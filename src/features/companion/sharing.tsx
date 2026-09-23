@@ -3,30 +3,11 @@ import type { FormEvent, ReactNode } from 'react';
 import { SERVICE_DAYS, WEEKDAYS } from './dawn';
 import { PageHeading, VenueSwitch } from './ui';
 import type { Venue } from './ui';
+import { restaurants } from './restaurants';
 
 export type SnackView = 'snacks' | 'breakfast';
 export type Story = { id: number; name: string; text: string; tilt: number };
 
-const restaurants = {
-  songrim: {
-    name: '유치회관 야탑직영점',
-    hours: '24시간으로 안내',
-    type: '해장국',
-    area: '야탑 · 이동 필요',
-    address: '성남시 분당구 장미로48번길 14',
-    map: 'https://www.google.com/maps/?cid=15601197394275138759',
-    source: 'https://www.saeob.com/%EC%9C%A0%EC%B9%98%ED%9A%8C%EA%B4%80-%EC%95%BC%ED%83%91%EC%A7%81%EC%98%81%EC%A0%90-031-715-6275',
-  },
-  dream: {
-    name: '서울감자탕 서현지점',
-    hours: '24시간으로 안내',
-    type: '감자탕 · 뼈해장국',
-    area: '서현',
-    address: '성남시 분당구 황새울로 315, 대현빌딩 1층',
-    map: 'https://www.google.com/maps/search/서울감자탕+서현지점',
-    source: 'https://www.diningcode.com/list.dc?query=%EC%84%9C%ED%98%84%EC%97%AD%2024%EC%8B%9C%EA%B0%84%EC%98%81%EC%97%85',
-  },
-} as const;
 
 const Icon = {
   tea: <svg viewBox="0 0 40 40"><path d="M11 9h18v24H11z" /><path d="M11 14h18M20 9V4M17 4h6" /><path d="M20 27c-5-1.5-4.5-7 0-9 4.5 2 5 7.5 0 9zM20 19v8" /></svg>,
@@ -116,7 +97,6 @@ function StorySection({ stories, onAdd, onDelete, onHide, onMore }: { stories: S
 }
 
 export function SharingPanel({ eventDay, stories, onAddStory, onDeleteStory, onHideStory, onMoreStories, view, setView, venue, setVenue }: { eventDay: number | null; stories: Story[]; onAddStory: (name: string, text: string) => string | null; onDeleteStory: (id: number) => void; onHideStory: (id: number) => void; onMoreStories: () => void; view: SnackView; setView: (view: SnackView) => void; venue: Venue; setVenue: (venue: Venue) => void }) {
-  const restaurant = restaurants[venue];
   return (
     <section id="tc-panel-sharing" className="tc-panel" role="tabpanel" aria-labelledby="tc-tab-sharing">
       <PageHeading eyebrow="기다리는 시간도, 예배 후에도" title="함께 나눠요" art={<span className="tc-steam">{Icon.pot}</span>}>작은 간식 하나, 따뜻한 아침 한 끼.</PageHeading>
@@ -178,21 +158,25 @@ export function SharingPanel({ eventDay, stories, onAddStory, onDeleteStory, onH
             <div className="tc-breakfast-intro">
               <span className="tc-tiny">예배를 마친 뒤</span>
               <h2>같이 아침 먹고 갈까요?</h2>
-              <p>예배 종료 시각은 아직 정해지지 않았어요. 아래는 식당의 공개 영업정보를 바탕으로 둔 장소별 후보 1곳입니다.</p>
+              <p>예배 종료 시각은 아직 정해지지 않았어요. 이른 아침 영업시간이 안내된 식당을 모았어요. 출발 전 전화로 당일 영업을 확인해주세요.</p>
             </div>
             <VenueSwitch venue={venue} onChange={setVenue} label="아침 식사 지역" />
-            {venue === 'songrim' && <div className="tc-district-note">송림고 가까운 후보는 추가 확인 중이에요. 아래 식당은 <strong>야탑으로 이동이 필요</strong>하며 도보권 추천이 아닙니다.</div>}
-            <article className="tc-restaurant">
+            {venue === 'songrim' && <div className="tc-district-note">아래 식당은 <strong>야탑으로 이동이 필요</strong>해요. 송림본당 바로 앞이나 도보권 추천은 아닙니다.</div>}
+            <div className="tc-restaurant-list">{restaurants[venue].map((restaurant) => (
+            <article className="tc-restaurant" key={restaurant.name} aria-label={restaurant.name}>
               <div className="tc-restaurant__bowl" aria-hidden="true">{Icon.pot}</div>
               <div className="tc-restaurant__head"><h2>{restaurant.name}</h2><span>{restaurant.hours}</span></div>
               <p>{restaurant.type} · {restaurant.area}</p>
               <p>{restaurant.address}</p>
-              <small>후보 1 · 공개 영업정보 기준 · 특새 기간 영업·휴무는 매장 확인 필요</small>
+              {restaurant.caution && <p className="tc-restaurant__caution"><strong>{restaurant.caution}</strong></p>}
+              <small>공개 영업정보 확인: 2026.09.24 · 특새 기간 영업·휴무는 매장 확인 필요</small>
               <footer>
+                <a className="tc-pill-link" href={`tel:${restaurant.phone}`}>전화 확인</a>
                 <a className="tc-pill-link" href={restaurant.map} target="_blank" rel="noopener noreferrer">지도·영업정보 ↗</a>
                 <a className="tc-pill-link tc-pill-link--ghost" href={restaurant.source} target="_blank" rel="noopener noreferrer">참고 자료 ↗</a>
               </footer>
             </article>
+            ))}</div>
             <p className="tc-footnote">‘지금 영업 중’을 뜻하지 않으며 교회 제휴 식당이 아닙니다.</p>
           </>
         )}

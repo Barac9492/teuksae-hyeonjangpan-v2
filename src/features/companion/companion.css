@@ -544,3 +544,7 @@ body { background: #fbfbfa; }
   .tc-companion *, .tc-dialog, .tc-dialog * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
 @keyframes tc-steam { 50% { transform: translateY(-3px); opacity: .5; } }
+
+.tc-restaurant-list { display: grid; gap: 16px; }
+.tc-restaurant footer { flex-wrap: wrap; position: relative; }
+.tc-restaurant > .tc-restaurant__caution { color: var(--ink); border-left: 3px solid var(--line); padding-left: 10px; }
