@@ -1,0 +1,1 @@
+export { CompanionApp } from './CompanionApp';

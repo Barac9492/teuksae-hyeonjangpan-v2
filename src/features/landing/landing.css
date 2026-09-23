@@ -1,0 +1,272 @@
+#woori-apple {
+  --wa-paper: #fff;
+  --wa-ink: #1d1d1f;
+  --wa-muted: #66666d;
+  --wa-soft: #f5f5f7;
+  --wa-blue-soft: #eef6ff;
+  --wa-blue-wash: #dcecff;
+  --wa-line: #dedee3;
+  --wa-blue: #0066cc;
+  --wa-button: #0071e3;
+  --wa-success: #17623b;
+  width: 100%; overflow: clip; isolation: isolate; color: var(--wa-ink); background: var(--wa-paper);
+  font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Noto Sans KR", sans-serif;
+  font-size: 16px; line-height: 1.55; letter-spacing: -.035em; -webkit-font-smoothing: antialiased;
+}
+#woori-apple * { box-sizing: border-box; }
+#woori-apple [hidden] { display: none !important; }
+#woori-apple h1, #woori-apple h2, #woori-apple h3, #woori-apple p, #woori-apple figure, #woori-apple dl { margin: 0; }
+#woori-apple button, #woori-apple input, #woori-apple textarea { font: inherit; color: inherit; }
+#woori-apple button, #woori-apple a, #woori-apple summary, #woori-apple input[type="file"] { -webkit-tap-highlight-color: transparent; }
+#woori-apple button { cursor: pointer; }
+#woori-apple a { color: inherit; text-decoration: none; }
+#woori-apple button:focus-visible, #woori-apple a:focus-visible, #woori-apple summary:focus-visible, #woori-apple input:focus-visible, #woori-apple textarea:focus-visible { outline: 3px solid var(--wa-blue); outline-offset: 4px; }
+#woori-apple .wa-nav { position: sticky; top: 0; z-index: 30; min-height: 62px; padding: 7px max(24px, 5vw); display: flex; align-items: center; justify-content: space-between; gap: 28px; border-bottom: 1px solid rgba(29,29,31,.12); background: rgba(255,255,255,.88); backdrop-filter: saturate(180%) blur(18px); }
+#woori-apple .wa-brand { min-height: 46px; display: flex; align-items: center; gap: 10px; flex: none; font-size: 14px; font-weight: 650; letter-spacing: -.05em; }
+#woori-apple .wa-wordmark { font-size: 27px; line-height: 1; font-weight: 850; letter-spacing: -.11em; padding-right: .08em; }
+#woori-apple .wa-brand-rule { width: 1px; height: 17px; background: var(--wa-line); }
+#woori-apple .wa-menu { display: grid; grid-template-columns: repeat(4, max-content); align-items: center; gap: clamp(18px, 2.6vw, 38px); font-size: 13px; font-weight: 580; }
+#woori-apple .wa-menu a { min-height: 44px; display: inline-flex; align-items: center; white-space: nowrap; }
+#woori-apple .wa-menu a:hover { color: var(--wa-blue); }
+#woori-apple .wa-kicker { font-size: 12px; line-height: 1.35; font-weight: 700; letter-spacing: .07em; color: var(--wa-blue); }
+#woori-apple .wa-worship { padding: clamp(34px, 5vw, 68px) max(24px, 6vw) 30px; display: grid; grid-template-columns: minmax(240px,.75fr) minmax(570px,1.4fr); gap: clamp(38px, 6vw, 90px); align-items: center; scroll-margin-top: 70px; background: radial-gradient(circle at 22% 40%, #f6faff 0, #fff 36%); }
+#woori-apple .wa-hero-copy h1 { margin: 3px 0 0; padding-right: .1em; font-size: clamp(94px, 12vw, 162px); line-height: .95; font-weight: 860; letter-spacing: -.115em; }
+#woori-apple .wa-hero-line { margin-top: 14px; font-size: clamp(24px, 2.5vw, 36px); line-height: 1.25; font-weight: 690; letter-spacing: -.06em; }
+#woori-apple .wa-schedule { display: inline-flex; margin-top: 18px; padding: 7px 11px; border: 1px solid var(--wa-line); border-radius: 999px; font-size: 12px; color: var(--wa-muted); background: rgba(255,255,255,.8); }
+#woori-apple .wa-status-panel { min-width: 0; }
+#woori-apple .wa-venue-layout { grid-column:1 / -1; min-width:0; width:100%; margin-top:16px; }
+#woori-apple .wa-status-heading { min-height: 34px; display: flex; justify-content: space-between; align-items: center; gap: 18px; font-size: 13px; }
+#woori-apple .wa-status-heading > div { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+#woori-apple .wa-status-heading strong { font-size: 11px; font-weight: 600; color: var(--wa-muted); }
+#woori-apple .wa-live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--wa-blue); box-shadow: 0 0 0 4px var(--wa-blue-wash); }
+#woori-apple .wa-place-picker { margin-top: 7px; display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--wa-line); border-bottom: 1px solid var(--wa-line); }
+#woori-apple .wa-place-picker button { position: relative; min-width: 0; min-height: 91px; padding: 16px 13px 14px; border: 0; border-right: 1px solid var(--wa-line); background: transparent; text-align: left; }
+#woori-apple .wa-place-picker button:last-child { border-right: 0; }
+#woori-apple .wa-place-picker button::before { content: ""; position: absolute; left: 12px; right: 12px; bottom: -1px; height: 3px; border-radius: 3px 3px 0 0; background: transparent; }
+#woori-apple .wa-place-picker button[aria-pressed="true"] { background: var(--wa-blue-soft); }
+#woori-apple .wa-place-picker button[aria-pressed="true"]::before { background: var(--wa-blue); }
+#woori-apple .wa-place-picker strong, #woori-apple .wa-place-picker span, #woori-apple .wa-place-picker small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#woori-apple .wa-place-picker strong { font-size: 14px; }
+#woori-apple .wa-place-picker span { margin-top: 4px; font-size: 11px; font-weight: 600; color: var(--wa-blue); }
+#woori-apple .wa-place-picker small { margin-top: 2px; font-size: 10px; color: var(--wa-muted); }
+#woori-apple .wa-place-detail { padding-top: 18px; display: grid; grid-template-columns: 1.45fr .9fr; gap: 9px 28px; align-items: end; }
+#woori-apple .wa-example-label { margin-bottom: 2px; color: var(--wa-blue); font-size: 10px; font-weight: 750; letter-spacing: .08em; }
+#woori-apple .wa-place-detail h2 { font-size: clamp(19px, 2vw, 24px); line-height: 1.3; letter-spacing: -.05em; }
+#woori-apple .wa-place-detail > div > p:last-child { max-width: 580px; margin-top: 5px; color: var(--wa-muted); font-size: 12px; }
+#woori-apple .wa-place-detail dl { font-size: 11px; }
+#woori-apple .wa-place-detail dl div { padding: 3px 0; display: flex; justify-content: space-between; gap: 12px; }
+#woori-apple .wa-place-detail dt { color: var(--wa-muted); }
+#woori-apple .wa-place-detail dd { margin: 0; text-align: right; font-weight: 650; }
+#woori-apple .wa-detail-toggle { grid-column: 1 / -1; min-height: 36px; padding: 8px 0 0; display: flex; align-items: center; justify-content: space-between; border: 0; border-top: 1px solid var(--wa-line); background: transparent; color: var(--wa-blue); font-size: 12px; font-weight: 650; text-align: left; }
+#woori-apple .wa-detail-toggle span { font-size: 20px; font-weight: 400; }
+#woori-apple .wa-access-detail { grid-column: 1 / -1; padding: 11px 14px; border-radius: 12px; background: var(--wa-soft); font-size: 12px; color: var(--wa-muted); }
+#woori-apple .wa-access-detail p + p { margin-top: 6px; }
+#woori-apple .wa-hero-photo { height: clamp(360px, 51vw, 680px); position: relative; overflow: hidden; background: #17191c; }
+#woori-apple .wa-hero-photo img { width: 100%; height: 100%; display: block; object-fit: cover; object-position: 50% 52%; }
+#woori-apple .wa-photo-wash { position: absolute; inset: 0; background: linear-gradient(180deg, transparent 55%, rgba(0,0,0,.65)); pointer-events: none; }
+#woori-apple .wa-hero-photo figcaption { position: absolute; left: max(24px,6vw); right: max(24px,6vw); bottom: 25px; display: flex; align-items: end; justify-content: space-between; gap: 25px; color: #fff; font-size: 12px; letter-spacing: 0; }
+#woori-apple .wa-hero-photo figcaption span { font-size: clamp(30px, 4.5vw, 62px); line-height: 1; font-weight: 760; letter-spacing: -.065em; }
+#woori-apple .wa-section { padding: clamp(76px, 10vw, 150px) max(24px, 6vw); scroll-margin-top: 64px; }
+#woori-apple .wa-section-copy { max-width: 770px; margin-bottom: clamp(35px, 5vw, 66px); }
+#woori-apple .wa-section h2 { margin-top: 10px; font-size: clamp(40px, 6vw, 76px); font-weight: 760; line-height: 1.14; letter-spacing: -.072em; }
+#woori-apple .wa-section-copy > p:last-child, #woori-apple .wa-postcard-copy > p, #woori-apple .wa-photo-head > p { margin-top: 22px; max-width: 600px; color: var(--wa-muted); font-size: clamp(15px, 1.5vw, 18px); line-height: 1.75; }
+#woori-apple .wa-sharing { background: #fff; }
+#woori-apple .wa-sharing-layout { display: grid; grid-template-columns: minmax(0,1.18fr) minmax(330px,.82fr); gap: clamp(36px, 6vw, 90px); align-items: center; }
+#woori-apple .wa-table-art { width: 100%; height: auto; display: block; border-radius: 38px; box-shadow: 0 24px 70px rgba(40,83,125,.13); }
+#woori-apple .wa-notice-column { min-width: 0; }
+#woori-apple .wa-list-heading { padding-bottom: 9px; display: flex; justify-content: space-between; color: var(--wa-muted); font-size: 11px; }
+#woori-apple .wa-notice { width: 100%; min-height: 102px; padding: 19px 0; display: grid; grid-template-columns: 1fr auto; gap: 5px 16px; border: 0; border-top: 1px solid var(--wa-line); background: transparent; text-align: left; }
+#woori-apple .wa-notice:last-of-type { border-bottom: 1px solid var(--wa-line); }
+#woori-apple .wa-notice span { grid-column: 1; color: var(--wa-blue); font-size: 11px; font-style: normal; }
+#woori-apple .wa-notice strong { grid-column: 1; font-size: clamp(17px, 1.8vw, 22px); line-height: 1.35; letter-spacing: -.045em; }
+#woori-apple .wa-notice i { grid-column: 2; grid-row: 1 / 3; align-self: center; color: var(--wa-muted); font-size: 11px; font-style: normal; }
+#woori-apple .wa-inline-actions { margin-top: 23px; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+#woori-apple .wa-primary { min-height: 44px; padding: 10px 20px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 999px; background: var(--wa-button); color: #fff; font-size: 13px; font-weight: 650; }
+#woori-apple .wa-link-button { min-height: 44px; padding: 8px 0; border: 0; background: transparent; color: var(--wa-blue); font-size: 13px; font-weight: 650; }
+#woori-apple .wa-success { margin-top: 14px; color: var(--wa-success); font-size: 12px; font-weight: 600; }
+#woori-apple .wa-local-form { margin-top: 22px; padding: 23px; border-radius: 18px; background: var(--wa-soft); }
+#woori-apple .wa-form-intro { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+#woori-apple .wa-form-intro strong { font-size: 14px; }
+#woori-apple .wa-form-intro button { min-height: 40px; padding: 4px 0; border: 0; background: transparent; color: var(--wa-blue); font-size: 12px; }
+#woori-apple .wa-local-form > p { margin: 3px 0 17px; color: var(--wa-muted); font-size: 11px; line-height: 1.6; }
+#woori-apple .wa-local-form label { display: block; margin-top: 12px; font-size: 12px; font-weight: 650; }
+#woori-apple .wa-local-form input, #woori-apple .wa-local-form textarea { width: 100%; margin-top: 6px; padding: 10px 12px; border: 1px solid var(--wa-line); border-radius: 9px; background: #fff; font-size: 14px; resize: vertical; }
+#woori-apple .wa-local-form textarea { min-height: 74px; }
+#woori-apple .wa-local-form .wa-primary { margin-top: 17px; }
+#woori-apple .wa-postcards { min-height: 820px; display: grid; grid-template-columns: minmax(270px,.75fr) minmax(430px,1.25fr); gap: clamp(50px, 10vw, 160px); align-items: center; background: linear-gradient(135deg,#edf6ff 0%,#f8fbff 42%,#e7f1ff 100%); }
+#woori-apple .wa-postcard-copy h2 { font-size: clamp(40px,5.3vw,70px); }
+#woori-apple .wa-card-controls { margin-top: 28px; display: inline-flex; align-items: center; gap: 13px; }
+#woori-apple .wa-card-controls button { min-height: 40px; padding: 7px 12px; border: 1px solid rgba(0,102,204,.2); border-radius: 999px; background: rgba(255,255,255,.7); color: var(--wa-blue); font-size: 12px; }
+#woori-apple .wa-card-controls span { min-width: 38px; text-align: center; color: var(--wa-muted); font-size: 11px; }
+#woori-apple .wa-postcard-stage { min-width: 0; text-align: center; }
+#woori-apple .wa-postcard { width: min(100%, 620px); min-height: 420px; margin: 0 auto 28px; padding: clamp(34px,5vw,65px); position: relative; display: flex; flex-direction: column; justify-content: center; border: 1px solid rgba(0,63,125,.13); border-radius: 4px; background: #fff; box-shadow: 0 30px 80px rgba(37,81,127,.16), inset 0 0 80px rgba(121,164,202,.07); text-align: left; transform: rotate(1.25deg); overflow: hidden; }
+#woori-apple .wa-postcard::after { content: ""; position: absolute; inset: 0; opacity: .25; pointer-events: none; background-image: repeating-linear-gradient(0deg,transparent 0,transparent 35px,#a9c8e5 36px); }
+#woori-apple .wa-postcard.is-turned { transform: rotate(-1deg); background: #fdfefe; }
+#woori-apple .wa-postcard > * { position: relative; z-index: 1; }
+#woori-apple .wa-stamp { position: absolute; top: 28px; right: 29px; width: 70px; height: 60px; padding-top: 12px; border: 2px solid #8bb3d9; color: #5b88b1; text-align: center; font-size: 9px; line-height: 1.2; letter-spacing: .1em; }
+#woori-apple .wa-example-tag { width: fit-content; margin-bottom: 16px; padding: 4px 8px; border-radius: 999px; color: var(--wa-blue); background: var(--wa-blue-soft); font-size: 10px; font-weight: 750; }
+#woori-apple .wa-postcard small { color: var(--wa-muted); font-size: 12px; font-weight: 650; }
+#woori-apple .wa-postcard strong { max-width: 490px; margin-top: 15px; font-family: "Nanum Myeongjo", "Apple SD Gothic Neo", serif; font-size: clamp(23px, 3vw, 37px); line-height: 1.62; letter-spacing: -.045em; font-weight: 700; word-break: keep-all; }
+#woori-apple .wa-turn-hint { margin-top: 27px; color: var(--wa-blue); font-size: 12px; font-weight: 650; }
+#woori-apple .wa-card-form { max-width: 620px; margin-left: auto; margin-right: auto; text-align: left; }
+#woori-apple .wa-photos { background: #fff; }
+#woori-apple .wa-photo-head { margin-bottom: clamp(45px,7vw,90px); display: flex; justify-content: space-between; align-items: end; gap: 45px; }
+#woori-apple .wa-photo-head > p { max-width: 390px; padding-bottom: 7px; }
+#woori-apple .wa-gallery { display: grid; grid-template-columns: 1.3fr .7fr; grid-template-rows: minmax(250px,31vw) minmax(250px,31vw); gap: 15px; }
+#woori-apple .wa-gallery-item { min-width: 0; display: flex; flex-direction: column; }
+#woori-apple .wa-gallery-item-1 { grid-row: 1 / 3; }
+#woori-apple .wa-gallery-item button { min-height: 0; flex: 1; width: 100%; padding: 0; border: 0; background: #e9ebee; overflow: hidden; }
+#woori-apple .wa-gallery-item img, #woori-apple .wa-gallery-item svg { width: 100%; height: 100%; display: block; object-fit: cover; }
+#woori-apple .wa-gallery-item-1 img { object-position: 47% 50%; }
+#woori-apple .wa-gallery-item figcaption { min-height: 44px; padding: 10px 1px; color: var(--wa-muted); font-size: 11px; letter-spacing: 0; }
+#woori-apple .wa-upload { margin-top: clamp(55px,8vw,105px); padding: 30px 0; display: grid; grid-template-columns: 1fr auto; gap: 20px 40px; align-items: center; border-top: 1px solid var(--wa-line); border-bottom: 1px solid var(--wa-line); }
+#woori-apple .wa-upload h3 { margin-top: 5px; font-size: clamp(24px,3vw,36px); letter-spacing: -.055em; }
+#woori-apple .wa-upload > div > p:last-child { margin-top: 6px; color: var(--wa-muted); font-size: 12px; }
+#woori-apple .wa-file-label { cursor: pointer; }
+#woori-apple .wa-file-label input { position: absolute; width: 1px; height: 1px; clip: rect(0 0 0 0); clip-path: inset(50%); overflow: hidden; white-space: nowrap; }
+#woori-apple .wa-error { grid-column: 1 / -1; color: #a22929; font-size: 12px; }
+#woori-apple .wa-local-preview { grid-column: 1 / -1; padding-top: 18px; display: grid; grid-template-columns: 150px 1fr auto; gap: 18px; align-items: center; border-top: 1px solid var(--wa-line); }
+#woori-apple .wa-local-preview img { width: 150px; height: 100px; object-fit: cover; border-radius: 9px; }
+#woori-apple .wa-local-preview figcaption { color: var(--wa-muted); font-size: 12px; letter-spacing: 0; overflow-wrap: anywhere; }
+#woori-apple .wa-dialog { width: min(620px,calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto; padding: 26px; border: 0; border-radius: 22px; color: var(--wa-ink); background: #fff; box-shadow: 0 28px 100px rgba(0,0,0,.28); }
+#woori-apple .wa-dialog::backdrop { background: rgba(7,12,19,.68); backdrop-filter: blur(7px); }
+#woori-apple .wa-dialog-bar { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+#woori-apple .wa-icon-button { min-height: 40px; padding: 7px 13px; border: 1px solid var(--wa-line); border-radius: 999px; background: #fff; color: var(--wa-blue); font-size: 12px; }
+#woori-apple .wa-dialog h2 { margin: 15px 0 12px; font-size: clamp(25px,4vw,38px); line-height: 1.25; letter-spacing: -.055em; }
+#woori-apple .wa-dialog > p { color: var(--wa-muted); line-height: 1.75; }
+#woori-apple .wa-dialog .wa-dialog-meta { margin-bottom: 6px; color: var(--wa-blue); font-size: 12px; }
+#woori-apple .wa-dialog .wa-dialog-note { margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--wa-line); font-size: 11px; }
+#woori-apple .wa-dialog-image, #woori-apple .wa-dialog > svg { width: 100%; height: auto; max-height: 62vh; display: block; object-fit: contain; border-radius: 12px; }
+#woori-apple .wa-footer { padding: 38px max(24px,6vw) 48px; border-top: 1px solid var(--wa-line); background: var(--wa-soft); color: var(--wa-muted); font-size: 11px; line-height: 1.8; }
+#woori-apple .wa-footer-top { margin-bottom: 10px; display: flex; justify-content: space-between; gap: 20px; }
+#woori-apple .wa-footer-top strong { color: var(--wa-ink); font-size: 19px; letter-spacing: -.07em; }
+#woori-apple .wa-footer details { margin-top: 9px; }
+#woori-apple .wa-footer summary { width: fit-content; min-height: 38px; cursor: pointer; color: var(--wa-blue); }
+#woori-apple .wa-footer ul { margin: 3px 0; padding-left: 17px; }
+#woori-apple .wa-footer a { color: var(--wa-blue); text-decoration: underline; text-underline-offset: 3px; }
+
+
+#woori-apple .wa-venue-state { display:flex; align-items:center; gap:6px; }
+#woori-apple .wa-venue-state::before { content:''; width:6px; height:6px; border-radius:50%; background:#737780; flex-shrink:0; }
+#woori-apple .wa-venue-state-songlim::before { background:#23805b; }
+#woori-apple .wa-venue-state-dream::before { background:#b87516; }
+#woori-apple .wa-sharing-rules { padding:20px; margin-bottom:24px; border-radius:18px; background:var(--wa-blue-soft); }
+#woori-apple .wa-sharing-rules h3 { font-size:18px; line-height:1.4; margin-bottom:9px; }
+#woori-apple .wa-sharing-rules p { font-size:15px; line-height:1.65; }
+#woori-apple .wa-sharing-rules ul { padding-left:18px; margin:12px 0 0; color:var(--wa-muted); font-size:13px; line-height:1.7; }
+#woori-apple .wa-sharing-rules li+li { margin-top:6px; }
+#woori-apple .wa-local-form .wa-rules-confirm { display:flex; align-items:flex-start; gap:10px; font-size:14px; line-height:1.6; }
+#woori-apple .wa-rules-confirm input { width:22px; height:22px; margin:0; flex:none; }
+@media(max-width:1000px) {
+ #woori-apple .wa-nav { padding:4px 12px 0; display:block; }
+ #woori-apple .wa-brand { width:fit-content; min-height:34px; margin:0 auto; font-size:12px; gap:7px; }
+ #woori-apple .wa-wordmark { font-size:22px; }
+ #woori-apple .wa-brand-rule { height:14px; }
+ #woori-apple .wa-menu { width:100%; grid-template-columns:repeat(4,minmax(0,1fr)); gap:0; }
+ #woori-apple .wa-menu a { justify-content:center; font-size:13px; min-height:44px; }
+ #woori-apple .wa-worship { display:block; padding:18px 16px 20px; scroll-margin-top:88px; background:linear-gradient(180deg,#f6faff,#fff 65%); }
+ #woori-apple .wa-hero-copy { text-align:center; }
+ #woori-apple .wa-kicker { font-size:12px; }
+ #woori-apple .wa-hero-copy h1 { font-size:62px; line-height:.95; margin:5px 0 0; }
+ #woori-apple .wa-hero-line { font-size:21px; margin-top:9px; }
+ #woori-apple .wa-schedule { font-size:12px; margin-top:10px; padding:4px 10px; }
+ #woori-apple .wa-status-panel { margin-top:20px; }
+ #woori-apple .wa-status-heading { flex-wrap:wrap; gap:3px 10px; font-size:13px; }
+ #woori-apple .wa-status-heading strong { font-size:11px; }
+ #woori-apple .wa-place-picker { grid-template-columns:repeat(2,minmax(0,1fr)); gap:2px 8px; }
+ #woori-apple .wa-place-picker button { min-height:88px; padding:10px 12px; border-right:0; }
+ #woori-apple .wa-place-picker button::before { left:10px; right:10px; }
+ #woori-apple .wa-place-picker strong { font-size:16px; }
+ #woori-apple .wa-place-picker span { font-size:14px; }
+ #woori-apple .wa-place-picker small { font-size:11px; }
+ #woori-apple .wa-place-detail { grid-template-columns:1fr; gap:8px; padding-top:13px; }
+ #woori-apple .wa-place-detail h2 { font-size:18px; }
+ #woori-apple .wa-example-label { font-size:11px; }
+ #woori-apple .wa-place-detail > div > p:last-child { font-size:13px; }
+ #woori-apple .wa-place-detail dl { display:flex; gap:18px; flex-wrap:wrap; font-size:13px; }
+ #woori-apple .wa-detail-toggle { min-height:44px; font-size:14px; padding-top:6px; }
+ #woori-apple .wa-access-detail { font-size:14px; padding:13px; }
+ #woori-apple .wa-hero-photo { height:220px; }
+ #woori-apple .wa-hero-photo img { object-position:44% 50%; }
+ #woori-apple .wa-hero-photo figcaption { left:16px; right:16px; bottom:16px; display:block; font-size:11px; }
+ #woori-apple .wa-hero-photo figcaption span { display:block; font-size:28px; margin-bottom:8px; }
+ #woori-apple .wa-section { padding:44px 20px; scroll-margin-top:88px; }
+ #woori-apple .wa-section h2,#woori-apple .wa-postcard-copy h2 { font-size:34px; line-height:1.22; margin-top:9px; }
+ #woori-apple .wa-section-copy { margin-bottom:22px; }
+ #woori-apple .wa-section-copy > p:last-child,#woori-apple .wa-postcard-copy > p,#woori-apple .wa-photo-head > p { font-size:15px; line-height:1.65; margin-top:12px; }
+ #woori-apple .wa-sharing-layout { grid-template-columns:1fr; gap:24px; }
+ #woori-apple .wa-notice-column { order:1; }
+ #woori-apple .wa-table-art { order:2; max-height:190px; border-radius:20px; box-shadow:none; }
+ #woori-apple .wa-sharing-rules { padding:18px; margin-bottom:18px; }
+ #woori-apple .wa-sharing-rules h3 { font-size:17px; }
+ #woori-apple .wa-sharing-rules ul { font-size:14px; }
+ #woori-apple .wa-list-heading { font-size:12px; }
+ #woori-apple .wa-notice { min-height:90px; padding:16px 0; }
+ #woori-apple .wa-notice strong { font-size:18px; }
+ #woori-apple .wa-notice span,#woori-apple .wa-notice i { font-size:12px; }
+ #woori-apple .wa-inline-actions { margin-top:18px; }
+ #woori-apple .wa-primary { min-height:48px; font-size:15px; }
+ #woori-apple .wa-link-button { min-height:44px; font-size:14px; }
+ #woori-apple .wa-inline-actions > .wa-primary { width:100%; }
+ #woori-apple .wa-local-form { padding:18px; }
+ #woori-apple .wa-local-form > p { font-size:13px; }
+ #woori-apple .wa-local-form label { font-size:14px; }
+ #woori-apple .wa-local-form input,#woori-apple .wa-local-form textarea { font-size:16px; }
+ #woori-apple .wa-local-form .wa-primary { width:100%; }
+ #woori-apple .wa-form-intro button { min-height:44px; font-size:14px; }
+ #woori-apple .wa-postcards { min-height:0; grid-template-columns:1fr; gap:24px; }
+ #woori-apple .wa-card-controls { margin-top:16px; display:flex; justify-content:space-between; }
+ #woori-apple .wa-card-controls button { min-height:44px; min-width:64px; font-size:14px; }
+ #woori-apple .wa-card-controls span { font-size:13px; }
+ #woori-apple .wa-postcard { min-height:320px; margin-bottom:20px; padding:34px 24px; transform:rotate(.5deg); }
+ #woori-apple .wa-postcard strong { font-size:22px; line-height:1.6; }
+ #woori-apple .wa-stamp { top:16px; right:16px; width:53px; height:49px; padding-top:9px; }
+ #woori-apple .wa-postcard small,#woori-apple .wa-turn-hint { font-size:13px; }
+ #woori-apple .wa-postcard-stage > .wa-primary { width:100%; }
+ #woori-apple .wa-photo-head { display:block; margin-bottom:24px; }
+ #woori-apple .wa-photo-head > p { max-width:none; }
+ #woori-apple .wa-gallery { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); grid-template-rows:270px 200px; gap:16px 10px; }
+ #woori-apple .wa-gallery-item-1 { grid-column:1 / -1; grid-row:auto; }
+ #woori-apple .wa-gallery-item figcaption { font-size:11px; padding:8px 0; line-height:1.45; }
+ #woori-apple .wa-upload { grid-template-columns:1fr; margin-top:26px; padding:24px 0; gap:16px; }
+ #woori-apple .wa-upload h3 { font-size:24px; }
+ #woori-apple .wa-upload > div > p:last-child { font-size:13px; }
+ #woori-apple .wa-file-label { width:100%; }
+ #woori-apple .wa-local-preview { grid-template-columns:1fr; gap:10px; }
+ #woori-apple .wa-local-preview img { width:100%; height:190px; }
+ #woori-apple .wa-local-preview figcaption,#woori-apple .wa-error,#woori-apple .wa-success { font-size:13px; }
+ #woori-apple .wa-dialog { padding:20px; width:calc(100vw - 24px); max-height:calc(100dvh - 32px); }
+ #woori-apple .wa-icon-button { min-height:44px; font-size:14px; }
+ #woori-apple .wa-footer { padding:24px 20px; font-size:12px; }
+ #woori-apple .wa-footer-top { display:block; }
+ #woori-apple .wa-footer-top strong { display:block; margin-bottom:7px; }
+}
+@media(max-width:360px) {
+ #woori-apple .wa-nav { padding-left:8px; padding-right:8px; }
+ #woori-apple .wa-worship { padding-left:12px; padding-right:12px; }
+ #woori-apple .wa-section { padding-left:16px; padding-right:16px; }
+ #woori-apple .wa-section h2,#woori-apple .wa-postcard-copy h2 { font-size:30px; }
+ #woori-apple .wa-postcard { padding:34px 20px; }
+ #woori-apple .wa-postcard strong { font-size:21px; }
+ #woori-apple .wa-gallery { grid-template-rows:240px 205px; }
+}
+@media(prefers-reduced-motion:no-preference) {
+ #woori-apple a,#woori-apple button { transition:color .18s,background-color .18s,border-color .18s,transform .25s; }
+ #woori-apple .wa-gallery-item button:hover img { transform:scale(1.018); }
+ #woori-apple .wa-postcard:hover { transform:rotate(.3deg) translateY(-2px); }
+}
+@media(prefers-reduced-motion:reduce) {
+ #woori-apple *,#woori-apple *::before,#woori-apple *::after { scroll-behavior:auto!important; animation:none!important; transition:none!important; }
+}
+
+/* Local illustration phase, not an operator control. */
+#woori-apple .wa-opening-plan { margin:12px 0; padding:16px; border-radius:14px; background:var(--wa-blue-soft); font-size:14px; }
+#woori-apple .wa-opening-plan strong { display:block; color:var(--wa-blue); }
+#woori-apple .wa-opening-plan p { margin-top:4px; }
+#woori-apple .wa-opening-plan button { border:0; padding:0; min-height:44px; background:transparent; color:var(--wa-blue); font-size:14px; font-weight:650; }
+#woori-apple .wa-phase-demo { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin:12px 0; font-size:12px; }
+#woori-apple .wa-phase-demo > span { width:100%; color:var(--wa-muted); }
+#woori-apple .wa-phase-demo button { min-height:44px; padding:8px 12px; border:1px solid var(--wa-line); border-radius:10px; background:white; font-size:14px; }
+#woori-apple .wa-phase-demo button[aria-pressed="true"] { background:var(--wa-blue); color:white; border-color:var(--wa-blue); }
+#woori-apple .wa-phase-demo small { width:100%; font-size:12px; color:var(--wa-muted); }
+#woori-apple .wa-place-picker span { white-space:normal; overflow:visible; text-overflow:clip; }

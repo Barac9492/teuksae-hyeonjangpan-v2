@@ -1,0 +1,84 @@
+/* Standalone, local-only venue sketches. All rules stay inside the landing root. */
+#woori-apple .wvi {
+  width: 100%; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px;
+  font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Noto Sans KR", sans-serif;
+  color: #1d1d1f; line-height: 1.55; letter-spacing: -.035em;
+  container-type: inline-size;
+}
+#woori-apple .wvi-card {
+  min-width: 0; padding: clamp(16px, 3vw, 28px); border: 1px solid #dde8f4; border-radius: 26px;
+  background: linear-gradient(155deg, #fff 20%, #f6faff 100%); box-shadow: 0 12px 32px #31577808;
+}
+#woori-apple .wvi .wvi-eyebrow { color: #0066cc; font-size: 12px; font-weight: 750; letter-spacing: .015em; margin: 0 0 7px; }
+#woori-apple .wvi .wvi-card-heading h3 { margin: 0; font-size: clamp(21px, 2.2vw, 28px); font-weight: 750; line-height: 1.2; letter-spacing: -.055em; }
+#woori-apple .wvi .wvi-subtitle { margin: 9px 0 0; color: #626e7b; font-size: 12px; line-height: 1.7; word-break: keep-all; overflow-wrap: anywhere; }
+#woori-apple .wvi-room { margin-top: 21px; padding: 14px 10px 12px; border: 1px solid #dbe8f7; border-radius: 20px; background: radial-gradient(ellipse at 50% 0, #fff, #e9f3ff 95%); }
+#woori-apple .wvi-stage { min-height: 45px; margin: 0 8% 18px; display: flex; justify-content: center; align-items: center; gap: 9px; border-radius: 9px 9px 19px 19px; background: linear-gradient(#fff, #d6e8fc); border: 1px solid #c4dcf7; color: #375c83; box-shadow: 0 5px 0 #cadff244; font-size: 12px; font-weight: 650; }
+#woori-apple .wvi-stage-mark { width: 16px; height: 3px; border-radius: 4px; background: #7aa7d7; }
+#woori-apple .wvi-zones { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr); gap: 12px 0; }
+#woori-apple .wvi-zone {
+  appearance: none; position: relative; min-width: 44px; min-height: 142px; width: 100%; padding: 10px 7px;
+  border: 1px solid #c2d9f2; border-radius: 11px; background: #ffffffdb; text-align: center;
+  cursor: pointer; color: #0066cc; box-shadow: 0 3px 0 #85a9d312; font: inherit;
+  display: flex; flex-direction: column; align-items: stretch; gap: 7px;
+}
+#woori-apple .wvi-zone:nth-child(odd) { grid-column: 1; }
+#woori-apple .wvi-zone:nth-child(even) { grid-column: 3; }
+#woori-apple .wvi-zone[aria-pressed="true"] { border: 2px solid #0066cc; padding: 9px 6px; box-shadow: 0 0 0 3px #0066cc12, 0 5px 10px #124a7b0d; }
+#woori-apple .wvi .wvi-zone:focus-visible, #woori-apple .wvi .wvi-demo-control select:focus-visible { outline: 3px solid #0066cc; outline-offset: 4px; }
+#woori-apple .wvi-zone-name { font-size: 12px; font-weight: 700; color: #294765; line-height: 1.4; overflow-wrap: anywhere; }
+#woori-apple .wvi-furniture { display: block; flex: 1; width: 100%; height: 66px; color: #609bdf; }
+#woori-apple .wvi-zone--congested { background: #e1ecfa; }
+#woori-apple .wvi-zone--congested .wvi-furniture { color: #336cab; }
+#woori-apple .wvi-zone--unconfirmed { border-style: dashed; border-color: #b5c0cb; background: #f6f8fa; }
+#woori-apple .wvi-zone--unconfirmed .wvi-furniture { color: #97a5b3; }
+#woori-apple .wvi-zone--unconfirmed[aria-pressed="true"] { border-style: solid; }
+#woori-apple .wvi-state { display: inline-flex; gap: 5px; align-items: center; justify-content: center; color: #355676; font-size: 12px; font-weight: 650; line-height: 1.5; }
+#woori-apple .wvi-swatch { display: inline-block; flex: 0 0 13px; width: 13px; height: 13px; border-radius: 3px; border: 1px solid #6f94bd; background-color: #f7fbff; }
+#woori-apple .wvi-swatch--roomy { background-image: repeating-linear-gradient(0deg, transparent 0 4px, #658dbb 4px 5px); }
+#woori-apple .wvi-swatch--mid { background-image: radial-gradient(#4b76aa 1.2px, transparent 1.4px); background-size: 5px 5px; }
+#woori-apple .wvi-swatch--congested { background-image: repeating-linear-gradient(135deg, #235b98 0 2px, #e6effb 2px 4px); }
+#woori-apple .wvi-swatch--unconfirmed { border: 1px dashed #73808d; background-color: #edf0f3; background-image: linear-gradient(45deg, transparent 46%, #8994a0 47% 53%, transparent 54%), linear-gradient(-45deg, transparent 46%, #8994a0 47% 53%, transparent 54%); }
+#woori-apple .wvi-aisle { position: absolute; top: 0; bottom: 0; left: calc(50% - 12px); width: 24px; display: flex; align-items: center; justify-content: center; writing-mode: vertical-rl; font-size: 12px; letter-spacing: .24em; color: #60748a; pointer-events: none; }
+#woori-apple .wvi .wvi-room-caption { margin: 13px 0 0; text-align: center; color: #586d84; font-size: 12px; }
+#woori-apple .wvi-legend { display: flex; flex-wrap: wrap; gap: 8px 12px; margin: 16px 0; color: #586778; font-size: 12px; }
+#woori-apple .wvi-legend > span { display: inline-flex; align-items: center; gap: 5px; }
+#woori-apple .wvi-zone-detail { min-height: 94px; padding: 13px 14px; border-radius: 13px; background: #fff; border: 1px solid #e0eaf5; }
+#woori-apple .wvi-zone-detail strong { display: block; font-size: 12px; color: #244c77; }
+#woori-apple .wvi .wvi-zone-detail p { margin: 4px 0 0; font-size: 12px; color: #586778; word-break: keep-all; overflow-wrap: anywhere; }
+#woori-apple .wvi .wvi-disclaimer { margin: 12px 0 0; font-size: 12px; color: #626e7b; }
+#woori-apple .wvi { max-width:760px; margin-inline:auto; }
+#woori-apple .wvi-seating--gym .wvi-room { background: linear-gradient(140deg, #f3f8fd, #eaf0f6); }
+#woori-apple .wvi-seating--gym .wvi-zones { gap: 18px 0; }
+#woori-apple .wvi-queue { display: flex; flex-direction: column; }
+#woori-apple .wvi-route { position: relative; margin: 20px 0 14px; padding: 0 5px; }
+#woori-apple .wvi-route-track { position: absolute; left: 19px; top: 36px; bottom: 36px; width: 5px; border-radius: 9px; background: #dfe6ee; overflow: hidden; }
+#woori-apple .wvi-route-fill { display: block; width: 100%; height: var(--wvi-progress); border-radius: inherit; background: linear-gradient(#80baff, #0066cc); }
+#woori-apple .wvi-route--unknown .wvi-route-fill { display: none; }
+#woori-apple .wvi-landmarks { list-style: none; padding: 0; margin: 0; }
+#woori-apple .wvi-landmarks li { position: relative; display: flex; align-items: center; gap: 12px; height: 72px; min-width: 0; }
+#woori-apple .wvi-route-dot { flex: 0 0 17px; width: 17px; height: 17px; margin: 0 7px 0 8px; border: 3px solid #c0ccd8; border-radius: 50%; background: #fff; }
+#woori-apple .wvi-landmark--filled .wvi-route-dot { border-color: #0066cc; background: #e3f0ff; }
+#woori-apple .wvi-landmark--end .wvi-route-dot { border: 4px solid #0066cc; background: #fff; box-shadow: 0 0 0 5px #ddebfc; }
+#woori-apple .wvi-landmark-copy { min-width: 0; flex: 1; }
+#woori-apple .wvi-landmark-copy strong { display: block; font-size: 14px; font-weight: 650; color: #304f70; }
+#woori-apple .wvi-landmark-copy small { display: block; margin-top: 2px; font-size: 12px; color: #626e7b; line-height: 1.45; overflow-wrap: anywhere; }
+#woori-apple .wvi-end-tag { flex: none; padding: 4px 7px; border-radius: 6px; background: #0066cc; color: #fff; font-size: 12px; font-weight: 700; }
+#woori-apple .wvi .wvi-queue-result { padding: 12px 13px; border-radius: 12px; background: #e8f2ff; color: #0054aa; font-size: 13px; font-weight: 700; word-break: keep-all; overflow-wrap: anywhere; }
+#woori-apple .wvi .wvi-queue-result--unknown { color: #56616e; background: #edf0f3; }
+#woori-apple .wvi-demo-control { margin-top: auto; padding-top: 23px; }
+#woori-apple .wvi-demo-control label { display: block; margin-bottom: 7px; font-size: 12px; font-weight: 650; }
+#woori-apple .wvi-demo-control select { width: 100%; min-width: 0; max-width: 100%; min-height: 46px; padding: 10px 8px; border: 1px solid #b6c8dc; border-radius: 10px; background-color: #fff; font: inherit; font-size: 16px; color: #244c77; cursor: pointer; }
+#woori-apple .wvi .wvi-demo-control p { margin: 8px 0 0; color: #626e7b; font-size: 12px; line-height: 1.65; word-break: keep-all; overflow-wrap: anywhere; }
+@media (min-width: 900px) {
+  #woori-apple .wvi--songlim { grid-template-columns: minmax(0, 1fr); }
+}
+@media (hover: hover) {
+  #woori-apple .wvi-zone:hover { box-shadow: 0 0 0 3px #0066cc18; border-color: #0066cc; }
+}
+@media (forced-colors: active) {
+  #woori-apple .wvi-zone[aria-pressed="true"] { outline: 2px solid Highlight; outline-offset: 2px; }
+  #woori-apple .wvi-route-track { border: 1px solid GrayText; }
+  #woori-apple .wvi-route-fill { background: Highlight; forced-color-adjust: none; }
+  #woori-apple .wvi-landmark--end .wvi-route-dot { border-color: Highlight; }
+}
