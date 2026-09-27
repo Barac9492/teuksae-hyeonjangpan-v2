@@ -205,7 +205,7 @@ export function WorshipPanel({ crownImage, venue, setVenue, now, previewDay, sta
           <h2 id="tc-david-game-title">목동에서 왕이 되기까지</h2>
           <p>잠깐의 여유에, 다윗의 이야기를 게임으로 만나보세요.</p>
           <a href="https://the-shepherd-king.vercel.app/" target="_blank" rel="noopener noreferrer" className="tc-david-game__link" aria-label="다윗 게임 열기 (새 탭)">다윗 게임 열기 <span aria-hidden="true">↗</span></a>
-          <small>개인 제작 게임 · 새 탭에서 열려요</small>
+          <small>새 탭에서 열려요</small>
         </aside>
         <VerseCard />
       </div>
