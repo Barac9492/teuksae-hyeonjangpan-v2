@@ -1,0 +1,10 @@
+.tc-install-card { display: grid; gap: 12px; margin: 16px 20px; padding: 16px; border: 1px solid #e5d7c7; border-radius: 14px; background: #fff6eb; color: var(--ink); }
+.tc-install-card .tc-install-card__eyebrow { margin: 0 0 4px; color: #806650; font-size: 11px; font-weight: 600; }
+.tc-companion .tc-install-card h2 { margin: 0; font-size: 18px; line-height: 1.4; }
+.tc-install-card .tc-install-card__copy { margin: 5px 0 0; color: var(--ink-soft); font-size: 13px; line-height: 1.6; }
+.tc-install-card__actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.tc-companion .tc-install-card button { min-height: 44px; padding: 10px 14px; border-radius: 8px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.tc-companion .tc-install-card .tc-install-card__primary { border: 1px solid var(--ink); background: var(--ink); color: #fff; }
+.tc-install-card__primary:disabled { opacity: .65; cursor: wait; }
+.tc-companion .tc-install-card .tc-install-card__dismiss { border: 0; background: transparent; color: var(--ink-soft); text-decoration: underline; text-underline-offset: 3px; }
+.tc-install-card .tc-install-card__instructions, .tc-install-card .tc-install-card__notice { margin: 0; padding: 10px 12px; border-radius: 8px; background: #f3e8da; color: var(--ink); font-size: 12px; line-height: 1.7; }

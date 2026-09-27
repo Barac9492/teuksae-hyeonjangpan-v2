@@ -1,3 +1,4 @@
+import { InstallCard } from './InstallCard';
 import { useId, useState } from 'react';
 import type { ReactNode } from 'react';
 import { SERVICE_DAYS, WEEKDAYS, buildCalendar, countdownParts, dawnPhase, downloadBlob, seoulDayDiff, wakeTimeText } from './dawn';
@@ -188,6 +189,7 @@ export function WorshipPanel({ crownImage, venue, setVenue, now, previewDay, sta
 }) {
   return (
     <section id="tc-panel-worship" className="tc-panel" role="tabpanel" aria-labelledby="tc-tab-worship">
+      <InstallCard />
       <WorshipHero crownImage={crownImage} />
       <DawnJourney now={now} previewDay={previewDay} />
       <div className="tc-section">

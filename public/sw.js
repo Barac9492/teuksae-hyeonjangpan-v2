@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'teuksae-companion-admin-20260923';
+const CACHE_VERSION = 'teuksae-companion-install-20260928';
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const ASSET_CACHE = `${CACHE_VERSION}-assets`;
 
@@ -9,6 +9,9 @@ const APP_SHELL_URLS = [
   '/app-config.json',
   '/icon-192.svg',
   '/icon-512.svg',
+  '/icon-180.png',
+  '/icon-192.png',
+  '/icon-512.png',
 ];
 
 self.addEventListener('install', (event) => {
@@ -27,7 +30,7 @@ self.addEventListener('activate', (event) => {
       .then((keys) =>
         Promise.all(
           keys
-            .filter((key) => key !== APP_SHELL_CACHE && key !== ASSET_CACHE)
+            .filter((key) => key.startsWith('teuksae-') && key !== APP_SHELL_CACHE && key !== ASSET_CACHE)
             .map((key) => caches.delete(key)),
         ),
       )
@@ -67,11 +70,12 @@ self.addEventListener('fetch', (event) => {
 async function networkFirstNavigation(request) {
   try {
     const response = await fetch(request);
-    const cache = await caches.open(APP_SHELL_CACHE);
-    cache.put('/index.html', response.clone());
+    if (response.ok && (response.headers.get('content-type') || '').includes('text/html')) {
+      await caches.open(APP_SHELL_CACHE).then(cache => cache.put('/index.html', response.clone())).catch(() => undefined);
+    }
     return response;
   } catch (_error) {
-    const cached = await caches.match('/index.html');
+    const cached = await caches.match('/index.html').catch(() => undefined);
     if (cached) {
       return cached;
     }
@@ -80,12 +84,15 @@ async function networkFirstNavigation(request) {
 }
 
 async function cacheFirstAsset(request) {
-  const cached = await caches.match(request);
+  const cached = await caches.match(request).catch(() => undefined);
   if (cached) {
     return cached;
   }
   const response = await fetch(request);
-  const cache = await caches.open(ASSET_CACHE);
-  cache.put(request, response.clone());
+  const type = response.headers.get('content-type') || '';
+  const asset = new URL(request.url).pathname;
+  if (response.ok && (!asset.endsWith('.js') || /javascript/.test(type)) && !type.includes('text/html')) {
+    await caches.open(ASSET_CACHE).then(cache => cache.put(request, response.clone())).catch(() => undefined);
+  }
   return response;
 }
