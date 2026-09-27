@@ -136,10 +136,11 @@ export function WakePlanner({ venue }: { venue: Venue }) {
     <details className="tc-wake">
       <summary>
         <span className="tc-wake__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><circle cx="12" cy="13" r="7.5" /><path d="M12 9v4l2.5 2M4 5.5l3-2.5M20 5.5l-3-2.5" /></svg></span>
-        <span><small>새벽 알람 계산기</small><strong>몇 시에 일어나면 될까요?</strong></span>
+        <span><small>기상 시간 계산기</small><strong>몇 시에 일어나면 될까요?</strong><small className="tc-wake__notice">시간만 계산해요 · 실제 알람은 울리지 않아요</small></span>
         <span className="tc-wake__peek">{wake}</span>
       </summary>
       <div className="tc-wake__body">
+        <p className="tc-wake__warning">이 기능은 기상 시간을 계산할 뿐, 알람을 설정하거나 울리지 않습니다. 아래 시간을 참고해 휴대폰 시계 앱에서 알람을 직접 설정해주세요.</p>
         <div className="tc-wake__result" aria-live="polite">
           <span>일어날 시간</span>
           <strong>{wake}</strong>
@@ -159,7 +160,7 @@ export function WakePlanner({ venue }: { venue: Venue }) {
         >
           6일치 새벽 일정을 내 캘린더에 <span aria-hidden="true">↓</span>
         </button>
-        <p className="tc-wake__fine">{saved ? `캘린더 파일을 만들었어요. 열면 ${wake} 알림이 포함된 6개 일정이 추가돼요.` : '내 기기에서 캘린더 파일(.ics)만 만들어요. 어디에도 전송하지 않아요.'}</p>
+        <p className="tc-wake__fine">{saved ? `캘린더 파일 다운로드를 요청했어요. 일정 알림은 파일을 가져온 캘린더 앱의 설정에 따라 달라집니다. 휴대폰 기상 알람은 별도로 설정해주세요.` : '캘린더 파일(.ics)만 다운로드합니다. 휴대폰 기상 알람이 설정되는 것은 아닙니다.'}</p>
       </div>
     </details>
   );

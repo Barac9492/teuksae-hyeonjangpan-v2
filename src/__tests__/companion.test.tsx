@@ -189,3 +189,14 @@ it('places an optional David game after live guidance and opens it separately wi
   expect(worship.querySelector('iframe')).toBeNull();
   expect(within(worship).getByRole('heading', { name: '지금 예배 공간은' }).compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 });
+
+it('warns even while collapsed that wake planning does not set or ring an alarm', async () => {
+  const user = userEvent.setup(); render(<CompanionApp />);
+  const notice = screen.getByText('시간만 계산해요 · 실제 알람은 울리지 않아요');
+  expect(notice).toBeVisible();
+  const details = notice.closest('details')!;
+  expect(details).not.toHaveAttribute('open');
+  await user.click(notice.closest('summary')!);
+  expect(screen.getByText(/휴대폰 시계 앱에서 알람을 직접 설정해주세요/)).toBeVisible();
+  expect(screen.getByText(/휴대폰 기상 알람이 설정되는 것은 아닙니다/)).toBeVisible();
+});
