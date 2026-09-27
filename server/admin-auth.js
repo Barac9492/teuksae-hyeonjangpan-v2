@@ -79,7 +79,7 @@ async function rpc(cfg, name, args, fetcher = fetch) {
   const response = await fetcher(`${cfg.supabaseUrl}/rest/v1/rpc/${name}`, { method: 'POST', headers: { apikey: cfg.serviceKey, Authorization: `Bearer ${cfg.serviceKey}`, 'Content-Type': 'application/json' }, body: JSON.stringify(args) });
   let data = null;
   try { data = await response.json(); } catch { /* fail closed */ }
-  if (!response.ok) { const error = new Error('database unavailable'); error.status = response.status; throw error; }
+  if (!response.ok) { const error = new Error('database unavailable'); error.status = response.status; error.code = typeof data?.code === 'string' ? data.code : null; throw error; }
   return data;
 }
 function hashPassword(password) { const salt = randomBytes(16); return `scrypt$${salt.toString('hex')}$${scryptSync(password, salt, 32, { N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 }).toString('hex')}`; }
@@ -168,7 +168,16 @@ async function operations(req, res, cfg, session, fetcher) {
     if (req.method === 'GET') return reply(res, 200, await rpc(cfg, 'ops_list_operations', { p_session_id: session.tokenId }, fetcher));
     const body = await jsonBody(req);
     if (!validOperation(body)) return reply(res, 400, { error: '운영 상태 요청을 확인해주세요.' });
-    const data = await rpc(cfg, 'ops_set_resource_state', { p_session_id: session.tokenId, p_resource_id: body.resourceId, p_state: body.state, p_expected_version: body.expectedVersion, p_request_id: body.requestId, p_occupancy_percent: body.occupancyPercent ?? null }, fetcher);
+    const args = { p_session_id: session.tokenId, p_resource_id: body.resourceId, p_state: body.state, p_expected_version: body.expectedVersion, p_request_id: body.requestId };
+    let data;
+    try {
+      data = await rpc(cfg, 'ops_set_resource_state', { ...args, p_occupancy_percent: body.occupancyPercent ?? null }, fetcher);
+    } catch (error) {
+      // Missing RPC signature is a definite non-execution. Never retry ambiguous
+      // network/server failures or silently drop a requested operator estimate.
+      if (error?.code !== 'PGRST202' || error?.status !== 404 || body.occupancyPercent != null) throw error;
+      data = await rpc(cfg, 'ops_set_resource_state', args, fetcher);
+    }
     if (data?.status === 'conflict') return reply(res, 409, { error: '다른 변경이 먼저 반영되었습니다.', resource: data.resource });
     if (data?.status === 'payload_mismatch') return reply(res, 409, { error: '같은 요청 ID가 다른 요청에 사용되었습니다.' });
     if (!data?.resource) throw new Error('bad RPC result');
