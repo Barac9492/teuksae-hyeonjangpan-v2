@@ -48,44 +48,44 @@ function StorySection({ stories, onAdd, onDelete, onHide, onMore }: { stories: S
     event.preventDefault();
     const error = onAdd(name, text);
     if (error) { setMessage(error); return; }
-    setName(''); setText(''); setWriting(false); setMessage('내 화면에만 추가했어요. 다른 사람에게 공개되지 않습니다.');
+    setName(''); setText(''); setWriting(false); setMessage('나만 보는 메모에 추가했어요. 서버로 전송되거나 공개되지 않습니다.');
   };
   return (
     <section className="tc-stories" aria-labelledby="tc-stories-title">
       <span className="tc-eyebrow">오병이어 챌린지에서</span>
-      <h2 id="tc-stories-title">오늘 나눈 이야기</h2>
-      <p className="tc-story-intro">나눈 이야기나 고마웠던 마음을 남겨주세요. 함께 기다린 이야기도 좋아요.</p>
+      <h2 id="tc-stories-title">나만 보는 메모</h2>
+      <p className="tc-story-intro">나눈 이야기나 고마웠던 마음을 나를 위해 적어두세요.</p>
       <button className="tc-write-toggle" type="button" aria-expanded={writing} aria-controls="tc-story-form" onClick={() => setWriting((current) => !current)}>
-        <span aria-hidden="true" className="tc-write-toggle__pen">✎</span>{writing ? '작성창 접기' : '한마디 남기기'} <span aria-hidden="true">{writing ? '−' : '＋'}</span>
+        <span aria-hidden="true" className="tc-write-toggle__pen">✎</span>{writing ? '메모 작성창 접기' : '메모 작성하기'} <span aria-hidden="true">{writing ? '−' : '＋'}</span>
       </button>
       <form id="tc-story-form" className="tc-story-form" hidden={!writing} onSubmit={submit}>
-        <label className="tc-field-label" htmlFor="tc-story">이야기</label>
+        <label className="tc-field-label" htmlFor="tc-story">메모</label>
         <div className="tc-paper-field tc-paper-field--note">
           <textarea id="tc-story" className="tc-story-text" maxLength={300} value={text} onChange={(event) => setText(event.target.value)} placeholder="오늘 나눈 작은 마음을 적어주세요." required />
         </div>
-        <div className="tc-form-meta"><span>개인정보를 적지 말아주세요.</span><span>{text.length} / 300</span></div>
+        <div className="tc-form-meta"><span>공용 기기에서는 화면을 다른 사람이 볼 수 있어요.</span><span>{text.length} / 300</span></div>
         <label className="tc-field-label" htmlFor="tc-story-name">이름 또는 별명 <small>선택 · 비우면 익명</small></label>
         <input id="tc-story-name" className="tc-text-input" maxLength={20} value={name} onChange={(event) => setName(event.target.value)} placeholder="익명" />
-        <div className="tc-privacy-caution"><strong>공개될 글이라고 생각하고 적어주세요.</strong><p>전화번호·이메일 같은 기본 개인정보 표시는 제한하지만, 모든 개인정보를 자동으로 찾아내지는 못합니다.</p></div>
-        <button className="tc-primary" type="submit">내 화면에 이야기 추가 <span aria-hidden="true">＋</span></button>
-        <p className="tc-local-only">내 화면에만 추가 · 다른 사람에게 공개되지 않음</p>
+        <div className="tc-privacy-caution"><strong>이 메모는 서버로 전송하거나 공개하지 않아요.</strong><p>현재 화면에서만 유지되어 새로고침하거나 닫으면 사라집니다. 이 화면을 볼 수 있는 사람은 메모를 읽을 수 있어요.</p></div>
+        <button className="tc-primary" type="submit">나만 보는 메모에 추가 <span aria-hidden="true">＋</span></button>
+        <p className="tc-local-only">현재 화면에만 유지 · 서버 전송과 공개 없음</p>
       </form>
       {message && <p className="tc-form-status" role="status">{message}</p>}
       {visible.length === 0 ? (
         <div className="tc-story-empty">
           <div className="tc-story-empty__notes" aria-hidden="true"><i /><i /><i /></div>
-          <strong>아직 추가한 이야기가 없어요.</strong>
-          <p>이야기를 남겨보세요. 지금은 내 화면에서만 확인할 수 있어요.</p>
+          <strong>아직 남긴 메모가 없어요.</strong>
+          <p>나만 보는 메모를 남겨보세요. 현재 화면을 새로고침하거나 닫으면 사라집니다.</p>
         </div>
       ) : (
         <div className="tc-story-list">
           {visible.map((story) => (
             <article key={story.id} className="tc-story-card" style={{ '--tilt': `${story.tilt}deg` } as React.CSSProperties}>
-              <header><strong>{story.name}</strong><span>내 화면의 미리보기</span></header>
+              <header><strong>{story.name}</strong><span>나만 보는 메모</span></header>
               <p>{story.text}</p>
               <footer>
                 <button type="button" onClick={() => onDelete(story.id)}>삭제</button>
-                <button type="button" onClick={() => { onHide(story.id); setMessage('이 카드만 내 화면에서 숨겼어요. 서버 신고는 접수되지 않았습니다.'); }}>숨기기·신고 체험</button>
+                <button type="button" onClick={() => { onHide(story.id); setMessage('이 메모를 현재 화면에서 숨겼어요. 서버로 전송되지 않았습니다.'); }}>이 메모 숨기기</button>
               </footer>
             </article>
           ))}
@@ -150,7 +150,7 @@ export function SharingPanel({ eventDay, stories, onAddStory, onDeleteStory, onH
               <p>개인 보온병에 따뜻한 물을 준비해 오시거나,<br /><b>체육관이 열린 뒤 내부 온수 정수기</b>를 이용하실 수 있어요.</p>
               <small>학교 출입문만 열렸을 때는 이용할 수 없습니다. 학교 밖에서는 뜨거운 물을 나눠드리지 않습니다.</small>
             </div>
-            <p className="tc-footnote">학교 밖의 정확한 지점과 시작·종료 시각은 아직 정해지지 않았습니다.</p>
+            <p className="tc-footnote"><strong>정확한 학교 밖 위치와 시작·마감 시각은 주최팀 확인 전입니다.</strong> 현장에서는 1청년부 3팀 피켓 안내를 따라주세요. 확인 전에는 임의의 장소나 시각을 안내하지 않습니다.</p>
             <StorySection stories={stories} onAdd={onAddStory} onDelete={onDeleteStory} onHide={onHideStory} onMore={onMoreStories} />
             <button className="tc-line-action" type="button" onClick={() => setView('breakfast')}>예배 후 아침 식당도 살펴보기 <span aria-hidden="true">→</span></button>
           </>
@@ -159,7 +159,7 @@ export function SharingPanel({ eventDay, stories, onAddStory, onDeleteStory, onH
             <div className="tc-breakfast-intro">
               <span className="tc-tiny">예배를 마친 뒤</span>
               <h2>같이 아침 먹고 갈까요?</h2>
-              <p>예배 종료 시각은 아직 정해지지 않았어요. 이른 아침 영업시간이 안내된 식당을 모았어요. 출발 전 전화로 당일 영업을 확인해주세요.</p>
+              <p>예배 종료 시각은 주최 측 공식 확인 전이라 안내하지 않습니다. 이동은 당일 예배 안내를 따르고, 식당은 출발 전 전화로 당일 영업을 확인해주세요.</p>
             </div>
             <VenueSwitch venue={venue} onChange={setVenue} label="아침 식사 지역" />
             {venue === 'songrim' && <div className="tc-district-note">아래 식당은 <strong>야탑으로 이동이 필요</strong>해요. 송림본당 바로 앞이나 도보권 추천은 아닙니다.</div>}

@@ -109,33 +109,34 @@ describe('CompanionApp', () => {
     expect(screen.getByText(/준비하지 않으셔도 편하게 함께해 주세요/)).toBeVisible();
   });
 
-  it('adds only session preview stories, renders text safely, limits recent cards, and supports delete and no-server hide', async () => {
+  it('adds only local memos, renders text safely, limits recent cards, and supports delete and no-server hide', async () => {
     const user = userEvent.setup();
     render(<CompanionApp />);
     await chooseTab(user, '나눔');
-    expect(screen.getByText('이야기를 남겨보세요. 지금은 내 화면에서만 확인할 수 있어요.')).toBeVisible();
-    await user.click(screen.getByRole('button', { name: /한마디 남기기/ }));
-    const storyBox = screen.getByLabelText('이야기');
+    expect(screen.getByRole('heading', { name: '나만 보는 메모' })).toBeVisible();
+    expect(screen.getByText(/현재 화면을 새로고침하거나 닫으면 사라집니다/)).toBeVisible();
+    await user.click(screen.getByRole('button', { name: /메모 작성하기/ }));
+    const storyBox = screen.getByLabelText('메모');
     await user.type(storyBox, '<img src=x onerror=alert(1)> 고마웠어요');
-    await user.click(screen.getByRole('button', { name: /내 화면에 이야기 추가/ }));
+    await user.click(screen.getByRole('button', { name: /나만 보는 메모에 추가/ }));
     expect(screen.getByText('<img src=x onerror=alert(1)> 고마웠어요')).toBeVisible();
     expect(document.querySelector('.tc-story-card img')).toBeNull();
     expect(screen.getByText('익명')).toBeVisible();
-    expect(screen.getByText(/다른 사람에게 공개되지 않습니다/)).toBeVisible();
+    expect(screen.getByText(/서버로 전송되거나 공개되지 않습니다/)).toBeVisible();
     await user.click(screen.getByRole('button', { name: '삭제' }));
     expect(screen.queryByText('<img src=x onerror=alert(1)> 고마웠어요')).not.toBeInTheDocument();
-    for (const text of ['첫 이야기', '둘 이야기', '셋 이야기', '넷 이야기']) {
-      await user.click(screen.getByRole('button', { name: /한마디 남기기/ }));
+    for (const text of ['첫 메모', '둘 메모', '셋 메모', '넷 메모']) {
+      await user.click(screen.getByRole('button', { name: /메모 작성하기/ }));
       await user.clear(storyBox);
       await user.type(storyBox, text);
-      await user.click(screen.getByRole('button', { name: /내 화면에 이야기 추가/ }));
+      await user.click(screen.getByRole('button', { name: /나만 보는 메모에 추가/ }));
     }
     expect(document.querySelectorAll('.tc-story-list .tc-story-card')).toHaveLength(3);
     await user.click(screen.getByRole('button', { name: /더 보기/ }));
-    expect(within(screen.getByRole('dialog', { name: '내 화면의 이야기 더 보기' })).getAllByRole('article')).toHaveLength(4);
+    expect(within(screen.getByRole('dialog')).getAllByRole('article')).toHaveLength(4);
     await user.click(screen.getByRole('button', { name: '닫기' }));
-    await user.click(screen.getAllByRole('button', { name: '숨기기·신고 체험' })[0]);
-    expect(screen.getByRole('status')).toHaveTextContent('서버 신고는 접수되지 않았습니다');
+    await user.click(screen.getAllByRole('button', { name: '이 메모 숨기기' })[0]);
+    expect(screen.getByRole('status')).toHaveTextContent('서버로 전송되지 않았습니다');
   });
 
   it('keeps prayer private by default, previews locally, and never posts its content', async () => {
@@ -144,7 +145,7 @@ describe('CompanionApp', () => {
     render(<CompanionApp />);
     await chooseTab(user, '기도');
     expect(screen.queryByText(/이 기도제목을 내가 선택한 사람에게/)).not.toBeInTheDocument();
-    expect(screen.getByRole('checkbox', { name: /공개 범위를 확인했고/ })).not.toBeChecked();
+    expect(screen.getByRole('checkbox', { name: /모두에게 공개하는 데 동의/ })).not.toBeChecked();
     await user.type(screen.getByLabelText('어떤 마음으로 기도하고 있나요?'), '가족을 위해 기도합니다.');
     await user.click(screen.getByRole('button', { name: /입력 내용 미리보기/ }));
     const dialog = screen.getByRole('dialog', { name: '내 기도 제목 미리보기' });

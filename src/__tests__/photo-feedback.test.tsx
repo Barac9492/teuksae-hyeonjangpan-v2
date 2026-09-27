@@ -61,7 +61,7 @@ describe('local photo feedback', () => {
     const button = await screen.findByRole('button', { name: '사진 다운로드' });
     expect(screen.queryByRole('button', { name: '사진 공유하기' })).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '앱에 들어온 모든 분께 공개하기' })).toBeVisible();
-    expect(screen.getByRole('checkbox', { name: /앱 이용자 모두에게 공개/ })).not.toBeChecked();
+    expect(screen.getByRole('checkbox', { name: /모두에게 공개하는 데 동의합니다/ })).not.toBeChecked();
     fireEvent.click(button);
     expect(downloadBlob).toHaveBeenCalledOnce();
     expect(share).not.toHaveBeenCalled();

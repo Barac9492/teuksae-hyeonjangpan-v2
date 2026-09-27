@@ -2,18 +2,20 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Community } from '../features/companion/Community';
 import { photoBase64, RECEIPTS_KEY, safePhotoUrl } from '../features/companion/communityClient';
-const feed = { enabled: true, items: [], photoCountToday: 7, today: '2026-09-24' };
+const feed = { enabled: true, items: [], photoCountToday: 7, today: '2026-10-05' };
 const response = (value: unknown) => ({ ok: true, json: async () => value });
 let posted: Record<string, unknown>[];
 beforeEach(() => {
   localStorage.clear(); posted = [];
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date('2026-10-04T15:00:00.000Z'));
   vi.stubGlobal('fetch', vi.fn(async (_url, options) => {
     if (options.method === 'GET') return response(feed);
     const body = JSON.parse(options.body); posted.push(body);
     return response({ id: body.id ?? body.requestId, status: body.action === 'delete' ? 'deleted' : 'pending', photoCountToday: 8, today: feed.today });
   }));
 });
-afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.useRealTimers(); });
 const submit = () => screen.getByRole('button', { name: '공개 접수하기 · 검수 후 게시' });
 const consent = () => screen.getByRole('checkbox');
 describe('public companion submissions', () => {
@@ -77,7 +79,7 @@ describe('public companion submissions', () => {
     view.rerender(<Community kind="prayer" text="B" payloadKey="B" />); expect(consent()).not.toBeChecked();
     view.rerender(<Community kind="prayer" text="A" payloadKey="A" />); expect(consent()).not.toBeChecked();
   });
-  it('shows real submission count and escaped approved content, never outsider images', async () => {
+  it('shows real post-launch submission count and escaped approved content, never outsider images', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => response({ ...feed, items: [{ id: 'public', kind: 'photo', text: '<script>unsafe()</script>', photoUrl: 'https://evil.test/x.png' }] })));
     render(<Community kind="photo" text="" payloadKey="empty" />);
     await screen.findByText('오늘 사진 참여 7건'); expect(screen.getByText(/같은 사람의 여러 제출/)).toBeInTheDocument();
@@ -104,7 +106,7 @@ describe('public companion submissions', () => {
     expect(posted[0].eventDay).toBe(5);
     expect(atob(String(posted[0].imageBase64))).toBe('prepared-pixels');
     expect(localStorage.getItem(RECEIPTS_KEY)).not.toContain('prepared-pixels');
-    expect(screen.getByText(/사진에 선택한 행사 날짜와는 무관/)).toHaveTextContent('2026-09-24');
+    expect(screen.getByText(/사진에 선택한 행사 날짜와는 무관/)).toHaveTextContent('2026-10-05');
   });
   it('rejects oversized public images and only permits same origin API URLs', async () => {
     await expect(photoBase64(new File([new Uint8Array(3 * 1024 * 1024 + 1)], 'large.png', { type: 'image/png' }))).rejects.toThrow('3MB');

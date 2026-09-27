@@ -4,7 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CompanionApp } from '../features/companion';
 import { liveEventDay } from '../features/companion/CompanionApp';
 
-const fresh = new Date().toISOString();
+const eventNow = Date.parse('2026-10-06T04:40:00+09:00');
+const fresh = new Date(eventNow).toISOString();
 const communityReply = () => Promise.resolve({ ok: true, json: async () => ({ enabled: true, items: [], photoCountToday: 0, today: '2026-09-24' }) });
 const routeFetch = (statusReply: () => ReturnType<typeof reply>) => vi.fn((input: unknown) => {
   if (input === '/api/status') return statusReply();
@@ -14,6 +15,7 @@ const routeFetch = (statusReply: () => ReturnType<typeof reply>) => vi.fn((input
 const reply = (resources: unknown[], enabled = true, ok = true) => Promise.resolve({ ok, json: () => Promise.resolve({ enabled, resources }) });
 
 beforeEach(() => {
+  vi.spyOn(Date, 'now').mockReturnValue(eventNow);
   window.history.replaceState({}, '', '/');
   Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
 });
@@ -66,7 +68,7 @@ describe('public companion live operations', () => {
     const user = userEvent.setup();
     render(<CompanionApp />);
     await user.click(screen.getByRole('button', { name: '서현 · 드림센터' }));
-    await waitFor(() => expect(screen.getByText('10분 경과 · 확인 필요')).toBeVisible());
+    await waitFor(() => expect(screen.getByText('마지막 확인 후 10분 경과')).toBeVisible());
     expect(screen.getAllByText('확인 필요')[0]).toBeVisible();
     expect(within(screen.getByRole('tabpanel', { name: '예배' })).queryByText('이용 가능')).not.toBeInTheDocument();
     expect(screen.getByText('혼잡')).toBeVisible();
@@ -74,6 +76,14 @@ describe('public companion live operations', () => {
     expect(screen.getByText('B1')).toBeVisible();
     expect(screen.getByText('B5')).toBeVisible();
     expect(within(screen.getByRole('tabpanel', { name: '주차' })).getByText('만차')).toBeVisible();
+  });
+
+  it.each(['2026-10-04T14:59:59Z', '2026-10-06T00:00:00Z', '2026-10-05T18:00:00Z'])('does not claim a confirmed live banner for invalid freshness %s', async (updatedAt) => {
+    vi.stubGlobal('fetch', routeFetch(() => reply([{ id: 'space.songrim.hall', category: 'space', state: 'available', version: 1, updatedAt }])));
+    render(<CompanionApp />);
+    await waitFor(() => expect(screen.getAllByText('현장팀 확인 전')[0]).toBeVisible());
+    expect(screen.queryByText('현장팀 확인 현황')).not.toBeInTheDocument();
+    expect(screen.queryByText('이용 가능')).not.toBeInTheDocument();
   });
 
   it('uses the Seoul event day only during October 5 through 10', () => {

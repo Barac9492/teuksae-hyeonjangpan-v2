@@ -5,6 +5,10 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 const TOKEN = /^[A-Za-z0-9_-]{32,128}$/;
 const BUCKET = 'community-photos-v2';
 const MAX = 3 * 1024 * 1024;
+const EVENT_START = Date.parse('2026-10-05T00:00:00+09:00');
+const EVENT_END = Date.parse('2026-10-11T00:00:00+09:00');
+const EVENT_FIRST_DAY = '2026-10-05';
+const EVENT_LAST_DAY = '2026-10-10';
 const hash = value => createHash('sha256').update(value).digest('hex');
 const fail = (status, message) => Object.assign(new Error(message), { status });
 function config(env) {
@@ -21,6 +25,18 @@ function reply(res, status, body) {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Vary', 'Cookie, Origin');
   res.end(JSON.stringify(body));
+}
+function eventRecord(value) {
+  if (typeof value !== 'string') return false;
+  const time = Date.parse(value);
+  return Number.isFinite(time) && time >= EVENT_START && time < EVENT_END;
+}
+export function filterPublicCommunity(body) {
+  if (!body || typeof body !== 'object') return body;
+  const filtered = { ...body };
+  if (Array.isArray(body.items)) filtered.items = body.items.filter(item => item && eventRecord(item.createdAt));
+  if (Object.prototype.hasOwnProperty.call(body, 'photoCountToday') && (typeof body.today !== 'string' || body.today < EVENT_FIRST_DAY || body.today > EVENT_LAST_DAY)) filtered.photoCountToday = 0;
+  return filtered;
 }
 async function body(req) {
   if (!/^application\/json(?:\s*;|$)/i.test(req.headers?.['content-type'] || '')) throw fail(415, 'JSON 요청이 필요합니다.');
@@ -55,6 +71,14 @@ export async function handleCommunity(route, req, res, env = process.env, fetche
     if ((req.method === 'POST' && req.headers?.origin !== cfg.origin) || req.headers?.['sec-fetch-site'] === 'cross-site' || (req.headers?.origin && req.headers.origin !== cfg.origin)) throw fail(403, '같은 사이트에서 다시 시도해주세요.');
     const headers = { apikey: cfg.serviceKey, Authorization: `Bearer ${cfg.serviceKey}`, 'Content-Type': 'application/json' };
     async function rpc(name, args) { const response = await fetcher(`${cfg.supabaseUrl}/rest/v1/rpc/${name}`, { method:'POST', headers, body:JSON.stringify(args) }); let data; try { data = await response.json(); } catch { throw fail(503, '서버 응답을 확인하지 못했습니다.'); } if (!response.ok) throw fail(response.status === 403 ? 403 : 503, '요청을 처리하지 못했습니다.'); if (data == null) throw fail(503, '서버 응답을 확인하지 못했습니다.'); return data; }
+    async function itemCreatedAt(id) {
+      const response = await fetcher(`${cfg.supabaseUrl}/rest/v1/community_v2_items?id=eq.${encodeURIComponent(id)}&select=created_at`, { method:'GET', headers });
+      let rows; try { rows = await response.json(); } catch { throw fail(503, '사진 정보를 확인하지 못했습니다.'); }
+      if (!response.ok) throw fail(503, '사진 정보를 확인하지 못했습니다.');
+      const createdAt = Array.isArray(rows) && rows.length === 1 ? rows[0]?.created_at : null;
+      if (typeof createdAt !== 'string' || !Number.isFinite(Date.parse(createdAt))) throw fail(503, '사진 정보를 확인하지 못했습니다.');
+      return createdAt;
+    }
     async function moderator() { const token = readSession(req,cfg,now); if (!token) throw fail(401,'관리자 로그인이 필요합니다.'); const session = await rpc('ops_get_session',{p_session_id:token.id}); if (session.username !== token.username || session.credentialVersion !== token.credentialVersion || session.role !== 'superadmin') throw fail(403,'최고 관리자 권한이 필요합니다.'); return token.id; }
     const call = (action,args = {}) => rpc('community_v2',{p_action:action,p_args:args});
     async function cleanup(data) { if (data.cleanupPath) { const response = await fetcher(`${cfg.supabaseUrl}/storage/v1/object/${BUCKET}`, { method:'DELETE',headers,body:JSON.stringify({prefixes:[data.cleanupPath]}) }); if (!response.ok) throw fail(503,'삭제 처리 중입니다. 다시 시도해주세요.'); } const clean = {...data}; delete clean.cleanupPath; delete clean.path; delete clean.ready; return clean; }
@@ -81,10 +105,17 @@ export async function handleCommunity(route, req, res, env = process.env, fetche
         data = await call('photo',{id,session});
       }
       checked(data);
+      const createdAt = await itemCreatedAt(id);
+      if (!session && !eventRecord(createdAt)) {
+        if (!readSession(req,cfg,now)) throw fail(404,'요청을 처리하지 못했습니다. 잠시 후 확인해주세요.');
+        session = await moderator();
+        data = checked(await call('photo',{id,session}));
+      }
       const response = await fetcher(`${cfg.supabaseUrl}/storage/v1/object/authenticated/${BUCKET}/${data.path}`,{headers});
       if (!response.ok) throw fail(503,'사진을 읽지 못했습니다.');
-      // Recheck visibility after storage read, so a moderation/delete race cannot expose a stale read.
+      // Recheck both moderation visibility and event-window eligibility after storage read.
       checked(await call('photo',{id,session}));
+      if (!session && !eventRecord(await itemCreatedAt(id))) throw fail(404,'요청을 처리하지 못했습니다. 잠시 후 확인해주세요.');
       res.statusCode=200; res.setHeader('Content-Type','image/png'); res.setHeader('Cache-Control','private, no-store'); res.setHeader('X-Content-Type-Options','nosniff'); res.setHeader('Vary','Cookie, Origin'); return res.end(Buffer.from(await response.arrayBuffer()));
     }
     if (route === 'admin') {
@@ -94,9 +125,9 @@ export async function handleCommunity(route, req, res, env = process.env, fetche
       if (!UUID.test(b.id || '') || !['approved','rejected','deleted'].includes(b.decision) || !Number.isSafeInteger(b.expectedVersion) || b.expectedVersion < 0) throw fail(400,'검토 요청을 확인해주세요.');
       return reply(res,200,await cleanup(checked(await call('moderate',{...b,session}))));
     }
-    if (req.method === 'GET') { const kind = url.searchParams.get('kind'); if (!['prayer','photo','reflection'].includes(kind)) throw fail(400,'종류를 확인해주세요.'); return reply(res,200,await call('list',{kind})); }
+    if (req.method === 'GET') { const kind = url.searchParams.get('kind'); if (!['prayer','photo','reflection'].includes(kind)) throw fail(400,'종류를 확인해주세요.'); return reply(res,200,filterPublicCommunity(await call('list',{kind}))); }
     const b = await body(req);
-    if (b.action) { if (!['delete','status'].includes(b.action) || !UUID.test(b.id || '') || !TOKEN.test(b.deleteToken || '')) throw fail(400,'요청을 확인해주세요.'); return reply(res,200,await cleanup(checked(await call(b.action,{id:b.id,tokenHash:hash(b.deleteToken)})))); }
+    if (b.action) { if (!['delete','status'].includes(b.action) || !UUID.test(b.id || '') || !TOKEN.test(b.deleteToken || '')) throw fail(400,'요청을 확인해주세요.'); return reply(res,200,filterPublicCommunity(await cleanup(checked(await call(b.action,{id:b.id,tokenHash:hash(b.deleteToken)}))))); }
     // Vercel's platform-controlled header, never arbitrary X-Forwarded-For. Missing IP shares a conservative bucket.
     const ip = String(req.headers?.['x-vercel-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim();
     const ipHash = createHmac('sha256',cfg.sessionSecret).update(`community-ip:${ip}`).digest('hex');
@@ -110,8 +141,8 @@ export async function handleCommunity(route, req, res, env = process.env, fetche
     if (image && !data.ready && data.status === 'pending') {
       const response = await fetcher(`${cfg.supabaseUrl}/storage/v1/object/${BUCKET}/${data.path}`,{method:'POST',headers:{...headers,'Content-Type':'image/png','x-upsert':'false'},body:image});
       if (!response.ok && response.status !== 409) { let problem; try { problem=await response.json(); } catch { /* fail closed */ } if (problem?.statusCode !== '409' && problem?.error !== 'Duplicate') throw fail(503,'사진 전송을 완료하지 못했습니다. 같은 요청으로 다시 시도해주세요.'); }
-      return reply(res,200,await cleanup(checked(await call('finish',{id:b.requestId.toLowerCase(),tokenHash,payloadHash}))));
+      return reply(res,200,filterPublicCommunity(await cleanup(checked(await call('finish',{id:b.requestId.toLowerCase(),tokenHash,payloadHash})))));
     }
-    return reply(res,200,await cleanup(data));
+    return reply(res,200,filterPublicCommunity(await cleanup(data)));
   } catch (error) { return reply(res,error.status || 503,{error:error.status ? error.message : '서버에 연결하지 못했습니다. 잠시 후 다시 시도해주세요.'}); }
 }

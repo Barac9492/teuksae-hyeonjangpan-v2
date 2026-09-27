@@ -25,20 +25,21 @@ describe('Companion independent regression review', () => {
     expect(screen.getAllByRole('tabpanel')).toHaveLength(1);
   });
 
-  it('keeps story composition collapsed and preserves its draft across main tabs', async () => {
+  it('keeps local memo composition collapsed and preserves its draft across main tabs', async () => {
     const user = userEvent.setup();
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     render(<CompanionApp />);
     await user.click(screen.getByRole('tab', { name: '나눔' }));
-    expect(screen.queryByRole('textbox', { name: '이야기' })).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: /한마디 남기기/ }));
-    await user.type(screen.getByRole('textbox', { name: '이야기' }), '함께 기다려서 좋았습니다.');
+    expect(screen.queryByRole('textbox', { name: '메모' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /메모 작성하기/ }));
+    await user.type(screen.getByRole('textbox', { name: '메모' }), '함께 기다려서 좋았습니다.');
     await user.click(screen.getByRole('tab', { name: '예배' }));
     await user.click(screen.getByRole('tab', { name: '나눔' }));
-    expect(screen.getByRole('textbox', { name: '이야기' })).toHaveValue('함께 기다려서 좋았습니다.');
-    await user.click(screen.getByRole('button', { name: /내 화면에 이야기 추가/ }));
+    expect(screen.getByRole('textbox', { name: '메모' })).toHaveValue('함께 기다려서 좋았습니다.');
+    await user.click(screen.getByRole('button', { name: /나만 보는 메모에 추가/ }));
     expect(screen.getByText('함께 기다려서 좋았습니다.')).toBeVisible();
-    expect(screen.queryByRole('textbox', { name: '이야기' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: '메모' })).not.toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('서버로 전송되거나 공개되지 않습니다');
     expect(fetchSpy.mock.calls.filter(([, options]) => options?.method === 'POST')).toHaveLength(0);
     expect(fetchSpy.mock.calls.every(([, options]) => options?.body === undefined)).toBe(true);
     expect(JSON.stringify(fetchSpy.mock.calls)).not.toContain('함께 기다려서 좋았습니다.');
