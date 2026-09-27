@@ -22,7 +22,7 @@ export function PreviewWorshipStatus({ venue, stage, stale }: { venue: Venue; st
     return <><StatusLead tone="neutral" label="정보 갱신이 필요한 상황 · 디자인 예시" title="현장 확인을 기다리고 있어요">이전 상태는 표시하지 않습니다. 입장과 주차는 현장 안내요원에게 확인해주세요.</StatusLead><StatusRow name="학교 출입" value="확인 중" /><StatusRow name="본당·체육관" value="확인 중" /></>;
   }
   const leads = [
-    ['입장 전', '송림학교 입장은 03:00부터입니다. 실제 개방 여부는 현장 안내를 확인해주세요.', 'neutral'],
+    ['입장 전', '학교 입장은 03:00부터입니다. 실제 개방 여부는 현장 안내를 확인해주세요.', 'neutral'],
     ['학교 안에서 대기해요', '본당과 체육관은 아직 열리지 않았어요. 보행 동선으로 이동해주세요.', 'neutral'],
     ['체육관에 먼저 들어갈 수 있어요', '본당을 기다리지 않고 체육관에서 예배를 준비할 수 있어요.', 'good'],
     ['본당 입장이 시작됐어요', '본당 1·2층으로 함께 안내하고 있어요. 입장 가능 여부는 현장에서 확인해주세요.', 'good'],
