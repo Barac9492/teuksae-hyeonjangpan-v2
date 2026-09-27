@@ -5,17 +5,23 @@ import { CompanionApp } from '../features/companion';
 import { liveEventDay } from '../features/companion/CompanionApp';
 
 const fresh = new Date().toISOString();
+const communityReply = () => Promise.resolve({ ok: true, json: async () => ({ enabled: true, items: [], photoCountToday: 0, today: '2026-09-24' }) });
+const routeFetch = (statusReply: () => ReturnType<typeof reply>) => vi.fn((input: unknown) => {
+  if (input === '/api/status') return statusReply();
+  if (String(input).startsWith('/api/community?kind=')) return communityReply();
+  throw new Error('Unexpected endpoint: ' + String(input));
+});
 const reply = (resources: unknown[], enabled = true, ok = true) => Promise.resolve({ ok, json: () => Promise.resolve({ enabled, resources }) });
 
 beforeEach(() => {
   window.history.replaceState({}, '', '/');
   Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
 });
-afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); });
+afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe('public companion live operations', () => {
   it('reads only public staff values and keeps Songrim access, hall, and gym independent', async () => {
-    const fetchMock = vi.fn().mockReturnValue(reply([
+    const fetchMock = routeFetch(() => reply([
       { id: 'space.songrim.access', label: '학교 출입', category: 'space', state: 'school_open', version: 2, updatedAt: fresh },
       { id: 'space.songrim.hall', label: '본당 1·2층', category: 'space', state: 'full', version: 2, updatedAt: fresh },
       { id: 'space.songrim.gym', label: '체육관', category: 'space', state: 'available', version: 2, updatedAt: fresh },
@@ -32,7 +38,8 @@ describe('public companion live operations', () => {
   });
 
   it('shows checking, not seeded example states, for an enabled empty response and unavailable API', async () => {
-    const fetchMock = vi.fn().mockReturnValueOnce(reply([])).mockReturnValueOnce(reply([], false, false));
+    const statusReply = vi.fn().mockImplementationOnce(() => reply([])).mockImplementationOnce(() => reply([], false, false));
+    const fetchMock = routeFetch(statusReply);
     vi.stubGlobal('fetch', fetchMock);
     const view = render(<CompanionApp />);
     await waitFor(() => expect(screen.getAllByText('확인 필요').length).toBeGreaterThan(0));
@@ -45,7 +52,7 @@ describe('public companion live operations', () => {
 
   it('fails closed when a staff update is stale and shows independent Dream floors and parking levels', async () => {
     const stale = new Date(Date.now() - 11 * 60_000).toISOString();
-    vi.stubGlobal('fetch', vi.fn().mockReturnValue(reply([
+    vi.stubGlobal('fetch', routeFetch(() => reply([
       { id: 'space.dream.f3', label: '3층', category: 'space', state: 'available', version: 1, updatedAt: stale },
       { id: 'space.dream.f7', label: '7층', category: 'space', state: 'busy', version: 1, updatedAt: fresh },
       { id: 'space.dream.f11', label: '11층', category: 'space', state: 'full', version: 1, updatedAt: fresh },
@@ -73,13 +80,13 @@ describe('public companion live operations', () => {
 
   it('polls every 20 seconds and labels an offline connection without reusing a live claim', async () => {
     vi.useFakeTimers();
-    const fetchMock = vi.fn().mockReturnValue(reply([{ id: 'parking.songrim', label: '송림본당 주차', category: 'parking', state: 'available', version: 1, updatedAt: fresh }]));
+    const fetchMock = routeFetch(() => reply([{ id: 'parking.songrim', label: '송림본당 주차', category: 'parking', state: 'available', version: 1, updatedAt: fresh }]));
     vi.stubGlobal('fetch', fetchMock);
     render(<CompanionApp />);
     await act(async () => { await Promise.resolve(); });
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls.filter(([url]) => url === '/api/status')).toHaveLength(1);
     await act(async () => { await vi.advanceTimersByTimeAsync(20_000); });
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls.filter(([url]) => url === '/api/status')).toHaveLength(2);
     Object.defineProperty(navigator, 'onLine', { configurable: true, value: false });
     await act(async () => { window.dispatchEvent(new Event('offline')); });
     expect(screen.getAllByText('연결 확인 중')[0]).toBeVisible();

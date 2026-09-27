@@ -4,7 +4,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CompanionApp } from '../features/companion';
 
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
-beforeEach(() => { window.history.replaceState({}, '', '/?preview=1'); });
+beforeEach(() => { window.history.replaceState({}, '', '/?preview=1');
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+    if (String(input).startsWith('/api/community?kind=')) return { ok: true, json: async () => ({ enabled: true, items: [], photoCountToday: 0, today: '2026-09-24' }) } as Response;
+    if (input === '/api/status') return { ok: true, json: async () => ({ enabled: true, resources: [] }) } as Response;
+    throw new Error('Unexpected endpoint: ' + String(input));
+  }); });
 
 describe('Companion independent regression review', () => {
   it('retains a prayer draft when checking parking but shows only one accessible panel', async () => {
@@ -34,7 +39,9 @@ describe('Companion independent regression review', () => {
     await user.click(screen.getByRole('button', { name: /내 화면에 이야기 추가/ }));
     expect(screen.getByText('함께 기다려서 좋았습니다.')).toBeVisible();
     expect(screen.queryByRole('textbox', { name: '이야기' })).not.toBeInTheDocument();
-    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(fetchSpy.mock.calls.filter(([, options]) => options?.method === 'POST')).toHaveLength(0);
+    expect(fetchSpy.mock.calls.every(([, options]) => options?.body === undefined)).toBe(true);
+    expect(JSON.stringify(fetchSpy.mock.calls)).not.toContain('함께 기다려서 좋았습니다.');
   });
 
   it('does not carry Songrim parking-full state over to Dream Center', async () => {

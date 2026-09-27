@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { PageHeading } from './ui';
 import { Reflection } from './Reflection';
+import { Community } from './Community';
 
 type PrayerView = 'write' | 'read' | 'reflection';
 
@@ -79,19 +80,16 @@ export function PrayerPanel({ onPreview }: { onPreview: (text: string, sharing: 
               <span>이 기도제목을 내가 선택한 사람에게 나눌게요.<small>기본은 비공유입니다. 미리보기에서 공유 버튼을 누르고, 기기의 공유 메뉴에서 받는 사람을 직접 선택해요.</small></span>
             </label>
             <button className="tc-primary" type="submit">입력 내용 미리보기 <span aria-hidden="true">→</span></button>
-            <p className="tc-lock-note"><span aria-hidden="true">🔒</span> 작성만으로는 공유되지 않아요. 교회나 앱 서버에는 접수되지 않습니다.</p>
+            <p className="tc-lock-note"><span aria-hidden="true">🔒</span> 작성·미리보기만으로는 서버에 접수되지 않아요. 공개 접수는 아래에서 별도로 동의해야 합니다.</p>
             <p className="tc-footnote">다른 사람의 실명·연락처·민감한 사정은 적지 말아주세요.</p>
           </form>
         ) : (
           <>
             <QuietMinute />
-            <div className="tc-empty">
-              <span aria-hidden="true">“</span>
-              <h2>동의한 마음만,<br />조심스럽게 나눕니다.</h2>
-              <p>앱 안에서 다른 사람의 기도제목을 읽는 공개 게시판은 아직 열리지 않았어요.<br />기도제목 쓰기에서 내용을 확인한 뒤, 원하는 사람에게 직접 나눌 수 있어요.</p>
-            </div>
+
           </>
         )}
+        <Community kind="prayer" text={text} payloadKey={text} showComposer={view === 'write'} />
       </div>
     </section>
   );

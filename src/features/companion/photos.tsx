@@ -4,6 +4,7 @@ import { normalizePhotoMemo, renderFramedPhoto } from './canvas';
 import { downloadBlob, SERVICE_DAYS, WEEKDAYS } from './dawn';
 import { PageHeading } from './ui';
 import './photos.css';
+import { Community } from './Community';
 
 const STAMPS_KEY = 'woori-photo-days-2026-v1';
 const validDay = (day: number | null): day is number => day !== null && Number.isInteger(day) && day >= 0 && day < 6;
@@ -99,12 +100,12 @@ export function PhotosPanel({ eventDay }: { eventDay: number | null }) {
           <div className="tc-photo-preview">
             <figure className="tc-polaroid">
               <div className="tc-polaroid__image">
-                <img src={photo} alt={`내 기기에서만 보이는 선택한 사진: ${photoName}`} />
+                <img src={photo} alt={`선택한 사진 미리보기: ${photoName}`} />
                 {day !== null && <span className="tc-polaroid__stamp" aria-hidden="true">'26 10 {String(SERVICE_DAYS[day]).padStart(2, '0')}</span>}
               </div>
               <figcaption><strong>하나님 마음에 합한 사람</strong><small>{stamp} · 사도행전 13:22</small>{cleanMemo && <span className="tc-photo-memo">{cleanMemo}</span>}</figcaption>
             </figure>
-            <p>내 화면의 미리보기 · 서버 전송 없음</p>
+            <p>내 화면의 미리보기 · 공개 접수 전에는 서버 전송 없음</p>
             <label className="tc-photo-field" htmlFor="tc-photo-memo">사진 아래 한 줄 (선택, 최대 40자)
               <input id="tc-photo-memo" value={memo} maxLength={40} disabled={sharing} placeholder="이 새벽에 기억하고 싶은 말" onChange={(e) => { setMemo(e.target.value); setMessage(''); }} />
             </label>
@@ -122,7 +123,7 @@ export function PhotosPanel({ eventDay }: { eventDay: number | null }) {
         )}
         <label className={photo ? 'tc-secondary tc-upload' : 'tc-primary tc-upload'} htmlFor="tc-photo-input">{photo ? '다른 사진 고르기' : '내 사진으로 미리보기'}</label>
         <input ref={inputRef} id="tc-photo-input" aria-label="내 사진으로 미리보기" type="file" accept="image/jpeg,image/png,image/webp" onChange={choose} disabled={sharing} hidden />
-        <p className="tc-footnote">사진과 메모는 이 화면에서만 사용하며 자동 저장·업로드하지 않아요. 공유는 직접 누를 때 선택한 앱으로 전달됩니다. 내보낸 PNG에는 원본 EXIF 정보가 포함되지 않아요. JPG·PNG·WebP, 최대 8MB</p>
+        <p className="tc-footnote">사진과 메모는 자동 저장·업로드하지 않아요. 공개 게시판 접수는 아래에서 별도로 동의해야 합니다. 공유는 직접 누를 때 선택한 앱으로 전달됩니다. 내보낸 PNG에는 원본 EXIF 정보가 포함되지 않아요. JPG·PNG·WebP, 최대 8MB</p>
         <div className="tc-photo-days">
           <h2>이 기기에 남긴 새벽 도장</h2>
           <p>사진을 고른 뒤 날짜별로 직접 남기는 개인 기록입니다. 출석 인증이나 전체 참여 인원이 아니에요. 사진과 메모는 저장하지 않습니다.</p>
@@ -134,6 +135,7 @@ export function PhotosPanel({ eventDay }: { eventDay: number | null }) {
           }}>이 기기의 도장 모두 지우기</button>
         </div>
         {message && <p className="tc-form-status" role="status">{message}</p>}
+        <Community kind="photo" text={cleanMemo} eventDay={day} file={readyFile} payloadKey={renderKey} />
         <div className="tc-quiet"><strong>함께 나온 분의 동의를 먼저 받아주세요.</strong><p>특히 어린이의 얼굴과 이름이 드러나는 사진은 보호자 동의와 공개 범위를 확인해야 합니다.</p></div>
       </div>
     </section>

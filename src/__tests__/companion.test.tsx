@@ -10,6 +10,11 @@ afterEach(() => {
 
 beforeEach(() => {
   window.history.replaceState({}, '', '/?preview=1');
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+    if (String(input).startsWith('/api/community?kind=')) return { ok: true, json: async () => ({ enabled: true, items: [], photoCountToday: 0, today: '2026-09-24' }) } as Response;
+    if (input === '/api/status') return { ok: true, json: async () => ({ enabled: true, resources: [] }) } as Response;
+    throw new Error('Unexpected endpoint: ' + String(input));
+  });
   if (!globalThis.requestAnimationFrame) globalThis.requestAnimationFrame = (callback) => window.setTimeout(callback, 0);
 });
 
@@ -133,19 +138,22 @@ describe('CompanionApp', () => {
     expect(screen.getByRole('status')).toHaveTextContent('서버 신고는 접수되지 않았습니다');
   });
 
-  it('keeps prayer private by default, previews locally, and never calls fetch', async () => {
+  it('keeps prayer private by default, previews locally, and never posts its content', async () => {
     const user = userEvent.setup();
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     render(<CompanionApp />);
     await chooseTab(user, '기도');
     const sharing = screen.getByRole('checkbox', { name: /이 기도제목을 내가 선택한 사람에게/ });
     expect(sharing).not.toBeChecked();
+    expect(screen.getByRole('checkbox', { name: /공개 범위를 확인했고/ })).not.toBeChecked();
     await user.type(screen.getByLabelText('어떤 마음으로 기도하고 있나요?'), '가족을 위해 기도합니다.');
     await user.click(screen.getByRole('button', { name: /입력 내용 미리보기/ }));
     const dialog = screen.getByRole('dialog', { name: '내 기도 제목 미리보기' });
     expect(within(dialog).getByText('가족을 위해 기도합니다.')).toBeVisible();
-    expect(within(dialog).getByText(/비공유 선택입니다/)).toBeVisible();
-    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(within(dialog).getByText(/이 미리보기는 내 화면에만 보입니다/)).toBeVisible();
+    expect(fetchSpy.mock.calls.filter(([, options]) => options?.method === 'POST')).toHaveLength(0);
+    expect(fetchSpy.mock.calls.every(([, options]) => options?.body === undefined)).toBe(true);
+    expect(JSON.stringify(fetchSpy.mock.calls)).not.toContain('가족을 위해 기도합니다.');
     expect(localStorage.length).toBe(0);
   });
 

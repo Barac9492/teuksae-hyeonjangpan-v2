@@ -146,7 +146,7 @@ export function CompanionApp() {
           <span>WOORI CHURCH · AUTUMN 2026</span>
           <h1>새벽의 마음을,<br />손에 쥐고.</h1>
           <p>예배에 오기 전부터<br />함께 아침을 먹는 시간까지.</p>
-          <small>{isPreview ? '디자인 검토용 미리보기입니다.' : '현장 현황 시범 운영 · 기도·사진·나눔은 서버에 접수되지 않습니다.'}</small>
+          <small>{isPreview ? '디자인 검토용 미리보기입니다.' : '현장 현황 시범 운영 · 기도·사진은 공개 동의 후 접수, 관리자 확인 후 공개합니다.'}</small>
         </div>
       </aside>
       <div className="tc-app">
@@ -227,19 +227,19 @@ export function CompanionApp() {
       )}
       {modal?.type === 'prayer' && (
         <Modal title="내 기도 제목 미리보기" onClose={() => setModal(null)}>
-          <span className="tc-tiny">전송·저장되지 않은 미리보기</span>
+          <span className="tc-tiny">이 미리보기 자체는 서버에 전송되지 않습니다</span>
           <div className="tc-prayer-card">
             <span className="tc-prayer-card__top">가을특별새벽부흥회 · 나의 기도</span>
             <div className="tc-preview-text">{modal.text}</div>
             <img src={crownImage} alt="" aria-hidden="true" />
           </div>
-          <p>{modal.sharing ? '아래 공유 버튼을 누르면 기기의 공유 메뉴가 열립니다. 받는 사람은 직접 선택하며, 앱 공개 게시판에는 올라가지 않습니다.' : '비공유 선택입니다. 현재 앱 안에서는 내 화면에만 보입니다.'}</p>
+          <p>{modal.sharing ? '아래 공유 버튼을 누르면 기기의 공유 메뉴가 열립니다. 받는 사람은 직접 선택하며, 앱 공개 게시판에는 올라가지 않습니다.' : '이 미리보기는 내 화면에만 보입니다. 별도로 공개 접수한 내용은 내 제출 기록에서 상태를 확인해주세요.'}</p>
           <button className="tc-secondary" type="button" onClick={async () => {
             try { await savePrayerCard(modal.text, crownImage); setCardState('기도 카드를 내 기기에 저장했어요.'); } catch { setCardState('이 브라우저에서는 저장하지 못했어요. 화면을 캡처해 주세요.'); }
           }}>기도 카드로 내 기기에 저장 <span aria-hidden="true">↓</span></button>
           {modal.sharing && <button className="tc-primary" type="button" onClick={async () => setCardState(await shareText('함께 기도해주세요', modal.text))}>기도제목 공유 메뉴 열기</button>}
           {cardState && <p className="tc-form-status" role="status">{cardState}</p>}
-          <p className="tc-safety">서버 접수 기능이 없으며 창을 닫으면 계속 수정할 수 있습니다.</p>
+          <p className="tc-safety">이 미리보기만으로는 제출되지 않습니다. 공개 게시를 원하면 창을 닫고 기도 작성 화면에서 별도로 동의·접수해주세요.</p>
         </Modal>
       )}
       {modal?.type === 'stories' && (
