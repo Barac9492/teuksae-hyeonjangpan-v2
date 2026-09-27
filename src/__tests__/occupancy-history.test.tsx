@@ -31,3 +31,20 @@ it('keeps an explicit closed label when there is no percentage',async()=>{
 it.each([[65,'busy'],[40,'full'],[0,'closed']])('fails closed on malformed step/state %s %s',async(percent,state)=>{
  mock(percent,new Date().toISOString(),String(state));render(<Harness/>);expect(await screen.findByText('갈보리교회 주차')).toBeVisible();expect(screen.queryByText(String(percent)+'%')).not.toBeInTheDocument();
 });
+
+function mockPrevious(firstFullAt: string | null, closedAt: string | null, date='2026-09-27') {
+ vi.spyOn(globalThis,'fetch').mockResolvedValue(new Response(JSON.stringify({enabled:true,resources:[{id:'parking.calvary',category:'parking',state:'busy',version:2,updatedAt:'2026-09-27T19:00:00Z',occupancyPercent:70,previousDay:{date,firstFullAt,closedAt}}]})));
+}
+it('shows date-labelled prior full and closing times even when current occupancy is stale',async()=>{
+ mockPrevious('2026-09-26T19:20:00Z','2026-09-26T20:10:00Z');render(<Harness/>);
+ expect(await screen.findByText(/09\/27 주차 기록 · 첫 만차 04:20 · 마감 05:10/)).toBeVisible();
+});
+it('distinguishes missing history from a claim that parking never closed',async()=>{
+ mockPrevious(null,null);render(<Harness/>);
+ expect(await screen.findByText(/첫 만차 기록 없음 · 마감 기록 없음/)).toBeVisible();
+});
+it('does not label timestamps from another Korea day as the prior day history',async()=>{
+ mockPrevious('2026-09-27T19:20:00Z',null);render(<Harness/>);
+ expect(await screen.findByText('갈보리교회 주차')).toBeVisible();
+ expect(screen.queryByText(/09\/27 주차 기록/)).not.toBeInTheDocument();
+});

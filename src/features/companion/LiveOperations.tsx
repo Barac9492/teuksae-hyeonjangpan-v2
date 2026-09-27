@@ -7,7 +7,21 @@ import type { ValueTone, Venue } from './ui';
 
 export type LiveResourceState = 'checking' | 'closed' | 'available' | 'busy' | 'full' | 'school_open' | 'gym_open' | 'hall_open' | 'hall_closed';
 type Category = 'parking' | 'space';
-type LiveResource = { id: string; label: string; category: Category; state: LiveResourceState; version: number; updatedAt: string | null; occupancyPercent?: number | null; lastClosedAt?: string | null; lastFullAt?: string | null };
+type ParkingDay = { date: string; firstFullAt: string | null; closedAt: string | null };
+const koreaDate = (time: number) => new Date(time + 9 * 60 * 60_000).toISOString().slice(0, 10);
+function parkingDay(value: unknown): ParkingDay | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const v = value as Record<string, unknown>;
+  if (typeof v.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v.date)) return undefined;
+  const dayStart = Date.parse(v.date + 'T00:00:00+09:00');
+  if (!Number.isFinite(dayStart) || koreaDate(dayStart) !== v.date) return undefined;
+  for (const key of ['firstFullAt', 'closedAt']) {
+    const t = v[key];
+    if (t !== null && (typeof t !== 'string' || !Number.isFinite(Date.parse(t)) || koreaDate(Date.parse(t)) !== v.date)) return undefined;
+  }
+  return v as ParkingDay;
+}
+type LiveResource = { id: string; label: string; category: Category; state: LiveResourceState; version: number; updatedAt: string | null; occupancyPercent?: number | null; lastClosedAt?: string | null; lastFullAt?: string | null; previousDay?: ParkingDay };
 type StatusResponse = { enabled: boolean; resources: LiveResource[] };
 type Freshness = 'fresh' | 'unconfirmed' | 'stale' | 'invalid' | 'future' | 'offline';
 
@@ -42,7 +56,7 @@ function validResource(value: unknown): LiveResource | null {
   if (raw.occupancyPercent != null && (typeof raw.occupancyPercent !== 'number' || !Number.isInteger(raw.occupancyPercent) || raw.occupancyPercent < 0 || raw.occupancyPercent > 100 || raw.occupancyPercent % 10 !== 0 || raw.id === 'space.songrim.access')) return null;
   if (typeof raw.occupancyPercent === 'number' && raw.state !== (raw.occupancyPercent === 100 ? 'full' : raw.occupancyPercent >= 70 ? 'busy' : 'available')) return null;
   for (const key of ['lastClosedAt', 'lastFullAt']) if (raw[key] != null && (typeof raw[key] !== 'string' || !Number.isFinite(Date.parse(raw[key] as string)))) return null;
-  return { ...fallback, ...(Object.prototype.hasOwnProperty.call(raw, 'occupancyPercent') ? { occupancyPercent: raw.occupancyPercent as number | null } : {}), lastClosedAt: raw.lastClosedAt as string | null | undefined, lastFullAt: raw.lastFullAt as string | null | undefined, state: raw.state as LiveResourceState, version: raw.version as number, updatedAt: raw.updatedAt as string | null };
+  return { ...fallback, previousDay: parkingDay(raw.previousDay), ...(Object.prototype.hasOwnProperty.call(raw, 'occupancyPercent') ? { occupancyPercent: raw.occupancyPercent as number | null } : {}), lastClosedAt: raw.lastClosedAt as string | null | undefined, lastFullAt: raw.lastFullAt as string | null | undefined, state: raw.state as LiveResourceState, version: raw.version as number, updatedAt: raw.updatedAt as string | null };
 }
 
 function freshness(updatedAt: string | null, now: number, offline: boolean, enabled: boolean): Freshness {
@@ -63,6 +77,7 @@ function stateTone(state: LiveResourceState): ValueTone {
   if (state === 'full' || state === 'closed' || state === 'hall_closed') return 'stop';
   return 'neutral';
 }
+function historyClock(time: string): string { return new Intl.DateTimeFormat('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Seoul' }).format(new Date(time)); }
 function clockText(updatedAt: string): string { return new Intl.DateTimeFormat('ko-KR', { hour: '2-digit', minute: '2-digit', month: 'numeric', day: 'numeric', timeZone: 'Asia/Seoul' }).format(new Date(updatedAt)); }
 function historyTime(value: string): string { return new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Seoul' }).format(new Date(value)); }
 
@@ -119,7 +134,10 @@ function liveItem(id: string, operations: Operations): FloorItem {
   const capacity = hasOccupancySchema(resource);
   const value = status !== 'fresh' ? '확인 필요' : capacity ? resource.state === 'closed' ? stateText(resource) : resource.occupancyPercent == null ? '사용률 확인 전' : `${resource.occupancyPercent}%` : stateText(resource);
   const sub = status === 'fresh' && resource.updatedAt ? `${clockText(resource.updatedAt)} 확인` : status === 'offline' ? '연결 확인 전' : status === 'stale' ? '10분 경과 · 확인 필요' : status === 'future' || status === 'invalid' ? '확인 시각 오류' : '현장팀 확인 전';
-  const history = [resource.lastClosedAt && Date.parse(resource.lastClosedAt) <= operations.now ? `최근 닫힘·입장 마감 기록 ${historyTime(resource.lastClosedAt)}` : '', resource.lastFullAt && Date.parse(resource.lastFullAt) <= operations.now ? `최근 만차·만석 기록 ${historyTime(resource.lastFullAt)}` : ''].filter(Boolean).join(' · ');
+  const previous = resource.category === 'parking' ? resource.previousDay : undefined;
+  const priorLabel = previous ? `${previous.date === koreaDate(operations.now - 86400000) ? '전날 ' : ''}${previous.date.slice(5).replace('-', '/')} 주차 기록` : '';
+  const priorHistory = previous ? `${priorLabel} · 첫 만차 ${previous.firstFullAt ? historyClock(previous.firstFullAt) : '기록 없음'} · 마감 ${previous.closedAt ? historyClock(previous.closedAt) : '기록 없음'}` : '';
+  const history = priorHistory || [resource.lastClosedAt && Date.parse(resource.lastClosedAt) <= operations.now ? `최근 닫힘·입장 마감 기록 ${historyTime(resource.lastClosedAt)}` : '', resource.lastFullAt && Date.parse(resource.lastFullAt) <= operations.now ? `최근 만차·만석 기록 ${historyTime(resource.lastFullAt)}` : ''].filter(Boolean).join(' · ');
   const tone = status !== 'fresh' ? 'neutral' : capacity ? resource.state === 'closed' ? stateTone(resource.state) : resource.occupancyPercent == null ? 'neutral' : occupancyTone(resource.occupancyPercent) : stateTone(resource.state);
   return { key: id, label: resource.label, sub: history ? `${sub} · ${history}` : sub, value, tone };
 }
@@ -155,7 +173,8 @@ export function LiveParkingPanel({ venue, setVenue, operations, art }: { venue: 
   const items = ids.map((id) => liveItem(id, operations));
   return (
     <section id="tc-panel-parking" className="tc-panel" role="tabpanel" aria-labelledby="tc-tab-parking">
-      <PageHeading eyebrow="도착하기 전에" title="주차 안내" art={art}>각 주차 구역의 현황을 따로 확인해요.</PageHeading>
+      <PageHeading eyebrow="도착하기 전에" title="주차 안내" art={art}>각 주차 구역의 현황을 따로 확인해요. 전날 첫 만차·마감 기록도 참고하세요.</PageHeading>
+      <p className="tc-panel-note">전날 기록은 운영자 입력 이력입니다. 마감은 운영 중에서 닫힘으로 바뀐 기록이며, 오늘도 같은 시각에 마감된다는 뜻은 아닙니다.</p>
       <div className="tc-section tc-section--topless">
         <VenueSwitch venue={venue} onChange={setVenue} label="주차 장소" />
         <LiveNotice enabled={operations.enabled} offline={operations.offline} confirmed={operations.confirmed} />
