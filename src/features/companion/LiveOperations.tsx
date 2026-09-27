@@ -28,6 +28,8 @@ const defaults: LiveResource[] = [
 const byId = new Map(defaults.map((resource) => [resource.id, resource]));
 const normalStates = new Set<LiveResourceState>(['checking', 'closed', 'available', 'busy', 'full']);
 const accessStates = new Set<LiveResourceState>(['checking', 'closed', 'school_open', 'gym_open', 'hall_open', 'hall_closed']);
+const hasOccupancySchema = (resource: LiveResource) => resource.id !== 'space.songrim.access' && Object.prototype.hasOwnProperty.call(resource, 'occupancyPercent');
+const occupancyTone = (percent: number): ValueTone => percent <= 60 ? 'good' : percent <= 90 ? 'warn' : percent === 100 ? 'stop' : 'neutral';
 
 function validResource(value: unknown): LiveResource | null {
   if (!value || typeof value !== 'object') return null;
@@ -37,9 +39,10 @@ function validResource(value: unknown): LiveResource | null {
   const states = fallback.id === 'space.songrim.access' ? accessStates : normalStates;
   if (!states.has(raw.state as LiveResourceState)) return null;
   if (raw.updatedAt !== null && (typeof raw.updatedAt !== 'string' || !Number.isFinite(Date.parse(raw.updatedAt)))) return null;
-  if (raw.occupancyPercent != null && (typeof raw.occupancyPercent !== 'number' || !Number.isInteger(raw.occupancyPercent) || raw.occupancyPercent < 0 || raw.occupancyPercent > 100 || raw.id === 'space.songrim.access')) return null;
+  if (raw.occupancyPercent != null && (typeof raw.occupancyPercent !== 'number' || !Number.isInteger(raw.occupancyPercent) || raw.occupancyPercent < 0 || raw.occupancyPercent > 100 || raw.occupancyPercent % 10 !== 0 || raw.id === 'space.songrim.access')) return null;
+  if (typeof raw.occupancyPercent === 'number' && raw.state !== (raw.occupancyPercent === 100 ? 'full' : raw.occupancyPercent >= 70 ? 'busy' : 'available')) return null;
   for (const key of ['lastClosedAt', 'lastFullAt']) if (raw[key] != null && (typeof raw[key] !== 'string' || !Number.isFinite(Date.parse(raw[key] as string)))) return null;
-  return { ...fallback, occupancyPercent: raw.occupancyPercent as number | null | undefined, lastClosedAt: raw.lastClosedAt as string | null | undefined, lastFullAt: raw.lastFullAt as string | null | undefined, state: raw.state as LiveResourceState, version: raw.version as number, updatedAt: raw.updatedAt as string | null };
+  return { ...fallback, ...(Object.prototype.hasOwnProperty.call(raw, 'occupancyPercent') ? { occupancyPercent: raw.occupancyPercent as number | null } : {}), lastClosedAt: raw.lastClosedAt as string | null | undefined, lastFullAt: raw.lastFullAt as string | null | undefined, state: raw.state as LiveResourceState, version: raw.version as number, updatedAt: raw.updatedAt as string | null };
 }
 
 function freshness(updatedAt: string | null, now: number, offline: boolean, enabled: boolean): Freshness {
@@ -54,7 +57,7 @@ function stateText(resource: LiveResource): string {
   if (resource.state === 'full') return resource.category === 'parking' ? '만차' : '입장 마감';
   return ({ checking: '확인 중', closed: '닫힘', available: '이용 가능', busy: '혼잡', school_open: '학교 개방', gym_open: '체육관 개방', hall_open: '본당 입장 가능', hall_closed: '본당 입장 마감' })[resource.state] ?? '확인 중';
 }
-function stateTone(state: LiveResourceState): string {
+function stateTone(state: LiveResourceState): ValueTone {
   if (state === 'available' || state === 'school_open' || state === 'gym_open' || state === 'hall_open') return 'good';
   if (state === 'busy') return 'warn';
   if (state === 'full' || state === 'closed' || state === 'hall_closed') return 'stop';
@@ -113,10 +116,12 @@ type Operations = ReturnType<typeof useLiveOperations>;
 function liveItem(id: string, operations: Operations): FloorItem {
   const resource = operations.resources.find((item) => item.id === id)!;
   const status = freshness(resource.updatedAt, operations.now, operations.offline, operations.enabled);
-  const value = status === 'fresh' ? stateText(resource) + (resource.state !== 'checking' && resource.occupancyPercent != null ? ` · ${resource.occupancyPercent}% (운영자 추정)` : '') : '확인 필요';
+  const capacity = hasOccupancySchema(resource);
+  const value = status !== 'fresh' ? '확인 필요' : capacity ? resource.state === 'closed' ? stateText(resource) : resource.occupancyPercent == null ? '사용률 확인 전' : `${resource.occupancyPercent}%` : stateText(resource);
   const sub = status === 'fresh' && resource.updatedAt ? `${clockText(resource.updatedAt)} 확인` : status === 'offline' ? '연결 확인 전' : status === 'stale' ? '10분 경과 · 확인 필요' : status === 'future' || status === 'invalid' ? '확인 시각 오류' : '현장팀 확인 전';
   const history = [resource.lastClosedAt && Date.parse(resource.lastClosedAt) <= operations.now ? `최근 닫힘·입장 마감 기록 ${historyTime(resource.lastClosedAt)}` : '', resource.lastFullAt && Date.parse(resource.lastFullAt) <= operations.now ? `최근 만차·만석 기록 ${historyTime(resource.lastFullAt)}` : ''].filter(Boolean).join(' · ');
-  return { key: id, label: resource.label, sub: history ? `${sub} · ${history}` : sub, value, tone: (status === 'fresh' ? stateTone(resource.state) : 'neutral') as ValueTone };
+  const tone = status !== 'fresh' ? 'neutral' : capacity ? resource.state === 'closed' ? stateTone(resource.state) : resource.occupancyPercent == null ? 'neutral' : occupancyTone(resource.occupancyPercent) : stateTone(resource.state);
+  return { key: id, label: resource.label, sub: history ? `${sub} · ${history}` : sub, value, tone };
 }
 
 /** Songrim's current step, only when the access value is fresh. */
@@ -132,7 +137,7 @@ export function liveStage(operations: Operations): number | null {
 export function LiveNotice({ enabled, offline, confirmed }: { enabled: boolean; offline: boolean; confirmed: boolean }) {
   if (offline) return <div className="tc-live-notice tc-live-notice--offline" role="status"><strong>연결 확인 중</strong><span>마지막 안내를 실제 현황으로 표시하지 않습니다.</span></div>;
   if (!enabled || !confirmed) return <div className="tc-live-notice" role="status"><strong>현장팀 확인 전</strong><span>아직 공개된 현장 현황이 없습니다.</span></div>;
-  return <div className="tc-live-notice tc-live-notice--active" role="status"><strong>현장팀 확인 현황</strong><span>각 항목은 마지막 확인 시각 기준입니다. 사용률은 운영자 추정이며 실측 수용률이 아닙니다.</span></div>;
+  return <div className="tc-live-notice tc-live-notice--active" role="status"><strong>현장팀 확인 현황</strong><span>각 항목은 마지막 확인 시각 기준입니다. 사용률은 운영자 추정이며 실측 수용률이 아닙니다. 초록 0~60% · 주황 70~90% · 빨강 100% · 회색 확인 필요</span></div>;
 }
 
 function StatusList({ items }: { items: FloorItem[] }) {

@@ -12,7 +12,7 @@
 `오늘 사진 참여 N건`은 **한국 시간 실제 업로드 완료일 기준**이다. 중복 인원·같은 사진의 별도 접수도 각각 세며, 인원이나 출석 인증으로 표현하지 않는다. 같은 요청의 네트워크 재시도는 한 번만 센다. 업로드 미완료·반려·삭제는 제외하고 검수 대기 및 공개 상태를 포함한다. 실패/연결 오류를 0건으로 표시하지 않는다. 사진에 선택한 행사일과 오늘 집계일은 다를 수 있다.
 
 ## 저장소·권한
-- Migration005는 기존 operations sessions가 있는 DB에 별도로 추가한다. 보류 중인 migration004와 무관하며 기존 예배/주차 테이블과 RPC는 바꾸지 않는다.
+- Migration005는 기존 operations sessions가 있는 DB에 별도로 추가한다. 운영 migration004(현재007과 함께 적용 완료)와 무관하며 기존 예배/주차 테이블과 RPC는 바꾸지 않는다.
 - 테이블 `community_v2_items`, `community_v2_rates`, `community_v2_audit`에는 RLS 및 익명/일반 로그인 직접 접근 금지를 적용한다. RPC는 service_role에만 허용한다.
 - `community-photos-v2`는 비공개 PNG 전용 저장소. 서버에서 크기/CRC/이미지 디코딩 검증 후 재인코딩해 EXIF 등 메타데이터를 제거한다. 공개 이미지 API도 요청마다 승인 여부를 확인한다.
 - `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `ADMIN_SESSION_SECRET`은 기존 서버 전용 설정을 사용한다. 신규 `CRON_SECRET`은 Vercel Production Secret으로 저장한다. 어떤 비밀값도 Git에 넣지 않는다.
