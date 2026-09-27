@@ -41,7 +41,7 @@ describe('CompanionApp', () => {
     const user = userEvent.setup();
     render(<CompanionApp />);
     const expected = [
-      '학교 밖에서 기다려주세요',
+      '입장 전',
       '학교 안에서 대기해요',
       '체육관에 먼저 들어갈 수 있어요',
       '본당 입장이 시작됐어요',
@@ -138,13 +138,13 @@ describe('CompanionApp', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     render(<CompanionApp />);
     await chooseTab(user, '기도');
-    const sharing = screen.getByRole('checkbox', { name: /함께 읽는 기도로 나누는 의향/ });
+    const sharing = screen.getByRole('checkbox', { name: /이 기도제목을 내가 선택한 사람에게/ });
     expect(sharing).not.toBeChecked();
     await user.type(screen.getByLabelText('어떤 마음으로 기도하고 있나요?'), '가족을 위해 기도합니다.');
     await user.click(screen.getByRole('button', { name: /입력 내용 미리보기/ }));
     const dialog = screen.getByRole('dialog', { name: '내 기도 제목 미리보기' });
     expect(within(dialog).getByText('가족을 위해 기도합니다.')).toBeVisible();
-    expect(within(dialog).getByText(/비공개 선택입니다/)).toBeVisible();
+    expect(within(dialog).getByText(/비공유 선택입니다/)).toBeVisible();
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(localStorage.length).toBe(0);
   });

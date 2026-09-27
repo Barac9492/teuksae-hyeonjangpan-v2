@@ -3,6 +3,7 @@ import type { KeyboardEvent } from 'react';
 import crownImage from './assets/crown.jpg';
 import posterImage from './assets/poster.jpg';
 import { savePrayerCard } from './canvas';
+import { shareText } from './shareText';
 import { LiveParkingPanel, LiveWorshipStatus, liveStage, useLiveOperations } from './LiveOperations';
 import { PhotosPanel } from './photos';
 import { PrayerPanel } from './prayer';
@@ -125,13 +126,13 @@ export function CompanionApp() {
     <button type="button" onClick={() => selectTab('parking')}><span aria-hidden="true">P</span>주차 안내</button>
     {isPreview
       ? <button type="button" onClick={() => setModal({ type: 'route', venue })}><span aria-hidden="true">↝</span>{venue === 'songrim' ? '대기·입장 흐름' : '장소 안내'}</button>
-      : dayForContent !== null && venue === 'songrim' && <button type="button" onClick={goToSnack}><span aria-hidden="true">☕</span>간식 나눔</button>}
+      : dayForContent !== null && venue === 'songrim' && <button type="button" onClick={goToSnack}><span aria-hidden="true">☕</span>오병이어 챌린지</button>}
   </>;
   const worshipAfter = <>
     <p className="tc-panel-note">{isPreview ? '현황은 모두 디자인 검토용 예시입니다. 운영 시스템과 연결되지 않았고 실제 현장 상태를 뜻하지 않습니다.' : '현장팀이 확인한 공개 안내만 표시합니다. 교회 공식 앱 승인이나 운영 주체를 뜻하지 않습니다.'}</p>
     {isPreview && venue === 'songrim' && stage === 0 && !stale && (
       <button className="tc-snack-teaser" type="button" onClick={goToSnack}>
-        <span><small>학교 밖 대기 장소 · 간식 나눔 안내</small><strong>{eventDay === 0 ? '10월 5일, 1청년부 3팀이 준비합니다' : '10월 6일부터, 원하는 분들이 자율적으로 나눠요'}</strong></span>
+        <span><small>학교 밖 대기 장소 · 오병이어 챌린지 안내</small><strong>{eventDay === 0 ? '10월 5일, 1청년부 3팀이 준비합니다' : '10월 6일부터, 원하는 분들이 자율적으로 나눠요'}</strong></span>
         <span aria-hidden="true">→</span>
       </button>
     )}
@@ -191,7 +192,7 @@ export function CompanionApp() {
       {modal?.type === 'poster' && (
         <Modal title="2026 가을특별새벽부흥회" onClose={() => setModal(null)}>
           <img className="tc-poster" src={posterImage} alt="공식 행사 포스터. 하나님 마음에 합한 사람. 2026년 10월 5일부터 10일, 새벽 4시 40분 예배 시작." />
-          <p className="tc-footnote">04:40은 예배 시작 시각입니다. 학교와 예배 공간 개방 시각은 아직 정해지지 않았습니다.</p>
+          <p className="tc-footnote">04:40은 예배 시작 시각입니다. 송림본당 학교 안 입장은 오전 3시부터입니다. 본당·체육관 개방은 별도 현장 안내를 따라주세요.</p>
         </Modal>
       )}
       {modal?.type === 'settings' && (
@@ -232,10 +233,11 @@ export function CompanionApp() {
             <div className="tc-preview-text">{modal.text}</div>
             <img src={crownImage} alt="" aria-hidden="true" />
           </div>
-          <p>{modal.sharing ? '공개 의향을 선택했지만 이 시안에서는 공개되지 않습니다.' : '비공개 선택입니다. 다른 사람에게 보이지 않습니다.'}</p>
+          <p>{modal.sharing ? '아래 공유 버튼을 누르면 기기의 공유 메뉴가 열립니다. 받는 사람은 직접 선택하며, 앱 공개 게시판에는 올라가지 않습니다.' : '비공유 선택입니다. 현재 앱 안에서는 내 화면에만 보입니다.'}</p>
           <button className="tc-secondary" type="button" onClick={async () => {
             try { await savePrayerCard(modal.text, crownImage); setCardState('기도 카드를 내 기기에 저장했어요.'); } catch { setCardState('이 브라우저에서는 저장하지 못했어요. 화면을 캡처해 주세요.'); }
           }}>기도 카드로 내 기기에 저장 <span aria-hidden="true">↓</span></button>
+          {modal.sharing && <button className="tc-primary" type="button" onClick={async () => setCardState(await shareText('함께 기도해주세요', modal.text))}>기도제목 공유 메뉴 열기</button>}
           {cardState && <p className="tc-form-status" role="status">{cardState}</p>}
           <p className="tc-safety">서버 접수 기능이 없으며 창을 닫으면 계속 수정할 수 있습니다.</p>
         </Modal>

@@ -7,7 +7,7 @@ import type { ValueTone, Venue } from './ui';
 
 export type LiveResourceState = 'checking' | 'closed' | 'available' | 'busy' | 'full' | 'school_open' | 'gym_open' | 'hall_open' | 'hall_closed';
 type Category = 'parking' | 'space';
-type LiveResource = { id: string; label: string; category: Category; state: LiveResourceState; version: number; updatedAt: string | null };
+type LiveResource = { id: string; label: string; category: Category; state: LiveResourceState; version: number; updatedAt: string | null; occupancyPercent?: number | null; lastClosedAt?: string | null; lastFullAt?: string | null };
 type StatusResponse = { enabled: boolean; resources: LiveResource[] };
 type Freshness = 'fresh' | 'unconfirmed' | 'stale' | 'invalid' | 'future' | 'offline';
 
@@ -22,6 +22,7 @@ const defaults: LiveResource[] = [
   { id: 'space.dream.f7', label: '7층', category: 'space', state: 'checking', version: 0, updatedAt: null },
   { id: 'space.dream.f11', label: '11층', category: 'space', state: 'checking', version: 0, updatedAt: null },
   { id: 'parking.songrim', label: '송림본당 주차', category: 'parking', state: 'checking', version: 0, updatedAt: null },
+  { id: 'parking.calvary', label: '갈보리교회 주차', category: 'parking', state: 'checking', version: 0, updatedAt: null },
   ...[1, 2, 3, 4, 5].map((floor) => ({ id: `parking.dream.b${floor}`, label: `B${floor}`, category: 'parking' as const, state: 'checking' as const, version: 0, updatedAt: null })),
 ];
 const byId = new Map(defaults.map((resource) => [resource.id, resource]));
@@ -36,7 +37,9 @@ function validResource(value: unknown): LiveResource | null {
   const states = fallback.id === 'space.songrim.access' ? accessStates : normalStates;
   if (!states.has(raw.state as LiveResourceState)) return null;
   if (raw.updatedAt !== null && (typeof raw.updatedAt !== 'string' || !Number.isFinite(Date.parse(raw.updatedAt)))) return null;
-  return { ...fallback, state: raw.state as LiveResourceState, version: raw.version as number, updatedAt: raw.updatedAt as string | null };
+  if (raw.occupancyPercent != null && (typeof raw.occupancyPercent !== 'number' || !Number.isInteger(raw.occupancyPercent) || raw.occupancyPercent < 0 || raw.occupancyPercent > 100 || raw.id === 'space.songrim.access')) return null;
+  for (const key of ['lastClosedAt', 'lastFullAt']) if (raw[key] != null && (typeof raw[key] !== 'string' || !Number.isFinite(Date.parse(raw[key] as string)))) return null;
+  return { ...fallback, occupancyPercent: raw.occupancyPercent as number | null | undefined, lastClosedAt: raw.lastClosedAt as string | null | undefined, lastFullAt: raw.lastFullAt as string | null | undefined, state: raw.state as LiveResourceState, version: raw.version as number, updatedAt: raw.updatedAt as string | null };
 }
 
 function freshness(updatedAt: string | null, now: number, offline: boolean, enabled: boolean): Freshness {
@@ -58,6 +61,7 @@ function stateTone(state: LiveResourceState): string {
   return 'neutral';
 }
 function clockText(updatedAt: string): string { return new Intl.DateTimeFormat('ko-KR', { hour: '2-digit', minute: '2-digit', month: 'numeric', day: 'numeric', timeZone: 'Asia/Seoul' }).format(new Date(updatedAt)); }
+function historyTime(value: string): string { return new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Seoul' }).format(new Date(value)); }
 
 // eslint-disable-next-line react-refresh/only-export-components
 export function useLiveOperations(active = true) {
@@ -109,9 +113,10 @@ type Operations = ReturnType<typeof useLiveOperations>;
 function liveItem(id: string, operations: Operations): FloorItem {
   const resource = operations.resources.find((item) => item.id === id)!;
   const status = freshness(resource.updatedAt, operations.now, operations.offline, operations.enabled);
-  const value = status === 'fresh' ? stateText(resource) : '확인 필요';
+  const value = status === 'fresh' ? stateText(resource) + (resource.state !== 'checking' && resource.occupancyPercent != null ? ` · ${resource.occupancyPercent}% (운영자 추정)` : '') : '확인 필요';
   const sub = status === 'fresh' && resource.updatedAt ? `${clockText(resource.updatedAt)} 확인` : status === 'offline' ? '연결 확인 전' : status === 'stale' ? '10분 경과 · 확인 필요' : status === 'future' || status === 'invalid' ? '확인 시각 오류' : '현장팀 확인 전';
-  return { key: id, label: resource.label, sub, value, tone: (status === 'fresh' ? stateTone(resource.state) : 'neutral') as ValueTone };
+  const history = [resource.lastClosedAt && Date.parse(resource.lastClosedAt) <= operations.now ? `최근 닫힘·입장 마감 기록 ${historyTime(resource.lastClosedAt)}` : '', resource.lastFullAt && Date.parse(resource.lastFullAt) <= operations.now ? `최근 만차·만석 기록 ${historyTime(resource.lastFullAt)}` : ''].filter(Boolean).join(' · ');
+  return { key: id, label: resource.label, sub: history ? `${sub} · ${history}` : sub, value, tone: (status === 'fresh' ? stateTone(resource.state) : 'neutral') as ValueTone };
 }
 
 /** Songrim's current step, only when the access value is fresh. */
@@ -127,7 +132,7 @@ export function liveStage(operations: Operations): number | null {
 export function LiveNotice({ enabled, offline, confirmed }: { enabled: boolean; offline: boolean; confirmed: boolean }) {
   if (offline) return <div className="tc-live-notice tc-live-notice--offline" role="status"><strong>연결 확인 중</strong><span>마지막 안내를 실제 현황으로 표시하지 않습니다.</span></div>;
   if (!enabled || !confirmed) return <div className="tc-live-notice" role="status"><strong>현장팀 확인 전</strong><span>아직 공개된 현장 현황이 없습니다.</span></div>;
-  return <div className="tc-live-notice tc-live-notice--active" role="status"><strong>현장팀 확인 현황</strong><span>각 항목은 마지막 확인 시각 기준입니다.</span></div>;
+  return <div className="tc-live-notice tc-live-notice--active" role="status"><strong>현장팀 확인 현황</strong><span>각 항목은 마지막 확인 시각 기준입니다. 사용률은 운영자 추정이며 실측 수용률이 아닙니다.</span></div>;
 }
 
 function StatusList({ items }: { items: FloorItem[] }) {
@@ -141,7 +146,7 @@ export function LiveWorshipStatus({ venue, operations }: { venue: Venue; operati
 }
 
 export function LiveParkingPanel({ venue, setVenue, operations, art }: { venue: Venue; setVenue: (venue: Venue) => void; operations: Operations; art?: ReactNode }) {
-  const ids = venue === 'songrim' ? ['parking.songrim'] : ['parking.dream.b1', 'parking.dream.b2', 'parking.dream.b3', 'parking.dream.b4', 'parking.dream.b5'];
+  const ids = venue === 'songrim' ? ['parking.songrim', 'parking.calvary'] : ['parking.dream.b1', 'parking.dream.b2', 'parking.dream.b3', 'parking.dream.b4', 'parking.dream.b5'];
   const items = ids.map((id) => liveItem(id, operations));
   return (
     <section id="tc-panel-parking" className="tc-panel" role="tabpanel" aria-labelledby="tc-tab-parking">

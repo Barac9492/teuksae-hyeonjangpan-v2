@@ -27,7 +27,7 @@ function Item({ icon, label, no = false }: { icon: ReactNode; label: string; no?
 
 function DayChips({ eventDay }: { eventDay: number | null }) {
   return (
-    <ol className="tc-day-chips" aria-label="날짜별 간식 나눔">
+    <ol className="tc-day-chips" aria-label="날짜별 오병이어 챌린지">
       {SERVICE_DAYS.map((day, index) => (
         <li key={day} data-today={eventDay === index || undefined} data-first={index === 0 || undefined}>
           <b>{day}</b><small>{WEEKDAYS[index]}</small>
@@ -52,7 +52,7 @@ function StorySection({ stories, onAdd, onDelete, onHide, onMore }: { stories: S
   };
   return (
     <section className="tc-stories" aria-labelledby="tc-stories-title">
-      <span className="tc-eyebrow">간식 나눔 안에서</span>
+      <span className="tc-eyebrow">오병이어 챌린지에서</span>
       <h2 id="tc-stories-title">오늘 나눈 이야기</h2>
       <p className="tc-story-intro">나눈 이야기나 고마웠던 마음을 남겨주세요. 함께 기다린 이야기도 좋아요.</p>
       <button className="tc-write-toggle" type="button" aria-expanded={writing} aria-controls="tc-story-form" onClick={() => setWriting((current) => !current)}>
@@ -102,16 +102,17 @@ export function SharingPanel({ eventDay, stories, onAddStory, onDeleteStory, onH
       <PageHeading eyebrow="기다리는 시간도, 예배 후에도" title="함께 나눠요" art={<span className="tc-steam">{Icon.pot}</span>}>작은 간식 하나, 따뜻한 아침 한 끼.</PageHeading>
       <div className="tc-section tc-section--topless">
         <div className="tc-subtabs" role="group" aria-label="나눔 메뉴">
-          <button type="button" aria-pressed={view === 'snacks'} onClick={() => setView('snacks')}>간식 나눔</button>
+          <button type="button" aria-pressed={view === 'snacks'} onClick={() => setView('snacks')}>오병이어 챌린지</button>
           <button type="button" aria-pressed={view === 'breakfast'} onClick={() => setView('breakfast')}>아침 식사</button>
         </div>
         {view === 'snacks' ? (
           <>
             <div className="tc-snack-place"><strong>송림본당만</strong><span>학교 개방 전 · 학교 밖 대기 장소</span></div>
-            <h2 className="tc-serif-title">기다리는 동안, 함께 나눠요.</h2>
+            <h2 className="tc-serif-title">작은 바구니에 마음을 모아요.</h2>
+            <div className="tc-quiet"><strong>교회에서 준비하는 간식과는 별개의 자율 나눔이에요.</strong><p>월·금·토 교회 간식 배부와 구분되는 1청년부 3팀의 오병이어 챌린지입니다. 바구니에서 사탕 하나 가져가셔도, 짧은 응원의 쪽지를 보태셔도 좋아요. 준비하지 않아도 누구나 함께할 수 있어요.</p></div>
             <DayChips eventDay={eventDay} />
             {eventDay === null ? (
-              <div className="tc-day-copy"><span className="tc-tiny">특새 기간 현장 안내</span><p>간식 나눔 여부와 준비 내용은 현장팀 확인 후 안내합니다.</p></div>
+              <div className="tc-day-copy"><span className="tc-tiny">특새 기간 현장 안내</span><p>1청년부 3팀이 사탕과 작은 간식을 모으고 있어요. 당일에는 피켓과 바구니를 찾아주세요.</p></div>
             ) : eventDay === 0 ? (
               <div className="tc-day-copy"><span className="tc-tiny">10월 5일(월) · 첫날</span><p><strong>1청년부 3팀이 간식을 준비합니다.</strong><br />간식을 준비하지 않으셔도 편하게 함께해 주세요.</p></div>
             ) : (

@@ -76,7 +76,7 @@ export function StageTrail({ stage }: { stage: number | null }) {
           return (
             <li key={label} data-state={state} aria-current={state === 'now' ? 'step' : undefined}>
               <span className="tc-trail__dot" aria-hidden="true" />
-              <span className="tc-trail__label">{label}</span>
+              <span className="tc-trail__label">{index === 0 ? '입장 전' : label}</span>
             </li>
           );
         })}
@@ -148,7 +148,7 @@ export function WakePlanner({ venue }: { venue: Venue }) {
         <Slider label="씻고 준비하기" value={ready} min={10} max={60} onChange={setReady} />
         <Slider label="이동 시간" value={travel} min={5} max={60} onChange={setTravel} />
         <Slider label="도착 후 여유" value={buffer} min={5} max={40} onChange={setBuffer} />
-        <p className="tc-wake__basis">04:40 예배 시작 기준이에요. 학교·예배 공간 개방 시각은 아직 정해지지 않아 여유를 넉넉히 잡는 편이 좋아요.</p>
+        <p className="tc-wake__basis">04:40 예배 시작 기준이에요. 송림학교 입장은 03:00부터입니다. 본당·체육관의 실제 개방 여부는 현장 안내를 확인해주세요.</p>
         <button
           className="tc-secondary"
           type="button"
@@ -192,7 +192,7 @@ export function WorshipPanel({ crownImage, venue, setVenue, now, previewDay, sta
       <div className="tc-section">
         <h2 className="tc-section-title">지금 예배 공간은</h2>
         <VenueSwitch venue={venue} onChange={setVenue} label="예배 장소" />
-        {venue === 'songrim' && <StageTrail stage={stage} />}
+        {venue === 'songrim' && <><p className="tc-panel-note">송림학교 입장 03:00부터 · 본당·체육관 입장 시각은 별도 현장 안내</p><StageTrail stage={stage} /></>}
         {children}
         <div className="tc-mini-actions">{actions}</div>
         {after}

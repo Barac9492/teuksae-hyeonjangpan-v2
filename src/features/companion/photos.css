@@ -1,0 +1,10 @@
+.tc-photo-field { display: grid; gap: 8px; margin: 18px 0; font-size: 13px; color: var(--ink); }
+.tc-photo-field input, .tc-photo-field select { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 4px; background: #fff; color: var(--ink); font: inherit; }
+.tc-photo-memo { margin-top: 10px; font: italic 20px/1.6 'Nanum Pen Script', 'Apple SD Gothic Neo', cursive; overflow-wrap: anywhere; color: var(--ink); }
+.tc-photo-days { margin-top: 30px; padding-top: 24px; border-top: 1px solid var(--line); }
+.tc-photo-days h2 { font-size: 18px; font-weight: 400; }
+.tc-photo-days p { font-size: 12px; line-height: 1.7; color: var(--muted); }
+.tc-photo-days ul { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; padding: 0; margin: 18px 0; list-style: none; }
+.tc-photo-days li { padding: 12px 2px; text-align: center; border: 1px dashed var(--line); border-radius: 50%; font-size: 12px; }
+.tc-photo-days li span { display: block; font-size: 10px; margin-top: 4px; }
+.tc-photo-days li[data-stamped='true'] { border: 1px solid var(--ink); background: #f2e5db; color: var(--ink); }

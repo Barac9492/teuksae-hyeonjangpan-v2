@@ -85,3 +85,20 @@ it('keeps logout effective when an overlapping operations poll resolves afterwar
   await act(async () => { lateRead.resolve(reply(data())); });
   expect(screen.queryByRole('heading', { name: '현장 운영' })).not.toBeInTheDocument();
 });
+
+it('keeps a conflict locked when latest-state refresh fails', async () => {
+  let gets = 0;
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
+    if (url === '/api/admin/session') return reply(identity());
+    if (init?.method === 'POST') return reply({ resource: { ...resource, state: 'busy', version: 2 } }, 409);
+    if (++gets === 1) return reply(data());
+    throw new Error('offline');
+  });
+  const user = userEvent.setup(); render(<AdminApp />);
+  await screen.findByLabelText('송림본당 주차 상태');
+  await user.selectOptions(screen.getByLabelText('송림본당 주차 상태'), 'full');
+  await user.click(screen.getByRole('button', { name: '상태 저장' }));
+  await user.click(await screen.findByRole('button', { name: '최신 상태 확인' }));
+  expect(screen.getByRole('button', { name: '상태 저장' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '최신 상태 확인' })).toBeVisible();
+});

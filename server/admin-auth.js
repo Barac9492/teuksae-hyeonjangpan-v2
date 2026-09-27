@@ -97,7 +97,8 @@ function accountView(account, session) {
   };
 }
 function validLogin(body) { return typeof body.username === 'string' && USERNAME.test(body.username.trim()) && typeof body.password === 'string' && body.password.length >= 1 && body.password.length <= 256 && typeof body.displayName === 'string' && body.displayName.trim().length >= 1 && body.displayName.trim().length <= 30; }
-function validOperation(body) { return typeof body.resourceId === 'string' && ALL_STATES.has(body.state) && Number.isInteger(body.expectedVersion) && body.expectedVersion >= 0 && typeof body.requestId === 'string' && UUID.test(body.requestId) && (body.resourceId === 'space.songrim.access' ? ACCESS_STATES.has(body.state) : !ACCESS_STATES.has(body.state) || body.state === 'checking' || body.state === 'closed'); }
+export function validOccupancy(value) { return value === undefined || value === null || (typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 100); }
+function validOperation(body) { return validOccupancy(body.occupancyPercent) && (body.resourceId !== 'space.songrim.access' || body.occupancyPercent == null) && typeof body.resourceId === 'string' && ALL_STATES.has(body.state) && Number.isInteger(body.expectedVersion) && body.expectedVersion >= 0 && typeof body.requestId === 'string' && UUID.test(body.requestId) && (body.resourceId === 'space.songrim.access' ? ACCESS_STATES.has(body.state) : !ACCESS_STATES.has(body.state) || body.state === 'checking' || body.state === 'closed'); }
 function validAccount(body) { return typeof body.username === 'string' && USERNAME.test(body.username.trim()) && typeof body.displayLabel === 'string' && body.displayLabel.trim().length >= 1 && body.displayLabel.trim().length <= 30 && TEAM_ROLES.has(body.role) && typeof body.active === 'boolean' && (body.password === undefined || (typeof body.password === 'string' && body.password.length >= 4 && body.password.length <= 256)); }
 async function protectedSession(req, res, cfg, fetcher, now) {
   const token = readSession(req, cfg, now);
@@ -167,7 +168,7 @@ async function operations(req, res, cfg, session, fetcher) {
     if (req.method === 'GET') return reply(res, 200, await rpc(cfg, 'ops_list_operations', { p_session_id: session.tokenId }, fetcher));
     const body = await jsonBody(req);
     if (!validOperation(body)) return reply(res, 400, { error: '운영 상태 요청을 확인해주세요.' });
-    const data = await rpc(cfg, 'ops_set_resource_state', { p_session_id: session.tokenId, p_resource_id: body.resourceId, p_state: body.state, p_expected_version: body.expectedVersion, p_request_id: body.requestId }, fetcher);
+    const data = await rpc(cfg, 'ops_set_resource_state', { p_session_id: session.tokenId, p_resource_id: body.resourceId, p_state: body.state, p_expected_version: body.expectedVersion, p_request_id: body.requestId, p_occupancy_percent: body.occupancyPercent ?? null }, fetcher);
     if (data?.status === 'conflict') return reply(res, 409, { error: '다른 변경이 먼저 반영되었습니다.', resource: data.resource });
     if (data?.status === 'payload_mismatch') return reply(res, 409, { error: '같은 요청 ID가 다른 요청에 사용되었습니다.' });
     if (!data?.resource) throw new Error('bad RPC result');

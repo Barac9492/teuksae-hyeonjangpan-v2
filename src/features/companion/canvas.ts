@@ -1,4 +1,4 @@
-/** Local-only image makers (prayer card, framed photo). Nothing leaves the device. */
+/** Local image rendering. Photo sharing requires a separate user action. */
 import { downloadBlob } from './dawn';
 
 const INK = '#50302f';
@@ -91,14 +91,21 @@ export async function savePrayerCard(text: string, crownSrc: string): Promise<vo
   downloadBlob(await toBlob(canvas), 'my-dawn-prayer.png');
 }
 
-export async function saveFramedPhoto(src: string, stampText: string): Promise<void> {
+/** Short single-line text, rendered as pixels, never HTML or a filename. */
+export function normalizePhotoMemo(text: string): string {
+  // eslint-disable-next-line no-control-regex -- Remove unsafe control characters from user text.
+  return [...text.replace(/[\u0000-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]/g, ' ').replace(/\s+/g, ' ').trim()].slice(0, 40).join('');
+}
+
+export async function renderFramedPhoto(src: string, stampText: string, memo = ''): Promise<Blob> {
+  if (!src) throw new Error('No photo');
   await fontsReady();
   const photo = await loadImage(src);
   const width = 1080; const height = 1350; const pad = 64; const box = width - pad * 2;
   const canvas = document.createElement('canvas');
   canvas.width = width; canvas.height = height;
   const ctx = canvas.getContext('2d');
-  if (!ctx) return;
+  if (!ctx) throw new Error('Canvas unavailable');
   ctx.fillStyle = PAPER; ctx.fillRect(0, 0, width, height);
   const scale = Math.max(box / photo.width, box / photo.height);
   const sw = box / scale; const sh = box / scale;
@@ -107,12 +114,20 @@ export async function saveFramedPhoto(src: string, stampText: string): Promise<v
   ctx.font = `200 58px ${FONT}`;
   ctx.fillText('하나님 마음에 합한 사람', pad, pad + box + 110);
   ctx.fillStyle = MUTED; ctx.font = `400 26px ${FONT}`;
-  ctx.fillText(`${stampText} · 2026 가을특별새벽부흥회`, pad, pad + box + 170);
-  ctx.textAlign = 'right'; ctx.font = `300 26px ${FONT}`;
-  ctx.fillText('사도행전 13:22', width - pad, pad + box + 170);
+  ctx.fillText(`${normalizePhotoMemo(stampText)} · 2026 가을특별새벽부흥회`, pad, pad + box + 170);
+  ctx.textAlign = 'left'; ctx.font = `300 24px ${FONT}`;
+  ctx.fillText('사도행전 13:22', pad, pad + box + 210);
+  ctx.fillStyle = INK; ctx.font = `italic 34px 'Nanum Pen Script', 'Apple SD Gothic Neo', cursive`;
+  wrap(ctx, normalizePhotoMemo(memo), box).slice(0, 2).forEach((line, i) => ctx.fillText(line, pad, pad + box + 265 + i * 40));
+  ctx.textAlign = 'right';
   ctx.globalAlpha = 0.85; ctx.fillStyle = '#e59b53'; ctx.font = `600 34px ui-monospace, Menlo, monospace`;
-  ctx.fillText(`'26 10 ${stampText.match(/\d+(?=일)/)?.[0]?.padStart(2, '0') ?? '05'}  04:40`, width - pad - 24, pad + box - 28);
+  const day = stampText.match(/\d+(?=일)/)?.[0];
+  if (day) ctx.fillText(`'26 10 ${day.padStart(2, '0')}`, width - pad - 24, pad + box - 28);
   ctx.globalAlpha = 1;
   grain(ctx, width, height);
-  downloadBlob(await toBlob(canvas), 'dawn-photo.png');
+  return toBlob(canvas);
+}
+
+export async function saveFramedPhoto(src: string, stampText: string, memo = ''): Promise<void> {
+  downloadBlob(await renderFramedPhoto(src, stampText, memo), 'dawn-photo.png');
 }

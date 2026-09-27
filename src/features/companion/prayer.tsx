@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { PageHeading } from './ui';
+import { Reflection } from './Reflection';
 
-type PrayerView = 'write' | 'read';
+type PrayerView = 'write' | 'read' | 'reflection';
 
 const QUIET_SECONDS = 60;
 const quietPrompts = ['천천히 숨을 들이쉬어요', '내쉬면서 어깨의 힘을 풀어요', '지금 마음에 떠오르는 이름을 올려드려요', '말없이 그 곁에 머물러요'];
@@ -58,25 +59,27 @@ export function PrayerPanel({ onPreview }: { onPreview: (text: string, sharing: 
   const warmth = Math.min(1, text.length / 120);
   return (
     <section id="tc-panel-prayer" className="tc-panel" role="tabpanel" aria-labelledby="tc-tab-prayer">
-      <PageHeading eyebrow="하나님 앞에 내려놓는 마음" title="함께 기도해요" art={<span className="tc-candle" style={{ '--warmth': warmth } as React.CSSProperties}><i /></span>}>잘 정리된 말이 아니어도 괜찮아요.</PageHeading>
+      <PageHeading eyebrow="하나님 앞에 내려놓는 마음" title="함께 기도해주세요" art={<span className="tc-candle" style={{ '--warmth': warmth } as React.CSSProperties}><i /></span>}>혼자 품고 있던 마음을 나눠주세요. 서로를 위해 함께 기도해요.</PageHeading>
       <div className="tc-section tc-section--topless">
         <div className="tc-subtabs" role="group" aria-label="기도 메뉴">
           <button type="button" aria-pressed={view === 'write'} onClick={() => setView('write')}>기도 제목 쓰기</button>
           <button type="button" aria-pressed={view === 'read'} onClick={() => setView('read')}>함께 머물기</button>
+          <button type="button" aria-pressed={view === 'reflection'} onClick={() => setView('reflection')}>특새 묵상</button>
         </div>
-        {view === 'write' ? (
+        <div hidden={view !== 'reflection'}><Reflection /></div>
+        {view === 'reflection' ? null : view === 'write' ? (
           <form onSubmit={(event) => { event.preventDefault(); if (text.trim()) onPreview(text.trim(), sharing); }}>
             <label className="tc-field-label" htmlFor="tc-prayer">어떤 마음으로 기도하고 있나요?</label>
             <div className="tc-paper-field">
-              <textarea id="tc-prayer" maxLength={600} value={text} onChange={(event) => setText(event.target.value)} placeholder="지금 마음에 있는 기도 제목을 적어주세요." required />
+              <textarea id="tc-prayer" maxLength={600} value={text} onChange={(event) => { setText(event.target.value); setSharing(false); }} placeholder="지금 마음에 있는 기도 제목을 적어주세요." required />
             </div>
             <div className="tc-form-meta"><span>이름·연락처는 쓰지 않아도 돼요.</span><span>{text.length} / 600</span></div>
             <label className="tc-checkbox">
               <input type="checkbox" checked={sharing} onChange={(event) => setSharing(event.target.checked)} />
-              <span>함께 읽는 기도로 나누는 의향이 있어요.<small>선택하지 않으면 비공개입니다. 이 시안에서는 선택해도 공개되지 않아요.</small></span>
+              <span>이 기도제목을 내가 선택한 사람에게 나눌게요.<small>기본은 비공유입니다. 미리보기에서 공유 버튼을 누르고, 기기의 공유 메뉴에서 받는 사람을 직접 선택해요.</small></span>
             </label>
             <button className="tc-primary" type="submit">입력 내용 미리보기 <span aria-hidden="true">→</span></button>
-            <p className="tc-lock-note"><span aria-hidden="true">🔒</span> 내 화면에서만 보여요. 서버로 보내거나 저장하지 않아요.</p>
+            <p className="tc-lock-note"><span aria-hidden="true">🔒</span> 작성만으로는 공유되지 않아요. 교회나 앱 서버에는 접수되지 않습니다.</p>
             <p className="tc-footnote">다른 사람의 실명·연락처·민감한 사정은 적지 말아주세요.</p>
           </form>
         ) : (
@@ -85,7 +88,7 @@ export function PrayerPanel({ onPreview }: { onPreview: (text: string, sharing: 
             <div className="tc-empty">
               <span aria-hidden="true">“</span>
               <h2>동의한 마음만,<br />조심스럽게 나눕니다.</h2>
-              <p>아직 공개된 기도 제목이 없습니다.<br />이 화면은 서버와 연결되지 않았습니다.</p>
+              <p>앱 안에서 다른 사람의 기도제목을 읽는 공개 게시판은 아직 열리지 않았어요.<br />기도제목 쓰기에서 내용을 확인한 뒤, 원하는 사람에게 직접 나눌 수 있어요.</p>
             </div>
           </>
         )}
