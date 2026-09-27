@@ -548,3 +548,12 @@ body { background: #fbfbfa; }
 .tc-restaurant-list { display: grid; gap: 16px; }
 .tc-restaurant footer { flex-wrap: wrap; position: relative; }
 .tc-restaurant > .tc-restaurant__caution { color: var(--ink); border-left: 3px solid var(--line); padding-left: 10px; }
+
+/* Optional waiting-time activity, after operational guidance and wake planner. */
+.tc-david-game { margin-top: 20px; padding: 22px; border: 1px solid var(--line); border-radius: 16px; background: linear-gradient(145deg, #f7efe2, #fffaf3); color: #49392c; }
+.tc-david-game__eyebrow { display: block; font-size: 11px; letter-spacing: .1em; color: #806c56; }
+.tc-david-game h2 { margin: 8px 0; font-size: 21px; font-weight: 500; line-height: 1.4; }
+.tc-david-game p { margin: 0; font-size: 13px; line-height: 1.8; }
+.tc-david-game__link { display: inline-flex; align-items: center; gap: 24px; min-height: 44px; margin-top: 14px; color: #704322; font-size: 14px; font-weight: 600; text-decoration: underline; text-underline-offset: 4px; }
+.tc-david-game__link:focus-visible { outline: 2px solid #704322; outline-offset: 4px; border-radius: 3px; }
+.tc-david-game small { display: block; margin-top: 5px; font-size: 11px; line-height: 1.7; color: #806c56; }

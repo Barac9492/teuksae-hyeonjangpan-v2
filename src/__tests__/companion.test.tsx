@@ -176,3 +176,16 @@ describe('CompanionApp', () => {
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:second');
   });
 });
+
+it('places an optional David game after live guidance and opens it separately without embedding', () => {
+  render(<CompanionApp />);
+  const worship = screen.getByRole('tabpanel', { name: '예배' });
+  const card = within(worship).getByRole('complementary', { name: '목동에서 왕이 되기까지' });
+  expect(within(card).getByText('특새를 기다리며')).toBeVisible();
+  const link = within(card).getByRole('link', { name: '다윗 게임 열기 (새 탭)' });
+  expect(link).toHaveAttribute('href', 'https://the-shepherd-king.vercel.app/');
+  expect(link).toHaveAttribute('target', '_blank');
+  expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+  expect(worship.querySelector('iframe')).toBeNull();
+  expect(within(worship).getByRole('heading', { name: '지금 예배 공간은' }).compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});
