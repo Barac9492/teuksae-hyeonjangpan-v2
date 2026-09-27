@@ -3,7 +3,6 @@ import type { KeyboardEvent } from 'react';
 import crownImage from './assets/crown.jpg';
 import posterImage from './assets/poster.jpg';
 import { savePrayerCard } from './canvas';
-import { shareText } from './shareText';
 import { LiveParkingPanel, LiveWorshipStatus, liveStage, useLiveOperations } from './LiveOperations';
 import { PhotosPanel } from './photos';
 import { PrayerPanel } from './prayer';
@@ -64,7 +63,7 @@ function syncText(lastSync: number | null, now: number): string {
   return seconds < 60 ? '방금 확인' : `${Math.floor(seconds / 60)}분 전 확인`;
 }
 
-type ModalState = { type: 'poster' } | { type: 'settings' } | { type: 'route'; venue: Venue } | { type: 'prayer'; text: string; sharing: boolean } | { type: 'stories' } | null;
+type ModalState = { type: 'poster' } | { type: 'settings' } | { type: 'route'; venue: Venue } | { type: 'prayer'; text: string } | { type: 'stories' } | null;
 
 export function CompanionApp() {
   const isPreview = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('preview') === '1';
@@ -173,7 +172,7 @@ export function CompanionApp() {
               ? <PreviewParkingPanel venue={venue} setVenue={setVenue} stage={stage} stale={stale} allFull={parkingFull[venue]} goToWorship={() => selectTab('worship')} art={<ParkingArt />} />
               : <LiveParkingPanel venue={venue} setVenue={setVenue} operations={operations} art={<ParkingArt />} />}
           </div>
-          <div hidden={tab !== 'prayer'}><PrayerPanel onPreview={(text, sharing) => { setCardState(''); setModal({ type: 'prayer', text, sharing }); }} /></div>
+          <div hidden={tab !== 'prayer'}><PrayerPanel onPreview={(text) => { setCardState(''); setModal({ type: 'prayer', text }); }} /></div>
           <div hidden={tab !== 'sharing'}>
             <SharingPanel eventDay={dayForContent} venue={venue} setVenue={setVenue} view={sharingView} setView={(next) => { setSharingView(next); if (mainRef.current) mainRef.current.scrollTop = 0; }} stories={visibleStories} onAddStory={addStory} onDeleteStory={(id) => setStories((current) => current.filter((story) => story.id !== id))} onHideStory={(id) => setHiddenStories((current) => new Set(current).add(id))} onMoreStories={() => setModal({ type: 'stories' })} />
           </div>
@@ -233,11 +232,10 @@ export function CompanionApp() {
             <div className="tc-preview-text">{modal.text}</div>
             <img src={crownImage} alt="" aria-hidden="true" />
           </div>
-          <p>{modal.sharing ? '아래 공유 버튼을 누르면 기기의 공유 메뉴가 열립니다. 받는 사람은 직접 선택하며, 앱 공개 게시판에는 올라가지 않습니다.' : '이 미리보기는 내 화면에만 보입니다. 별도로 공개 접수한 내용은 내 제출 기록에서 상태를 확인해주세요.'}</p>
+          <p>이 미리보기는 내 화면에만 보입니다. 공개 접수 후 관리자 검수가 끝나면 앱에 들어온 모든 분이 볼 수 있습니다.</p>
           <button className="tc-secondary" type="button" onClick={async () => {
             try { await savePrayerCard(modal.text, crownImage); setCardState('기도 카드를 내 기기에 저장했어요.'); } catch { setCardState('이 브라우저에서는 저장하지 못했어요. 화면을 캡처해 주세요.'); }
           }}>기도 카드로 내 기기에 저장 <span aria-hidden="true">↓</span></button>
-          {modal.sharing && <button className="tc-primary" type="button" onClick={async () => setCardState(await shareText('함께 기도해주세요', modal.text))}>기도제목 공유 메뉴 열기</button>}
           {cardState && <p className="tc-form-status" role="status">{cardState}</p>}
           <p className="tc-safety">이 미리보기만으로는 제출되지 않습니다. 공개 게시를 원하면 창을 닫고 기도 작성 화면에서 별도로 동의·접수해주세요.</p>
         </Modal>

@@ -143,8 +143,7 @@ describe('CompanionApp', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     render(<CompanionApp />);
     await chooseTab(user, '기도');
-    const sharing = screen.getByRole('checkbox', { name: /이 기도제목을 내가 선택한 사람에게/ });
-    expect(sharing).not.toBeChecked();
+    expect(screen.queryByText(/이 기도제목을 내가 선택한 사람에게/)).not.toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: /공개 범위를 확인했고/ })).not.toBeChecked();
     await user.type(screen.getByLabelText('어떤 마음으로 기도하고 있나요?'), '가족을 위해 기도합니다.');
     await user.click(screen.getByRole('button', { name: /입력 내용 미리보기/ }));

@@ -53,26 +53,19 @@ describe('local photo feedback', () => {
     expect(renderFramedPhoto).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: '선택한 날짜에 도장 남기기' })).toBeDisabled();
   });
-  it('opens native share only on click and cancellation does not download or stamp', async () => {
-    const share = vi.fn().mockRejectedValue(new DOMException('cancelled', 'AbortError'));
+  it('offers all-visitor posting and local download, never a recipient share menu', async () => {
+    const share = vi.fn();
     Object.defineProperty(navigator, 'canShare', { configurable: true, value: () => true });
     Object.defineProperty(navigator, 'share', { configurable: true, value: share });
     render(<PhotosPanel eventDay={1} />); upload();
-    const button = await screen.findByRole('button', { name: '사진 공유하기' });
-    expect(share).not.toHaveBeenCalled(); fireEvent.click(button);
-    await screen.findByText(/공유를 취소했어요/);
-    expect(share).toHaveBeenCalledWith({ files: [expect.any(File)], title: '우리의 새벽 사진' });
-    expect(downloadBlob).not.toHaveBeenCalled(); expect(localStorage.getItem(key)).toBeNull();
-  });
-  it('offers explicit download after share failure without claiming success', async () => {
-    Object.defineProperty(navigator, 'canShare', { configurable: true, value: () => true });
-    Object.defineProperty(navigator, 'share', { configurable: true, value: vi.fn().mockRejectedValue(new Error('blocked')) });
-    render(<PhotosPanel eventDay={1} />); upload();
-    fireEvent.click(await screen.findByRole('button', { name: '사진 공유하기' }));
-    await screen.findByText(/공유하지 못했어요/);
-    expect(downloadBlob).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: '사진 다운로드' }));
+    const button = await screen.findByRole('button', { name: '사진 다운로드' });
+    expect(screen.queryByRole('button', { name: '사진 공유하기' })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '앱에 들어온 모든 분께 공개하기' })).toBeVisible();
+    expect(screen.getByRole('checkbox', { name: /앱 이용자 모두에게 공개/ })).not.toBeChecked();
+    fireEvent.click(button);
     expect(downloadBlob).toHaveBeenCalledOnce();
+    expect(share).not.toHaveBeenCalled();
+    expect(localStorage.getItem(key)).toBeNull();
   });
   it('reads only valid persisted dates and clears photos independently', async () => {
     localStorage.setItem(key, '[0,5,5,6,-1,"private"]');

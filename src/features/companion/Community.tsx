@@ -75,9 +75,9 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
     </header>
     {feedError ? <p role="alert">{feedError} 이전 정보는 최신이 아닐 수 있어요. <button type="button" className="tc-line-action" onClick={() => void refresh()}>다시 불러오기</button></p> : !feed ? <p role="status">공개 나눔 정보를 불러오는 중이에요.</p> : null}
     {showComposer && <div className="tc-community-compose">
-      <h3>공개 게시판에 별도로 접수하기</h3>
-      <p>미리보기·다운로드·기기의 공유 메뉴와는 별개입니다. 아래 버튼을 눌러야 서버에 접수됩니다.</p>
-      <label className="tc-checkbox"><input type="checkbox" checked={consentKey === key} disabled={busy} onChange={e => setConsentKey(e.target.checked ? key : null)} /><span>공개 범위를 확인했고 공개 접수에 동의합니다.<small>관리자는 검수 대기 내용도 읽을 수 있습니다. 승인 후에는 인터넷의 누구나 볼 수 있고, 캡처·외부 저장 사본은 삭제 후에도 남을 수 있습니다. 다른 사람의 정보·사진은 당사자 동의를, 미성년자는 보호자 동의를 확인했습니다.</small></span></label>
+      <h3>앱에 들어온 모든 분께 공개하기</h3>
+      <p>특정 사람에게 보내는 메시지가 아닙니다. 접수 후 관리자 검수가 끝나면 앱에 들어온 누구나 볼 수 있습니다.</p>
+      <label className="tc-checkbox"><input type="checkbox" checked={consentKey === key} disabled={busy} onChange={e => setConsentKey(e.target.checked ? key : null)} /><span>공개 범위를 확인했고 앱 이용자 모두에게 공개하는 데 동의합니다.<small>관리자는 검수 대기 내용도 읽을 수 있습니다. 승인 후에는 로그인 없이 앱에 들어온 누구나 볼 수 있고, 캡처·외부 저장 사본은 삭제 후에도 남을 수 있습니다. 다른 사람의 정보·사진은 당사자 동의를, 미성년자는 보호자 동의를 확인했습니다.</small></span></label>
       <p className="tc-footnote">내 제출 기록에서 삭제 가능. 관리자도 검수·삭제할 수 있습니다.</p>
       <button type="button" className="tc-primary" disabled={busy || consentKey !== key || !feed || !!feedError || (kind === 'prayer' ? !text.trim() : !file)} onClick={() => void submit()}>{busy ? '처리 중…' : '공개 접수하기 · 검수 후 게시'}</button>
       {kind === 'photo' && <p className="tc-footnote">프레임을 입힌 PNG만 전송합니다. 최대 3MB이며 원본 EXIF는 포함하지 않습니다.</p>}

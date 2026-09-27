@@ -6,21 +6,20 @@ import { shareText } from '../features/companion/shareText';
 
 beforeEach(() => { window.history.replaceState({}, '', '/?preview=1'); localStorage.clear(); });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); Object.defineProperty(navigator, 'share', { configurable: true, value: undefined }); });
-it('shares prayer only after consent and a separate user action, without claiming delivery', async () => {
+it('offers all-visitor public prayer posting instead of recipient sharing', async () => {
   const share = vi.fn().mockResolvedValue(undefined);
   Object.defineProperty(navigator, 'share', { configurable: true, value: share });
   const user = userEvent.setup(); render(<CompanionApp />);
   await user.click(screen.getByRole('tab', { name: '기도' }));
   await user.type(screen.getByLabelText('어떤 마음으로 기도하고 있나요?'), '마음의 평안을 위해 기도해주세요.');
-  const consent = screen.getByRole('checkbox', { name: /이 기도제목을 내가 선택한 사람에게/ });
-  expect(consent).not.toBeChecked();
-  await user.click(consent);
-  expect(share).not.toHaveBeenCalled();
+  expect(screen.queryByText(/이 기도제목을 내가 선택한 사람에게/)).not.toBeInTheDocument();
+  expect(screen.getByRole('checkbox', { name: /앱 이용자 모두에게 공개/ })).not.toBeChecked();
+  expect(screen.getByRole('heading', { name: '앱에 들어온 모든 분께 공개하기' })).toBeVisible();
   await user.click(screen.getByRole('button', { name: /입력 내용 미리보기/ }));
   const dialog = screen.getByRole('dialog', { name: '내 기도 제목 미리보기' });
-  await user.click(within(dialog).getByRole('button', { name: '기도제목 공유 메뉴 열기' }));
-  expect(share).toHaveBeenCalledWith({ title: '함께 기도해주세요', text: '마음의 평안을 위해 기도해주세요.' });
-  expect(within(dialog).getByText(/실제 전송 여부는 선택한 앱에서/)).toBeVisible();
+  expect(within(dialog).queryByRole('button', { name: '기도제목 공유 메뉴 열기' })).not.toBeInTheDocument();
+  expect(within(dialog).getByText(/앱에 들어온 모든 분이 볼 수/)).toBeVisible();
+  expect(share).not.toHaveBeenCalled();
   expect(localStorage.length).toBe(0);
 });
 it('keeps daily reflection drafts separate and resets sharing consent on edits', async () => {
