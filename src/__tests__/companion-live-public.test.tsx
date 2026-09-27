@@ -32,7 +32,11 @@ describe('public companion live operations', () => {
     expect(screen.getByText('입장 마감')).toBeVisible();
     expect(screen.getByText('이용 가능')).toBeVisible();
     expect(fetchMock).toHaveBeenCalledWith('/api/status', expect.anything());
-    expect(screen.getByText('현장 현황 시범 운영')).toBeVisible();
+    expect(screen.queryByText('현장 현황 시범 운영')).not.toBeInTheDocument();
+    expect(screen.queryByText(/교회 공식 앱 승인 전 공개 안내/)).not.toBeInTheDocument();
+    expect(screen.queryByText('방금 확인')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '행사 포스터' })).not.toBeInTheDocument();
+    expect(screen.getByRole('img', { name: '분당우리교회' })).toBeVisible();
     expect(screen.queryByRole('button', { name: '상황 바꿔보기' })).not.toBeInTheDocument();
     expect(screen.queryByText('운영자')).not.toBeInTheDocument();
   });

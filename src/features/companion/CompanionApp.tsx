@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import crownImage from './assets/crown.jpg';
 import posterImage from './assets/poster.jpg';
+import churchLogo from './assets/woori-logo.gif';
 import { savePrayerCard } from './canvas';
 import { LiveParkingPanel, LiveWorshipStatus, liveStage, useLiveOperations } from './LiveOperations';
 import { PhotosPanel } from './photos';
@@ -57,13 +58,7 @@ function ParkingArt() {
   );
 }
 
-function syncText(lastSync: number | null, now: number): string {
-  if (!lastSync) return '확인 대기';
-  const seconds = Math.max(0, Math.round((now - lastSync) / 1000));
-  return seconds < 60 ? '방금 확인' : `${Math.floor(seconds / 60)}분 전 확인`;
-}
-
-type ModalState = { type: 'poster' } | { type: 'settings' } | { type: 'route'; venue: Venue } | { type: 'prayer'; text: string } | { type: 'stories' } | null;
+type ModalState = { type: 'settings' } | { type: 'route'; venue: Venue } | { type: 'prayer'; text: string } | { type: 'stories' } | null;
 
 export function CompanionApp() {
   const isPreview = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('preview') === '1';
@@ -128,7 +123,7 @@ export function CompanionApp() {
       : dayForContent !== null && venue === 'songrim' && <button type="button" onClick={goToSnack}><span aria-hidden="true">☕</span>오병이어 챌린지</button>}
   </>;
   const worshipAfter = <>
-    <p className="tc-panel-note">{isPreview ? '현황은 모두 디자인 검토용 예시입니다. 운영 시스템과 연결되지 않았고 실제 현장 상태를 뜻하지 않습니다.' : '현장팀이 확인한 공개 안내만 표시합니다. 교회 공식 앱 승인이나 운영 주체를 뜻하지 않습니다.'}</p>
+    <p className="tc-panel-note">{isPreview ? '현황은 모두 디자인 검토용 예시입니다. 운영 시스템과 연결되지 않았고 실제 현장 상태를 뜻하지 않습니다.' : '현장팀이 확인한 공개 안내만 표시합니다.'}</p>
     {isPreview && venue === 'songrim' && stage === 0 && !stale && (
       <button className="tc-snack-teaser" type="button" onClick={goToSnack}>
         <span><small>학교 밖 대기 장소 · 오병이어 챌린지 안내</small><strong>{eventDay === 0 ? '10월 5일, 1청년부 3팀이 준비합니다' : '10월 6일부터, 원하는 분들이 자율적으로 나눠요'}</strong></span>
@@ -145,24 +140,21 @@ export function CompanionApp() {
           <span>WOORI CHURCH · AUTUMN 2026</span>
           <h1>새벽의 마음을,<br />손에 쥐고.</h1>
           <p>예배에 오기 전부터<br />함께 아침을 먹는 시간까지.</p>
-          <small>{isPreview ? '디자인 검토용 미리보기입니다.' : '현장 현황 시범 운영 · 기도·사진은 공개 동의 후 접수, 관리자 확인 후 공개합니다.'}</small>
+          <small>{isPreview ? '디자인 검토용 미리보기입니다.' : '기도·사진은 공개 동의 후 접수, 관리자 확인 후 공개합니다.'}</small>
         </div>
       </aside>
       <div className="tc-app">
         <header className="tc-app-header">
           <button className="tc-brand" type="button" onClick={() => selectTab('worship')} aria-label="예배 첫 화면">
-            <strong>우리</strong><span>분당우리교회</span>
+            <img src={churchLogo} alt="분당우리교회" width="189" height="56" />
           </button>
           <div className="tc-header-actions">
-            <button className="tc-poster-button" type="button" onClick={() => setModal({ type: 'poster' })}>
-              <img src={posterImage} alt="" aria-hidden="true" />행사 포스터
-            </button>
             <a className="tc-admin-link" href="/admin" aria-label="관리자 로그인">관리자 로그인</a>
           </div>
         </header>
         {isPreview
           ? <div className="tc-demo-banner"><span><i aria-hidden="true" />디자인 미리보기 · 실제 현황 아님</span><button type="button" onClick={() => setModal({ type: 'settings' })}>상황 바꿔보기</button></div>
-          : <div className="tc-live-banner" data-offline={operations.offline || undefined}><span><i aria-hidden="true" />현장 현황 시범 운영</span><small>{operations.offline ? '오프라인' : syncText(operations.lastSync, now)} · 교회 공식 앱 승인 전 공개 안내</small></div>}
+          : operations.offline ? <div className="tc-live-banner" data-offline="true" role="status">오프라인 · 최신 현황을 확인할 수 없습니다.</div> : null}
         <main id={mainId} ref={mainRef} tabIndex={-1}>
           <div hidden={tab !== 'worship'}>
             <WorshipPanel crownImage={crownImage} venue={venue} setVenue={setVenue} now={now} previewDay={isPreview ? eventDay : null} stage={isPreview ? (stale ? null : stage) : liveStage(operations)} actions={worshipActions} after={worshipAfter}>{worshipStatus}</WorshipPanel>
@@ -188,12 +180,6 @@ export function CompanionApp() {
         </nav>
       </div>
 
-      {modal?.type === 'poster' && (
-        <Modal title="2026 가을특별새벽부흥회" onClose={() => setModal(null)}>
-          <img className="tc-poster" src={posterImage} alt="공식 행사 포스터. 하나님 마음에 합한 사람. 2026년 10월 5일부터 10일, 새벽 4시 40분 예배 시작." />
-          <p className="tc-footnote">04:40은 예배 시작 시각입니다. 송림본당 학교 안 입장은 오전 3시부터입니다. 본당·체육관 개방은 별도 현장 안내를 따라주세요.</p>
-        </Modal>
-      )}
       {modal?.type === 'settings' && (
         <Modal title="상황 바꿔보기" onClose={() => setModal(null)}>
           <p className="tc-modal-intro">디자인 검토용입니다. 실제 날짜나 현장 상태와 무관하게 미리 볼 행사일과 상황을 선택합니다.</p>

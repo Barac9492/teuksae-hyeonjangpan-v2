@@ -81,17 +81,9 @@ body { background: #fbfbfa; }
   backdrop-filter: blur(10px);
   z-index: 3;
 }
-.tc-brand { display: flex; align-items: baseline; gap: 8px; min-height: 44px; }
-.tc-brand strong { font-size: 24px; font-weight: 300; letter-spacing: -1px; color: var(--ink); }
-.tc-brand span { font-size: 11px; color: var(--muted); letter-spacing: -.2px; }
+.tc-brand { display: flex; align-items: center; min-height: 44px; }
+.tc-brand img { display: block; width: 162px; height: auto; object-fit: contain; }
 .tc-header-actions { display: flex; align-items: center; gap: 6px; }
-.tc-poster-button {
-  display: inline-flex; align-items: center; gap: 7px; min-height: 40px; padding: 0 12px 0 5px;
-  border-radius: 999px; font-size: 12px; color: var(--ink); background: var(--surface);
-  box-shadow: inset 0 0 0 1px var(--line-strong); transition: transform .2s var(--ease);
-}
-.tc-poster-button:hover { transform: translateY(-1px); }
-.tc-poster-button img { width: 24px; height: 32px; object-fit: cover; border-radius: 3px; box-shadow: 0 1px 3px #0002; transform: rotate(-4deg); }
 .tc-admin-link {
   display: inline-flex; align-items: center; min-height: 40px; padding: 0 10px; border-radius: 999px;
   color: var(--muted); font-size: 11px; text-decoration: none; white-space: nowrap;
@@ -498,7 +490,6 @@ body { background: #fbfbfa; }
 .tc-dialog__header h2 { font-size: 16px; font-weight: 700; color: var(--ink); }
 .tc-dialog__header button { width: 38px; height: 38px; border-radius: 50%; font-size: 22px; background: var(--paper-2) !important; }
 .tc-dialog__body { padding: 4px 22px 24px; font-size: 13px; line-height: 1.8; }
-.tc-dialog .tc-poster { max-width: 100%; height: auto; display: block; border-radius: 6px; box-shadow: 0 0 0 1px var(--line); }
 .tc-dialog .tc-footnote { font-size: 11.5px; color: var(--muted); margin-top: 12px; }
 .tc-modal-intro { font-size: 12px; color: var(--muted); margin-bottom: 14px !important; }
 .tc-modal-label { display: block; font-size: 13px; font-weight: 600; margin: 14px 0 6px; }
@@ -531,7 +522,6 @@ body { background: #fbfbfa; }
 @media (max-width: 360px) {
   .tc-app-header, .tc-demo-banner, .tc-live-banner { padding-inline: 14px; }
   .tc-section, .tc-page-heading { padding-inline: 16px; }
-  .tc-brand span { display: none; }
   .tc-hero h1 { font-size: 36px; }
   .tc-hero__series { font-size: 18px; }
   .tc-page-heading__art { width: 80px; }
