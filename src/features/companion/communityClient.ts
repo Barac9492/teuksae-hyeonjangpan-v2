@@ -1,4 +1,4 @@
-export type CommunityKind = 'prayer' | 'photo';
+export type CommunityKind = 'prayer' | 'photo' | 'reflection';
 export type Receipt = { id: string; kind: CommunityKind; token: string };
 export type CommunityItem = { id: string; kind: CommunityKind; text: string; createdAt: string; eventDay: number | null; photoUrl?: string };
 export type CommunityFeed = { enabled: true; items: CommunityItem[]; photoCountToday: number; today: string };
@@ -9,7 +9,7 @@ export function readReceipts(): Receipt[] {
   try {
     const saved: unknown = JSON.parse(localStorage.getItem(RECEIPTS_KEY) ?? '[]');
     if (Array.isArray(saved)) for (const r of saved) {
-      if (r && typeof r.id === 'string' && (r.kind === 'prayer' || r.kind === 'photo') && typeof r.token === 'string' && !receipts.some(x => x.id === r.id)) receipts.push({ id: r.id, kind: r.kind, token: r.token });
+      if (r && typeof r.id === 'string' && (r.kind === 'prayer' || r.kind === 'photo' || r.kind === 'reflection') && typeof r.token === 'string' && !receipts.some(x => x.id === r.id)) receipts.push({ id: r.id, kind: r.kind, token: r.token });
     }
   } catch { /* Memory remains available when storage is disabled. */ }
   return [...receipts];
@@ -31,7 +31,7 @@ export async function communityRequest(body?: object, kind?: CommunityKind): Pro
 }
 export function validateFeed(value: Record<string, unknown>): CommunityFeed {
   if (value.enabled !== true || !Array.isArray(value.items) || !Number.isInteger(value.photoCountToday) || Number(value.photoCountToday) < 0 || typeof value.today !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value.today)) throw new Error('공개 나눔 정보를 확인하지 못했어요.');
-  if (value.items.some(item => !item || typeof item.id !== 'string' || typeof item.text !== 'string' || !['photo', 'prayer'].includes(item.kind))) throw new Error('공개 나눔 정보를 확인하지 못했어요.');
+  if (value.items.some(item => !item || typeof item.id !== 'string' || typeof item.text !== 'string' || !['photo', 'prayer', 'reflection'].includes(item.kind))) throw new Error('공개 나눔 정보를 확인하지 못했어요.');
   return value as CommunityFeed;
 }
 export function safePhotoUrl(url?: string): string | null {

@@ -114,3 +114,21 @@ describe('public companion submissions', () => {
     await waitFor(() => expect(posted).toHaveLength(0));
   });
 });
+
+it('submits reflection only by consent, with day and no image, and supports withdrawal', async () => {
+  const { rerender } = render(<Community kind="reflection" text={'묵'.repeat(1000)} eventDay={2} payloadKey="reflection-day-2" />);
+  await screen.findByText(/아직 승인되어/);
+  expect(screen.getByRole('heading', { name: '함께 나누는 묵상' })).toBeVisible();
+  expect(consent()).not.toBeChecked(); expect(submit()).toBeDisabled(); expect(posted).toHaveLength(0);
+  fireEvent.click(consent());
+  rerender(<Community kind="reflection" text={'묵'.repeat(1000)} eventDay={3} payloadKey="reflection-day-3" />);
+  expect(consent()).not.toBeChecked();
+  fireEvent.click(consent()); fireEvent.click(submit());
+  await screen.findByText(/서버에 접수했어요/);
+  expect(posted[0]).toMatchObject({ kind: 'reflection', eventDay: 3, consent: true, text: '묵'.repeat(1000) });
+  expect(posted[0]).not.toHaveProperty('imageBase64');
+  expect(localStorage.getItem(RECEIPTS_KEY)).not.toContain('묵');
+  fireEvent.click(screen.getByText(/내 제출 기록 \(/));
+  fireEvent.click(screen.getAllByRole('button', { name: '제출 철회·삭제' }).at(-1)!);
+  await screen.findByText(/· 삭제됨/);
+});

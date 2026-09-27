@@ -94,14 +94,14 @@ export async function handleCommunity(route, req, res, env = process.env, fetche
       if (!UUID.test(b.id || '') || !['approved','rejected','deleted'].includes(b.decision) || !Number.isSafeInteger(b.expectedVersion) || b.expectedVersion < 0) throw fail(400,'검토 요청을 확인해주세요.');
       return reply(res,200,await cleanup(checked(await call('moderate',{...b,session}))));
     }
-    if (req.method === 'GET') { const kind = url.searchParams.get('kind'); if (!['prayer','photo'].includes(kind)) throw fail(400,'종류를 확인해주세요.'); return reply(res,200,await call('list',{kind})); }
+    if (req.method === 'GET') { const kind = url.searchParams.get('kind'); if (!['prayer','photo','reflection'].includes(kind)) throw fail(400,'종류를 확인해주세요.'); return reply(res,200,await call('list',{kind})); }
     const b = await body(req);
     if (b.action) { if (!['delete','status'].includes(b.action) || !UUID.test(b.id || '') || !TOKEN.test(b.deleteToken || '')) throw fail(400,'요청을 확인해주세요.'); return reply(res,200,await cleanup(checked(await call(b.action,{id:b.id,tokenHash:hash(b.deleteToken)})))); }
     // Vercel's platform-controlled header, never arbitrary X-Forwarded-For. Missing IP shares a conservative bucket.
     const ip = String(req.headers?.['x-vercel-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim();
     const ipHash = createHmac('sha256',cfg.sessionSecret).update(`community-ip:${ip}`).digest('hex');
     checked(await call('preflight',{ipHash}));
-    if (!UUID.test(b.requestId || '') || !['prayer','photo'].includes(b.kind) || typeof b.text !== 'string' || b.text.trim().length > (b.kind === 'prayer' ? 600 : 40) || (b.kind === 'prayer' && !b.text.trim()) || b.consent !== true || !TOKEN.test(b.deleteToken || '') || !(b.eventDay === null || (Number.isInteger(b.eventDay) && b.eventDay >= 0 && b.eventDay <= 5)) || (b.kind === 'prayer' && b.imageBase64 !== undefined)) throw fail(400,'내용과 공개 동의를 확인해주세요.');
+    if (!UUID.test(b.requestId || '') || !['prayer','photo','reflection'].includes(b.kind) || typeof b.text !== 'string' || b.text.trim().length > ({ prayer: 600, photo: 40, reflection: 1000 })[b.kind] || ((b.kind === 'prayer' || b.kind === 'reflection') && !b.text.trim()) || b.consent !== true || !TOKEN.test(b.deleteToken || '') || !(b.eventDay === null || (Number.isInteger(b.eventDay) && b.eventDay >= 0 && b.eventDay <= 5)) || ((b.kind === 'prayer' || b.kind === 'reflection') && b.imageBase64 !== undefined)) throw fail(400,'내용과 공개 동의를 확인해주세요.');
     const image = b.kind === 'photo' ? sanitizePng(b.imageBase64) : null;
     const tokenHash = hash(b.deleteToken);
     const payloadHash = hash(JSON.stringify([b.kind,b.text.trim(),b.eventDay,true,image ? hash(image) : null]));

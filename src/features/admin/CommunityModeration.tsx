@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import './CommunityModeration.css';
 
 type Item = {
-  id: string; kind: 'prayer' | 'photo'; text: string; createdAt: string;
+  id: string; kind: 'prayer' | 'photo' | 'reflection'; text: string; createdAt: string;
   eventDay: string | number | null; status: 'pending' | 'approved' | 'rejected'; version: number; photoUrl?: string;
 };
 type Decision = 'approved' | 'rejected' | 'deleted';
@@ -19,7 +19,7 @@ function photoSource(value?: string) {
 function validItem(value: unknown): value is Item {
   if (!value || typeof value !== 'object') return false;
   const x = value as Record<string, unknown>;
-  return typeof x.id === 'string' && ['prayer', 'photo'].includes(String(x.kind)) && typeof x.text === 'string'
+  return typeof x.id === 'string' && ['prayer', 'photo', 'reflection'].includes(String(x.kind)) && typeof x.text === 'string'
     && typeof x.createdAt === 'string' && (x.eventDay === null || ['string', 'number'].includes(typeof x.eventDay))
     && ['pending', 'approved', 'rejected'].includes(String(x.status)) && Number.isInteger(x.version) && Number(x.version) >= 0
     && (x.photoUrl === undefined || typeof x.photoUrl === 'string');
@@ -97,7 +97,7 @@ export function CommunityModeration() {
   };
   return <section className="community-moderation" aria-labelledby="community-review-heading" aria-busy={busy}>
     <div className="community-moderation__header"><h2 id="community-review-heading">커뮤니티 공개 검토</h2><button type="button" className="ta-admin__secondary" disabled={busy} onClick={() => void load()}>검토 목록 새로고침</button></div>
-    <p>검토 대기 및 최근 게시물 최대 100개입니다. 공개 승인한 기도와 사진은 로그인 없이 누구나 인터넷에서 볼 수 있으며 복사·저장될 수 있습니다.</p>
+    <p>검토 대기 및 최근 게시물 최대 100개입니다. 공개 승인한 기도·묵상·사진은 로그인 없이 누구나 인터넷에서 볼 수 있으며 복사·저장될 수 있습니다.</p>
     <p className="community-moderation__warning">사진 속 얼굴, 특히 아동·청소년의 공개 동의와 보호자 동의를 확인하세요. 기도 내용에 이름·연락처·건강 등 민감한 정보가 없는지 확인하세요. 비공개 처리는 이미지와 내용을 제거합니다. 삭제도 되돌릴 수 없으며, 이미 다른 사람이 저장한 사본까지 회수하지는 못합니다.</p>
     {error && <p role="alert" className="ta-admin__alert">{error}</p>}
     {notice && <p role="status">{notice}</p>}
@@ -106,15 +106,15 @@ export function CommunityModeration() {
     {items?.map(item => {
       const source = photoSource(item.photoUrl);
       const imageUnavailable = item.kind === 'photo' && (!source || brokenImages[item.id]);
-      return <article key={item.id} className="community-moderation__item" aria-label={`${item.kind === 'photo' ? '사진' : '기도'} ${item.id}`}>
-        <h3>{item.kind === 'photo' ? '사진' : '기도'} · {statusLabel[item.status]}</h3>
+      return <article key={item.id} className="community-moderation__item" aria-label={`${item.kind === 'photo' ? '사진' : item.kind === 'reflection' ? '묵상' : '기도'} ${item.id}`}>
+        <h3>{item.kind === 'photo' ? '사진' : item.kind === 'reflection' ? '묵상' : '기도'} · {statusLabel[item.status]}</h3>
         <p><time dateTime={item.createdAt}>{timestamp(item.createdAt)}</time> (한국 시간) · 행사일 {item.eventDay == null ? '미지정' : typeof item.eventDay === 'number' ? `${item.eventDay + 1}일차` : item.eventDay} · 버전 {item.version}</p>
         {item.kind === 'photo' && source && !brokenImages[item.id] && <img src={source} alt="공개 검토용 제출 사진" loading="lazy" onLoad={() => setLoadedImages(old => ({ ...old, [item.id]: true }))} onError={() => setBrokenImages(old => ({ ...old, [item.id]: true }))} />}
         {item.kind === 'photo' && !imageUnavailable && !loadedImages[item.id] && <p>사진을 불러온 뒤 공개 승인할 수 있습니다.</p>}
         {imageUnavailable && <p>이미지를 표시할 수 없습니다. 제거되었거나 접근할 수 없는 사진입니다.</p>}
         <p className="community-moderation__text">{item.text || '남아 있는 내용이 없습니다.'}</p>
         <div className="community-moderation__actions">
-          {item.status === 'pending' && <><button type="button" className="ta-admin__primary" disabled={busy || !!imageUnavailable || item.kind === 'photo' && !loadedImages[item.id] || !item.text.trim() && item.kind === 'prayer'} onClick={() => { setReviewId(item.id); setConsent(false); }}>공개 승인 검토</button><button type="button" className="ta-admin__secondary" disabled={busy} onClick={() => void decide(item, 'rejected')}>비공개 처리</button></>}
+          {item.status === 'pending' && <><button type="button" className="ta-admin__primary" disabled={busy || !!imageUnavailable || item.kind === 'photo' && !loadedImages[item.id] || !item.text.trim() && item.kind !== 'photo'} onClick={() => { setReviewId(item.id); setConsent(false); }}>공개 승인 검토</button><button type="button" className="ta-admin__secondary" disabled={busy} onClick={() => void decide(item, 'rejected')}>비공개 처리</button></>}
           {item.status === 'approved' && <button type="button" className="ta-admin__secondary" disabled={busy} onClick={() => void decide(item, 'deleted')}>공개 철회 및 삭제</button>}
           {item.status === 'rejected' && <button type="button" className="ta-admin__secondary" disabled={busy} onClick={() => void decide(item, 'deleted')}>비공개 항목 삭제</button>}
         </div>

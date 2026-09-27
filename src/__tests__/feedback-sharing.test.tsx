@@ -27,9 +27,9 @@ it('keeps daily reflection drafts separate and resets sharing consent on edits',
   await user.click(screen.getByRole('tab', { name: '기도' }));
   await user.click(screen.getByRole('button', { name: '특새 묵상' }));
   await user.type(screen.getByLabelText('나의 묵상'), '먼저 듣기');
-  await user.click(screen.getByRole('checkbox', { name: /이 묵상을 내가 선택한 사람에게/ }));
+  await user.click(screen.getByRole('checkbox', { name: /앱 이용자 모두에게 공개/ }));
   await user.type(screen.getByLabelText('나의 묵상'), '.');
-  expect(screen.getByRole('button', { name: '묵상 공유 메뉴 열기' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '공개 접수하기 · 검수 후 게시' })).toBeDisabled();
   await user.selectOptions(screen.getByLabelText('묵상할 예배일'), '6');
   expect(screen.getByLabelText('나의 묵상')).toHaveValue('');
   await user.selectOptions(screen.getByLabelText('묵상할 예배일'), '5');

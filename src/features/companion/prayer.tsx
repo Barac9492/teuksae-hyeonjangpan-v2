@@ -84,7 +84,7 @@ export function PrayerPanel({ onPreview }: { onPreview: (text: string) => void }
 
           </>
         )}
-        <Community kind="prayer" text={text} payloadKey={text} showComposer={view === 'write'} />
+        {view !== 'reflection' && <Community kind="prayer" text={text} payloadKey={text} showComposer={view === 'write'} />}
       </div>
     </section>
   );

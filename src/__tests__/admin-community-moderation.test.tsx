@@ -132,3 +132,16 @@ describe('superadmin community moderation', () => {
     expect(screen.queryByText(prayer.text)).not.toBeInTheDocument();
   });
 });
+
+it('recognizes reflection separately and requires review before public approval', async () => {
+  const fetch = setup('superadmin', [{ ...prayer, id: 'reflection-1', kind: 'reflection', text: '오늘의 묵상', eventDay: 2 }]);
+  const user = userEvent.setup();
+  expect(await screen.findByText('오늘의 묵상')).toBeVisible();
+  expect(screen.getByRole('article', { name: '묵상 reflection-1' })).toBeVisible();
+  await user.click(screen.getByRole('button', { name: '공개 승인 검토' }));
+  expect(posts(fetch)).toHaveLength(0);
+  await user.click(screen.getByRole('checkbox', { name: /개인정보와 얼굴/ }));
+  await user.click(screen.getByRole('button', { name: '확인 후 공개 승인' }));
+  await waitFor(() => expect(posts(fetch)).toHaveLength(1));
+  expect(JSON.parse(String(posts(fetch)[0][1]?.body))).toEqual({ id: 'reflection-1', decision: 'approved', expectedVersion: 3 });
+});
