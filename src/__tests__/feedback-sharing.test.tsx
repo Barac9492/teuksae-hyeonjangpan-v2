@@ -11,9 +11,10 @@ it('offers all-visitor public prayer posting instead of recipient sharing', asyn
   Object.defineProperty(navigator, 'share', { configurable: true, value: share });
   const user = userEvent.setup(); render(<CompanionApp />);
   await user.click(screen.getByRole('tab', { name: '기도' }));
+  await user.click(screen.getByRole('button', { name: '기도제목 올리기' }));
   await user.type(screen.getByLabelText('어떤 마음으로 기도하고 있나요?'), '마음의 평안을 위해 기도해주세요.');
   expect(screen.queryByText(/이 기도제목을 내가 선택한 사람에게/)).not.toBeInTheDocument();
-  expect(screen.getByRole('checkbox', { name: /앱 이용자 모두에게 공개/ })).not.toBeChecked();
+  expect(screen.getByRole('checkbox', { name: /함께 나누기 · 공개/ })).toBeChecked();
   expect(screen.getByRole('heading', { name: '앱에 들어온 모든 분께 공개하기' })).toBeVisible();
   await user.click(screen.getByRole('button', { name: /입력 내용 미리보기/ }));
   const dialog = screen.getByRole('dialog', { name: '내 기도 제목 미리보기' });
