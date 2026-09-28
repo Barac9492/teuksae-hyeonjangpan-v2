@@ -12,14 +12,16 @@ function isBeforeCommunityLaunch(date = new Date()) {
   return `${part('year')}-${part('month')}-${part('day')}` < communityLaunchDate;
 }
 
-export function Community({ kind, text, eventDay = null, file, payloadKey, showComposer = true }: {
-  kind: CommunityKind; text: string; eventDay?: number | null; file?: File | null; payloadKey: string; showComposer?: boolean;
+export function Community({ kind, text, eventDay = null, file, payloadKey, showComposer = true, defaultPublic = false }: {
+  kind: CommunityKind; text: string; eventDay?: number | null; file?: File | null; payloadKey: string; showComposer?: boolean; defaultPublic?: boolean;
 }) {
   const [feed, setFeed] = useState<CommunityFeed | null>(null);
   const [feedError, setFeedError] = useState('');
   const [beforeEvent, setBeforeEvent] = useState(() => isBeforeCommunityLaunch());
   const consentDetailsId = useId();
   const [consentKey, setConsentKey] = useState<string | null>(null);
+  const [publicChoice, setPublicChoice] = useState(defaultPublic);
+  const [submittedKey, setSubmittedKey] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [storageFailed, setStorageFailed] = useState(false);
@@ -28,6 +30,8 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
   const locked = useRef(false);
   const attempt = useRef<{ key: string; requestId: string; token: string; done: boolean } | null>(null);
   const key = JSON.stringify([kind, text, eventDay, payloadKey]);
+  const publicByDefault = kind === 'prayer' && defaultPublic;
+  const canShare = publicByDefault ? publicChoice && submittedKey !== key : consentKey === key;
   const currentKey = useRef(key); currentKey.current = key;
   useEffect(() => { setConsentKey(null); attempt.current = null; }, [key]);
   const refresh = useCallback(async () => {
@@ -51,7 +55,7 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
     setRecords(readReceipts());
   };
   const submit = async () => {
-    if (locked.current || consentKey !== key || !feed || feedError || (kind !== 'photo' ? !text.trim() : !file)) return;
+    if (beforeEvent || locked.current || !canShare || !feed || feedError || (kind !== 'photo' ? !text.trim() : !file)) return;
     locked.current = true; setBusy(true); setMessage('');
     try {
       if (!attempt.current || attempt.current.key !== key || attempt.current.done) attempt.current = { key, requestId: crypto.randomUUID(), token: deleteToken(), done: false };
@@ -64,6 +68,7 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
       if (typeof result.id !== 'string' || typeof result.status !== 'string' || !Object.hasOwn(statusLabels, result.status)) throw new Error('접수 응답을 확인하지 못했어요. 같은 내용으로 다시 시도하면 중복 접수를 방지합니다.');
       remember({ id: result.id, kind, token: a.token }, a.requestId);
       a.done = true;
+      setSubmittedKey(key);
       setStatuses(s => ({ ...s, [result.id as string]: statusLabels[result.status as string] }));
       setMessage(result.status === 'pending' ? '서버에 접수했어요. 관리자가 검수한 뒤에만 공개됩니다.' : `이 요청의 기존 접수 상태를 확인했어요: ${statusLabels[result.status as string]}`);
       if (currentKey.current === key) setConsentKey(null);
@@ -86,7 +91,7 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
   const visibleItems = beforeEvent || !feed ? [] : feed.items.filter(item => item.kind === kind);
   return <section className="tc-community" aria-label={kind === 'photo' ? '공개 사진 나눔' : kind === 'reflection' ? '공개 묵상 나눔' : '공개 기도 나눔'}>
     <header><h2>{kind === 'photo' ? '함께 남긴 새벽 사진' : kind === 'reflection' ? '함께 나누는 묵상' : '함께 나누는 기도'}</h2>
-      {kind === 'photo' && (beforeEvent ? <><strong className="tc-community-count">사진 참여 수는 10월 5일부터 보여드려요.</strong></> : <><strong className="tc-community-count">{feed && !feedError ? `오늘 사진 참여 ${feed.photoCountToday}건` : feedError ? '오늘 사진 참여 건수 확인 불가' : '오늘 사진 참여 건수 확인 중'}</strong><details className="tc-footnote"><summary>ⓘ 참여 수 안내</summary><p>한국 시간 실제 접수일 기준입니다. 같은 사람의 여러 제출도 각각 셉니다. 검수 대기·공개 사진을 포함하고 반려·삭제는 제외합니다. 사진에 선택한 행사 날짜와는 무관해요.{feed && !feedError && ` (${feed.today})`}</p></details></>)}
+      {kind === 'photo' && (beforeEvent ? <strong className="tc-community-count">사진 참여 수는 10월 5일부터 보여드려요.</strong> : <><strong className="tc-community-count">{feed && !feedError ? `오늘 사진 참여 ${feed.photoCountToday}건` : feedError ? '오늘 사진 참여 건수 확인 불가' : '오늘 사진 참여 건수 확인 중'}</strong><details className="tc-footnote"><summary>ⓘ 참여 수 안내</summary><p>한국 시간 실제 접수일 기준입니다. 같은 사람의 여러 제출도 각각 셉니다. 검수 대기·공개 사진을 포함하고 반려·삭제는 제외합니다. 사진에 선택한 행사 날짜와는 무관해요.{feed && !feedError && ` (${feed.today})`}</p></details></>)}
     </header>
     {beforeEvent && <p className="tc-community-empty">공개 나눔은 10월 5일부터 시작합니다.</p>}
     {feedError ? <p role="alert">{feedError} 이전 정보는 최신이 아닐 수 있어요. <button type="button" className="tc-line-action" onClick={() => void refresh()}>다시 불러오기</button></p> : !feed ? <p role="status">공개 나눔 정보를 불러오는 중이에요.</p> : null}
@@ -94,17 +99,20 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
       {beforeEvent && <p className="tc-footnote">공개 접수는 10월 5일부터 가능합니다. 작성한 내용은 접수 버튼을 누르기 전까지 전송되지 않습니다.</p>}
       <h3>앱에 들어온 모든 분께 공개하기</h3>
       <p>특정 사람에게 보내는 메시지가 아닙니다. 접수 후 관리자 검수가 끝나면 앱에 들어온 누구나 볼 수 있습니다.</p>
-      <label className="tc-checkbox"><input type="checkbox" aria-describedby={consentDetailsId} checked={consentKey === key} disabled={busy} onChange={e => setConsentKey(e.target.checked ? key : null)} /><span>모두에게 공개하는 데 동의합니다.</span></label>
-      <details id={consentDetailsId} className="tc-footnote"><summary>공개 범위와 삭제 한계 자세히 보기</summary><p>관리자는 검수 대기 내용도 읽을 수 있습니다. 승인 후에는 로그인 없이 앱에 들어온 누구나 볼 수 있고, 캡처·외부 저장 사본은 삭제 후에도 남을 수 있습니다. 다른 사람의 정보·사진은 당사자 동의를, 미성년자는 보호자 동의를 확인했습니다.</p></details>
+      {publicByDefault
+        ? <label className="tc-checkbox"><input type="checkbox" aria-describedby={consentDetailsId} checked={publicChoice} disabled={busy} onChange={e => setPublicChoice(e.target.checked)} /><span>함께 나누기 · 공개</span></label>
+        : <label className="tc-checkbox"><input type="checkbox" aria-describedby={consentDetailsId} checked={consentKey === key} disabled={busy} onChange={e => setConsentKey(e.target.checked ? key : null)} /><span>모두에게 공개하는 데 동의합니다.</span></label>}
+      <details id={consentDetailsId} className="tc-footnote"><summary>공개 범위와 삭제 한계 자세히 보기</summary><p>{publicByDefault && '공개를 원하지 않으면 선택을 해제하고 미리보기에서 기도 카드를 저장할 수 있어요. '}관리자는 검수 대기 내용도 읽을 수 있습니다. 승인 후에는 로그인 없이 앱에 들어온 누구나 볼 수 있고, 캡처·외부 저장 사본은 삭제 후에도 남을 수 있습니다. 다른 사람의 정보·사진은 당사자 동의를, 미성년자는 보호자 동의를 확인했습니다.</p></details>
+      {publicByDefault && <p className="tc-footnote">다른 사람의 실명이나 민감한 사정은 적지 말아주세요.</p>}
       <p className="tc-footnote">내 제출 기록에서 삭제 가능. 관리자도 검수·삭제할 수 있습니다.</p>
-      <button type="button" className="tc-primary" disabled={beforeEvent || busy || consentKey !== key || !feed || !!feedError || (kind !== 'photo' ? !text.trim() : !file)} onClick={() => void submit()}>{busy ? '처리 중…' : '공개 접수하기 · 검수 후 게시'}</button>
+      <button type="button" className="tc-primary" disabled={beforeEvent || busy || !canShare || !feed || !!feedError || (kind !== 'photo' ? !text.trim() : !file)} onClick={() => void submit()}>{busy ? '처리 중…' : publicByDefault ? submittedKey === key ? '접수 완료 · 검수 후 게시' : '기도제목 공개로 올리기' : '공개 접수하기 · 검수 후 게시'}</button>
       {kind === 'photo' && <p className="tc-footnote">프레임을 입힌 PNG만 전송합니다. 최대 3MB이며 원본 EXIF는 포함하지 않습니다.</p>}
     </div>}
     {storageFailed && <p role="alert">{storageWarning}</p>}
     {message && <p role="status">{message}</p>}
+    {feed && !feedError && (beforeEvent ? null : visibleItems.length ? <ul className="tc-community-wall">{visibleItems.map(item => <li key={item.id}>{kind === 'photo' && safePhotoUrl(item.photoUrl) && <a href={safePhotoUrl(item.photoUrl)!} target="_blank" rel="noopener noreferrer"><img src={safePhotoUrl(item.photoUrl)!} alt="공개 동의 후 승인된 새벽 사진" loading="lazy" /></a>}{kind === 'reflection' && item.eventDay !== null && <strong>10월 {item.eventDay + 5}일 묵상</strong>}<p>{item.text}</p><small>검수 후 공개</small></li>)}</ul> : <p className="tc-community-empty">아직 승인되어 공개된 {kind === 'photo' ? '사진이' : kind === 'reflection' ? '묵상이' : '기도제목이'} 없어요. 접수한 내용은 검수 후 보입니다.</p>)}
     <details className="tc-community-receipts"><summary>내 제출 기록 ({records.filter(r => r.kind === kind).length})</summary><p>이 브라우저에 남은 삭제 권한으로 조회합니다. 저장소를 지우면 삭제 권한을 잃을 수 있어요.</p>
       {records.filter(r => r.kind === kind).map((r, index) => <div key={r.id}><strong>제출 {index + 1}</strong><span> · {statuses[r.id] ?? '상태를 확인해주세요'}</span><button type="button" disabled={busy} onClick={() => void receiptAction(r, 'status')}>상태 확인</button><button type="button" disabled={busy || statuses[r.id] === '삭제됨'} onClick={() => void receiptAction(r, 'delete')}>제출 철회·삭제</button></div>)}
     </details>
-    {feed && !feedError && (beforeEvent ? null : visibleItems.length ? <ul className="tc-community-wall">{visibleItems.map(item => <li key={item.id}>{kind === 'photo' && safePhotoUrl(item.photoUrl) && <a href={safePhotoUrl(item.photoUrl)!} target="_blank" rel="noopener noreferrer"><img src={safePhotoUrl(item.photoUrl)!} alt="공개 동의 후 승인된 새벽 사진" loading="lazy" /></a>}{kind === 'reflection' && item.eventDay !== null && <strong>10월 {item.eventDay + 5}일 묵상</strong>}<p>{item.text}</p><small>검수 후 공개</small></li>)}</ul> : <p className="tc-community-empty">아직 승인되어 공개된 {kind === 'photo' ? '사진이' : kind === 'reflection' ? '묵상이' : '기도제목이'} 없어요. 접수한 내용은 검수 후 보입니다.</p>)}
   </section>;
 }

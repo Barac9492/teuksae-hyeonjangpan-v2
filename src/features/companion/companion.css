@@ -335,16 +335,16 @@ body { background: #fbfbfa; }
 .tc-local-only { text-align: center; font-size: 11px; color: var(--muted); margin-top: 8px !important; }
 
 /* ── Prayer: quiet minute ──────────────────────────────── */
-.tc-quiet-minute { position: relative; overflow: hidden; display: grid; justify-items: center; gap: 14px; padding: 26px 20px 20px; border-radius: 22px; background: #2d2233; color: #fff; isolation: isolate; }
+.tc-quiet-minute { position: relative; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 18px; margin-top: 24px; padding: 26px 20px 20px; border-radius: 22px; background: #2d2233; color: #fff; isolation: isolate; }
 .tc-quiet-minute__sky { position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, #1f1a2e 0%, #4b2f45 45%, #c9785a 85%, #f3c68f 100%); background-size: 100% 260%; background-position: 0 calc(100% * (1 - var(--dawn, 0))); opacity: calc(.55 + var(--dawn, 0) * .45); transition: background-position .5s linear; }
-.tc-quiet-minute svg { width: 170px; height: 170px; transform: rotate(-90deg); }
+.tc-quiet-minute svg { grid-area: 1 / 1; align-self: center; width: 170px; max-width: 100%; height: 170px; transform: rotate(-90deg); }
 .tc-quiet-minute__track { fill: none; stroke: #ffffff26; stroke-width: 3; }
 .tc-quiet-minute__bar { fill: none; stroke: #ffe3bf; stroke-width: 3; stroke-linecap: round; transition: stroke-dashoffset .3s linear; filter: drop-shadow(0 0 6px #ffcf94); }
-.tc-quiet-minute__center { position: absolute; top: 26px; width: 170px; height: 170px; display: grid; place-content: center; text-align: center; gap: 4px; padding: 0 22px; }
+.tc-quiet-minute__center { grid-area: 1 / 1; align-self: center; width: 170px; max-width: 100%; min-height: 170px; display: grid; place-content: center; text-align: center; gap: 4px; padding: 0 22px; }
 .tc-quiet-minute__center strong { font-size: 14px; font-weight: 500; line-height: 1.45; }
 .tc-quiet-minute__center span { font-size: 12px; opacity: .75; font-variant-numeric: tabular-nums; }
 .tc-quiet-minute[data-running] svg { animation: tc-breathe 8s ease-in-out infinite; }
-.tc-quiet-minute .tc-secondary { background: #ffffff1f !important; color: #fff !important; box-shadow: inset 0 0 0 1px #ffffff55; justify-content: center; min-height: 48px; }
+.tc-quiet-minute .tc-secondary { grid-area: 2 / 1; white-space: normal; overflow-wrap: anywhere; background: #ffffff1f !important; color: #fff !important; box-shadow: inset 0 0 0 1px #ffffff55; justify-content: center; min-height: 48px; }
 @keyframes tc-breathe { 0%, 100% { scale: .94; } 50% { scale: 1.04; } }
 
 .tc-empty { text-align: center; padding: 30px 15px 40px; }

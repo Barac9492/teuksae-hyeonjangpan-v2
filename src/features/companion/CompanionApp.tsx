@@ -223,7 +223,7 @@ export function CompanionApp() {
             try { await savePrayerCard(modal.text, crownImage); setCardState('기도 카드를 내 기기에 저장했어요.'); } catch { setCardState('이 브라우저에서는 저장하지 못했어요. 화면을 캡처해 주세요.'); }
           }}>기도 카드로 내 기기에 저장 <span aria-hidden="true">↓</span></button>
           {cardState && <p className="tc-form-status" role="status">{cardState}</p>}
-          <p className="tc-safety">이 미리보기만으로는 제출되지 않습니다. 공개 게시를 원하면 창을 닫고 기도 작성 화면에서 별도로 동의·접수해주세요.</p>
+          <p className="tc-safety">이 미리보기만으로는 제출되지 않습니다. 함께 나누려면 창을 닫고 ‘기도제목 공개로 올리기’를 눌러주세요.</p>
         </Modal>
       )}
       {modal?.type === 'stories' && (

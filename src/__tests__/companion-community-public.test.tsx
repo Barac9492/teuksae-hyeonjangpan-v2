@@ -134,3 +134,34 @@ it('submits reflection only by consent, with day and no image, and supports with
   fireEvent.click(screen.getAllByRole('button', { name: '제출 철회·삭제' }).at(-1)!);
   await screen.findByText(/· 삭제됨/);
 });
+
+
+it('shows shared prayers before personal submission receipts', async () => {
+  vi.stubGlobal('fetch', vi.fn(async (_url, options) => {
+    if (options.method === 'GET') return response({ ...feed, items: [{ id: 'prayer-1', kind: 'prayer', text: '먼저 보이는 기도', eventDay: null, createdAt: '2026-10-05T00:00:00Z' }] });
+    throw new Error('Unexpected write');
+  }));
+  render(<Community kind="prayer" text="" payloadKey="shared-first" defaultPublic />);
+  const sharedPrayer = await screen.findByText('먼저 보이는 기도');
+  const receipts = screen.getByText(/내 제출 기록 \(/).closest('details')!;
+  expect(sharedPrayer.compareDocumentPosition(receipts) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});
+
+
+it('defaults new prayer sharing to public, respects opting out across edits, and submits only on click', async () => {
+  const view = render(<Community kind="prayer" text="A" payloadKey="A" defaultPublic />);
+  await screen.findByText(/아직 승인되어/);
+  const share = () => screen.getByRole('button', { name: '기도제목 공개로 올리기' });
+  expect(consent()).toBeChecked();
+  expect(posted).toHaveLength(0);
+  fireEvent.click(consent());
+  view.rerender(<Community kind="prayer" text="B" payloadKey="B" defaultPublic />);
+  expect(consent()).not.toBeChecked();
+  expect(share()).toBeDisabled();
+  fireEvent.click(consent());
+  fireEvent.click(share());
+  await screen.findByText(/서버에 접수했어요/);
+  expect(posted).toHaveLength(1);
+  expect(posted[0]).toMatchObject({ kind: 'prayer', text: 'B', consent: true });
+  expect(screen.getByRole('button', { name: '접수 완료 · 검수 후 게시' })).toBeDisabled();
+});

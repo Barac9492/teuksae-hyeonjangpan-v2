@@ -16,6 +16,7 @@ describe('Companion independent regression review', () => {
     const user = userEvent.setup();
     render(<CompanionApp />);
     await user.click(screen.getByRole('tab', { name: '기도' }));
+    await user.click(screen.getByRole('button', { name: '기도제목 올리기' }));
     await user.type(screen.getByLabelText('어떤 마음으로 기도하고 있나요?'), '입력 중인 마음');
     await user.click(screen.getByRole('tab', { name: '주차' }));
     expect(screen.getAllByRole('tabpanel')).toHaveLength(1);

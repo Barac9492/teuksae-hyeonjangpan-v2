@@ -139,13 +139,16 @@ describe('CompanionApp', () => {
     expect(screen.getByRole('status')).toHaveTextContent('서버로 전송되지 않았습니다');
   });
 
-  it('keeps prayer private by default, previews locally, and never posts its content', async () => {
+  it('opens the prayer feed first and previews locally without posting', async () => {
     const user = userEvent.setup();
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     render(<CompanionApp />);
     await chooseTab(user, '기도');
     expect(screen.queryByText(/이 기도제목을 내가 선택한 사람에게/)).not.toBeInTheDocument();
-    expect(screen.getByRole('checkbox', { name: /모두에게 공개하는 데 동의/ })).not.toBeChecked();
+    expect(screen.getByRole('button', { name: '함께 기도하기' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByLabelText('어떤 마음으로 기도하고 있나요?')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '기도제목 올리기' }));
+    expect(screen.getByRole('checkbox', { name: /함께 나누기 · 공개/ })).toBeChecked();
     await user.type(screen.getByLabelText('어떤 마음으로 기도하고 있나요?'), '가족을 위해 기도합니다.');
     await user.click(screen.getByRole('button', { name: /입력 내용 미리보기/ }));
     const dialog = screen.getByRole('dialog', { name: '내 기도 제목 미리보기' });
