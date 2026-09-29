@@ -68,7 +68,7 @@ describe('public companion live operations', () => {
     const user = userEvent.setup();
     render(<CompanionApp />);
     await user.click(screen.getByRole('button', { name: '서현 · 드림센터' }));
-    await waitFor(() => expect(screen.getByText('마지막 확인 후 10분 경과')).toBeVisible());
+    await waitFor(() => expect(screen.getByText(/확인 \(한국 시간\) · 마지막 확인 후 10분 경과/)).toBeVisible());
     expect(screen.getAllByText('확인 필요')[0]).toBeVisible();
     expect(within(screen.getByRole('tabpanel', { name: '예배' })).queryByText('이용 가능')).not.toBeInTheDocument();
     expect(screen.getByText('혼잡')).toBeVisible();
