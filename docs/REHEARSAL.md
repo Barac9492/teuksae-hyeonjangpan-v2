@@ -22,10 +22,11 @@
 
 1. `node scripts/build-rehearsal-migration.mjs --check`.
 2. Supabase SQL Editor에서 `supabase/migrations/009_rehearsal.sql`을 **한 번만** 실행합니다. 전체는 단일 트랜잭션이고, 이미 rehearsal namespace가 있으면 거절합니다.
-3. Vercel Production 환경에 `REHEARSAL_ENABLED=true`를 추가하고 배포합니다.
-4. `/api/status`의 `rehearsal:true`, 분리된 13개 현황, admin 로그인을 확인합니다.
-5. 가상 기도/묵상/사진 제출, pending 비공개, 승인 공개, 반려/철회/삭제, 현황 저장/충돌, 초기화를 검증합니다.
-6. 실제 `ops_*`, `community_v2_*`의 업무 데이터가 바뀌지 않았는지 별도로 확인합니다. 정리 cron의 `last_cleanup_at` 메타데이터는 자연적으로 바뀔 수 있습니다.
+3. 이어서 `010_rehearsal_reset_safeupdate.sql`을 실행합니다. Supabase API의 `pg_safeupdate` 호환성이 필요합니다. SQL Editor에서 reset 성공만으로 API 성공을 판단하지 않습니다.
+4. Vercel Production 환경에 `REHEARSAL_ENABLED=true`를 추가하고 배포합니다.
+5. `/api/status`의 `rehearsal:true`, 분리된 13개 현황, admin 로그인을 확인합니다.
+6. 가상 기도/묵상/사진 제출, pending 비공개, 승인 공개, 반려/철회/삭제, 현황 저장/충돌, 초기화를 검증합니다.
+7. 실제 `ops_*`, `community_v2_*`의 업무 데이터가 바뀌지 않았는지 별도로 확인합니다. 정리 cron의 `last_cleanup_at` 메타데이터는 자연적으로 바뀔 수 있습니다.
 
 DB 회귀: `PGLITE_MODULE=<installed @electric-sql/pglite/dist/index.js> node tests/scripts/rehearsal-db.mjs`.
 일반 회귀: `npm test`, `npm run test:server`, `npm run lint`, `npm run build`.

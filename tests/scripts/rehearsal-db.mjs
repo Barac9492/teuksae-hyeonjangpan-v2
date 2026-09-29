@@ -37,6 +37,11 @@ ok(await scalar("select to_regclass('public.rehearsal_ops_accounts') is null"),'
 ok(await scalar("select count(*) from storage.buckets where id='rehearsal-community-photos-v2'")==0,'failed install leaves no rehearsal bucket behind');
 assert.deepEqual(await liveSnapshot(),sentinel);
 await db.exec(migration);
+const resetCompatibility=await readFile(new URL('010_rehearsal_reset_safeupdate.sql',dir),'utf8');
+await db.exec(resetCompatibility);
+const resetBody=await scalar(`select prosrc from pg_proc where oid='public.rehearsal_ops_reset_rehearsal(uuid)'::regprocedure`);
+const resetMutations=resetBody.match(/(?:update|delete from) public\.rehearsal_[^;]+;/gi);
+ok(resetMutations?.length===6&&resetMutations.every(statement=>/\bwhere\s+true\s*;/i.test(statement)), 'all six intentional bulk reset mutations have explicit predicates for Supabase pg_safeupdate');
 ok(JSON.stringify(await liveSnapshot())===JSON.stringify(sentinel),'migration leaves every live table, function, bucket and storage object unchanged');
 ok(await scalar(`select count(*) from rehearsal_ops_accounts`)==3,'only canonical accounts copied, no bootstrap sample accounts');
 ok(await scalar(`select bool_and(r.role=l.role and r.display_label=l.display_label and r.password_hash=l.password_hash and r.active=l.active) from rehearsal_ops_accounts r join ops_accounts l using(username)`),'account role/label/password/active copies match');
@@ -100,4 +105,4 @@ ok(await scalar(`select bool_and(relrowsecurity) from pg_class where relnamespac
 const rehearsed=await rows('select * from rehearsal_ops_resources order by id');
 await deny(()=>db.exec(migration),'second migration run fails at preflight');await db.exec('rollback');assert.deepEqual(await rows('select * from rehearsal_ops_resources order by id'),rehearsed);ok(true,'second migration run changes nothing');
 assert.deepEqual(await liveSnapshot(),sentinel);ok(true,'ALL live table/function/bucket/object sentinels unchanged after full exercise');
-await db.close();console.log(`\n${checks} checks passed. PGlite executes actual 002..009; no deployed database touched.`);
+await db.close();console.log(`\n${checks} checks passed. PGlite executes actual 002..010; no deployed database touched.`);
