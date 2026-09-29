@@ -108,8 +108,9 @@ export async function handleCommunity(route, req, res, env = process.env, fetche
         data = await call('photo',{id,session});
       }
       checked(data);
-      const createdAt = await itemCreatedAt(id);
-      if (!session && !eventRecord(createdAt)) {
+      // Public date eligibility is not a prerequisite for an authenticated moderator's review.
+      // Pending-photo access has already been revalidated by moderator() and the photo RPC.
+      if (!session && !eventRecord(await itemCreatedAt(id))) {
         if (!readSession(req,cfg,now)) throw fail(404,'요청을 처리하지 못했습니다. 잠시 후 확인해주세요.');
         session = await moderator();
         data = checked(await call('photo',{id,session}));
