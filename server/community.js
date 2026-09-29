@@ -5,13 +5,6 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 const TOKEN = /^[A-Za-z0-9_-]{32,128}$/;
 const BUCKET = 'community-photos-v2';
 const MAX = 3 * 1024 * 1024;
-const EVENT_END = Date.parse('2026-10-11T00:00:00+09:00');
-// Preopening: approved feed/photo items and photo-count eligibility open from Sep29 00:00 KST,
-// through the original Oct11 exclusive event-end boundary. Only the eligibility window widened;
-// moderation, consent, auth and submission/status timing policy are unchanged.
-const COMMUNITY_START = Date.parse('2026-09-29T00:00:00+09:00');
-const COMMUNITY_FIRST_DAY = '2026-09-29';
-const COMMUNITY_LAST_DAY = '2026-10-10';
 const hash = value => createHash('sha256').update(value).digest('hex');
 const fail = (status, message) => Object.assign(new Error(message), { status });
 function config(env) {
@@ -29,17 +22,13 @@ function reply(res, status, body) {
   res.setHeader('Vary', 'Cookie, Origin');
   res.end(JSON.stringify(body));
 }
-function eventRecord(value) {
-  if (typeof value !== 'string') return false;
-  const time = Date.parse(value);
-  return Number.isFinite(time) && time >= COMMUNITY_START && time < EVENT_END;
-}
+// All-date rehearsal availability: public community feed items and photo counts are no longer
+// filtered by calendar eligibility. RPC moderation status (pending/approved/rejected/deleted)
+// remains the sole authority over visibility; this stays a defensive shallow copy so callers
+// can keep composing it without accidentally sharing references with the RPC response.
 export function filterPublicCommunity(body) {
   if (!body || typeof body !== 'object') return body;
-  const filtered = { ...body };
-  if (Array.isArray(body.items)) filtered.items = body.items.filter(item => item && eventRecord(item.createdAt));
-  if (Object.prototype.hasOwnProperty.call(body, 'photoCountToday') && (typeof body.today !== 'string' || body.today < COMMUNITY_FIRST_DAY || body.today > COMMUNITY_LAST_DAY)) filtered.photoCountToday = 0;
-  return filtered;
+  return { ...body };
 }
 async function body(req) {
   if (!/^application\/json(?:\s*;|$)/i.test(req.headers?.['content-type'] || '')) throw fail(415, 'JSON 요청이 필요합니다.');
@@ -74,14 +63,6 @@ export async function handleCommunity(route, req, res, env = process.env, fetche
     if ((req.method === 'POST' && req.headers?.origin !== cfg.origin) || req.headers?.['sec-fetch-site'] === 'cross-site' || (req.headers?.origin && req.headers.origin !== cfg.origin)) throw fail(403, '같은 사이트에서 다시 시도해주세요.');
     const headers = { apikey: cfg.serviceKey, Authorization: `Bearer ${cfg.serviceKey}`, 'Content-Type': 'application/json' };
     async function rpc(name, args) { const response = await fetcher(`${cfg.supabaseUrl}/rest/v1/rpc/${name}`, { method:'POST', headers, body:JSON.stringify(args) }); let data; try { data = await response.json(); } catch { throw fail(503, '서버 응답을 확인하지 못했습니다.'); } if (!response.ok) throw fail(response.status === 403 ? 403 : 503, '요청을 처리하지 못했습니다.'); if (data == null) throw fail(503, '서버 응답을 확인하지 못했습니다.'); return data; }
-    async function itemCreatedAt(id) {
-      const response = await fetcher(`${cfg.supabaseUrl}/rest/v1/community_v2_items?id=eq.${encodeURIComponent(id)}&select=created_at`, { method:'GET', headers });
-      let rows; try { rows = await response.json(); } catch { throw fail(503, '사진 정보를 확인하지 못했습니다.'); }
-      if (!response.ok) throw fail(503, '사진 정보를 확인하지 못했습니다.');
-      const createdAt = Array.isArray(rows) && rows.length === 1 ? rows[0]?.created_at : null;
-      if (typeof createdAt !== 'string' || !Number.isFinite(Date.parse(createdAt))) throw fail(503, '사진 정보를 확인하지 못했습니다.');
-      return createdAt;
-    }
     async function moderator() { const token = readSession(req,cfg,now); if (!token) throw fail(401,'관리자 로그인이 필요합니다.'); const session = await rpc('ops_get_session',{p_session_id:token.id}); if (session.username !== token.username || session.credentialVersion !== token.credentialVersion || session.role !== 'superadmin') throw fail(403,'최고 관리자 권한이 필요합니다.'); return token.id; }
     const call = (action,args = {}) => rpc('community_v2',{p_action:action,p_args:args});
     async function cleanup(data) { if (data.cleanupPath) { const response = await fetcher(`${cfg.supabaseUrl}/storage/v1/object/${BUCKET}`, { method:'DELETE',headers,body:JSON.stringify({prefixes:[data.cleanupPath]}) }); if (!response.ok) throw fail(503,'삭제 처리 중입니다. 다시 시도해주세요.'); } const clean = {...data}; delete clean.cleanupPath; delete clean.path; delete clean.ready; return clean; }
@@ -108,18 +89,14 @@ export async function handleCommunity(route, req, res, env = process.env, fetche
         data = await call('photo',{id,session});
       }
       checked(data);
-      // Public date eligibility is not a prerequisite for an authenticated moderator's review.
-      // Pending-photo access has already been revalidated by moderator() and the photo RPC.
-      if (!session && !eventRecord(await itemCreatedAt(id))) {
-        if (!readSession(req,cfg,now)) throw fail(404,'요청을 처리하지 못했습니다. 잠시 후 확인해주세요.');
-        session = await moderator();
-        data = checked(await call('photo',{id,session}));
-      }
+      // Photo visibility is governed entirely by the RPC's moderation status (pending/approved/
+      // rejected/deleted), not by public date eligibility. A pending item already required a
+      // revalidated moderator session above.
       const response = await fetcher(`${cfg.supabaseUrl}/storage/v1/object/authenticated/${BUCKET}/${data.path}`,{headers});
       if (!response.ok) throw fail(503,'사진을 읽지 못했습니다.');
-      // Recheck both moderation visibility and event-window eligibility after storage read.
+      // Recheck moderation visibility after storage read (second check), in case status changed
+      // (e.g. approval revoked) between the first check and the storage fetch.
       checked(await call('photo',{id,session}));
-      if (!session && !eventRecord(await itemCreatedAt(id))) throw fail(404,'요청을 처리하지 못했습니다. 잠시 후 확인해주세요.');
       res.statusCode=200; res.setHeader('Content-Type','image/png'); res.setHeader('Cache-Control','private, no-store'); res.setHeader('X-Content-Type-Options','nosniff'); res.setHeader('Vary','Cookie, Origin'); return res.end(Buffer.from(await response.arrayBuffer()));
     }
     if (route === 'admin') {
