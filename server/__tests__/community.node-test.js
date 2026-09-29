@@ -128,3 +128,24 @@ test('SQL auth locks precede revalidation; rejected deletion and recurring clean
  assert.match(sql,/last_cleanup_at asc nulls first/);
  assert.match(sql,/v_hits>240/);
 });
+
+test('authenticated pending-photo review does not require public date metadata access', async()=>{
+ let metadataReads=0, authorizedReads=0;
+ const r=await run('photo','GET',undefined,async(url,opts)=>{
+  if(url.endsWith('/ops_get_session')) return response({username:'ADMIN',credentialVersion:3,role:'superadmin'});
+  if(url.includes('/rpc/community_v2')) {const args=JSON.parse(opts.body).p_args;if(!args.session)return response({status:'missing'});authorizedReads++;return response({path:id+'.png'});}
+  if(url.includes('/community_v2_items?')) {metadataReads++;return response({},403);}
+  return {ok:true,arrayBuffer:async()=>new Uint8Array([1,2])};
+ },{cookie:adminCookie()});
+ assert.equal(r.statusCode,200);assert.equal(metadataReads,0);assert.equal(authorizedReads,2);
+});
+test('pending photo still fails closed if moderator access is revoked during storage read', async()=>{
+ let authorizedReads=0;
+ const r=await run('photo','GET',undefined,async(url,opts)=>{
+  if(url.endsWith('/ops_get_session')) return response({username:'ADMIN',credentialVersion:3,role:'superadmin'});
+  if(url.includes('/rpc/community_v2')) {const args=JSON.parse(opts.body).p_args;if(!args.session)return response({status:'missing'});return ++authorizedReads===1?response({path:id+'.png'}):response({},403);}
+  if(url.includes('/community_v2_items?')) return response([{created_at:'2026-09-27T21:40:00Z'}]);
+  return {ok:true,arrayBuffer:async()=>new Uint8Array([1,2])};
+ },{cookie:adminCookie()});
+ assert.equal(r.statusCode,403);assert.equal(authorizedReads,2);
+});
