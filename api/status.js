@@ -1,4 +1,5 @@
 import { handlePublicStatus } from '../server/admin-auth.js';
+import { isRehearsal } from '../server/runtime.js';
 
 export const EVENT_START = Date.parse('2026-10-05T00:00:00+09:00');
 export const EVENT_END = Date.parse('2026-10-11T00:00:00+09:00');
@@ -43,18 +44,21 @@ export function filterPublicStatus(body) {
   return { ...body, resources: filterEventResources(body.resources) };
 }
 
-export async function handleStatus(req, res, env = process.env, fetcher = fetch) {
+export async function handleStatus(req, res, env = process.env, fetcher = fetch, now = Date.now()) {
   const boundary = {
     get statusCode() { return res.statusCode; },
     set statusCode(value) { res.statusCode = value; },
     setHeader(name, value) { return res.setHeader(name, value); },
     end(payload) {
       if (res.statusCode !== 200) return res.end(payload);
-      try { return res.end(JSON.stringify(filterPublicStatus(JSON.parse(String(payload))))); }
+      try {
+        const data = JSON.parse(String(payload));
+        return res.end(JSON.stringify(isRehearsal(env, now) ? data : filterPublicStatus(data)));
+      }
       catch { res.statusCode = 503; return res.end(JSON.stringify({ enabled: false })); }
     },
   };
-  return handlePublicStatus(req, boundary, env, fetcher);
+  return handlePublicStatus(req, boundary, env, fetcher, now);
 }
 
 export default function handler(req, res) { return handleStatus(req, res); }

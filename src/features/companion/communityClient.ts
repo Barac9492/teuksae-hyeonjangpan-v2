@@ -1,3 +1,4 @@
+import { runtimeStorageKey, runtimeModeHeader } from '../rehearsal/runtime';
 export type CommunityKind = 'prayer' | 'photo' | 'reflection';
 export type Receipt = { id: string; kind: CommunityKind; token: string };
 export type CommunityItem = { id: string; kind: CommunityKind; text: string; createdAt: string; eventDay: number | null; photoUrl?: string };
@@ -5,9 +6,12 @@ export type CommunityFeed = { enabled: true; items: CommunityItem[]; photoCountT
 export const RECEIPTS_KEY = 'woori-community-receipts-v1';
 // Content and images never enter browser storage. In-memory receipts survive panel switches.
 let receipts: Receipt[] = [];
+let receiptNamespace = runtimeStorageKey(RECEIPTS_KEY);
 export function readReceipts(): Receipt[] {
+  const currentNamespace = runtimeStorageKey(RECEIPTS_KEY);
+  if (receiptNamespace !== currentNamespace) { receipts = []; receiptNamespace = currentNamespace; }
   try {
-    const saved: unknown = JSON.parse(localStorage.getItem(RECEIPTS_KEY) ?? '[]');
+    const saved: unknown = JSON.parse(localStorage.getItem(runtimeStorageKey(RECEIPTS_KEY)) ?? '[]');
     if (Array.isArray(saved)) for (const r of saved) {
       if (r && typeof r.id === 'string' && (r.kind === 'prayer' || r.kind === 'photo' || r.kind === 'reflection') && typeof r.token === 'string' && !receipts.some(x => x.id === r.id)) receipts.push({ id: r.id, kind: r.kind, token: r.token });
     }
@@ -17,13 +21,14 @@ export function readReceipts(): Receipt[] {
 export function saveReceipt(receipt: Receipt, replaceId?: string): boolean {
   receipts = readReceipts().filter(r => r.id !== receipt.id && r.id !== replaceId);
   receipts.push(receipt);
-  try { localStorage.setItem(RECEIPTS_KEY, JSON.stringify(receipts)); return true; } catch { return false; }
+  try { localStorage.setItem(runtimeStorageKey(RECEIPTS_KEY), JSON.stringify(receipts)); return true; } catch { return false; }
 }
 export async function communityRequest(body?: object, kind?: CommunityKind): Promise<Record<string, unknown>> {
   const response = await fetch(body ? '/api/community' : `/api/community?kind=${kind}`, {
     method: body ? 'POST' : 'GET', cache: 'no-store', credentials: 'same-origin',
-    ...(body ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}),
+    ...(body ? { headers: { 'Content-Type': 'application/json', 'X-Woori-Mode': runtimeModeHeader() }, body: JSON.stringify(body) } : {}),
   });
+  if (response?.status === 409) throw new Error('운영 모드가 바뀌었거나 요청이 충돌했습니다. 새로고침 후 접수 여부를 확인해주세요.');
   if (!response?.ok) throw new Error('공개 나눔 서버에 연결하지 못했어요. 접수 여부를 확인하거나 다시 시도해주세요.');
   const result: unknown = await response.json();
   if (!result || typeof result !== 'object' || ('enabled' in result && result.enabled === false)) throw new Error('지금은 공개 나눔을 이용할 수 없어요.');

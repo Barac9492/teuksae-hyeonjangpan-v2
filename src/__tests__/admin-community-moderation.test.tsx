@@ -145,3 +145,19 @@ it('recognizes reflection separately and requires review before public approval'
   await waitFor(() => expect(posts(fetch)).toHaveLength(1));
   expect(JSON.parse(String(posts(fetch)[0][1]?.body))).toEqual({ id: 'reflection-1', decision: 'approved', expectedVersion: 3 });
 });
+
+it('filters redacted deleted tombstones before validating initial and refreshed lists', async () => {
+  let reads = 0;
+  setup('superadmin', [], { get: async () => response({ items: reads++ ? [{ status: 'deleted', id: prayer.id }] : [{ status: 'deleted' }, prayer] }) });
+  const user = userEvent.setup();
+  expect(await screen.findByText(prayer.text)).toBeVisible();
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: '비공개 처리' }));
+  expect(await screen.findByText('현재 검토 목록에 게시물이 없습니다.')).toBeVisible();
+  expect(screen.getByText('서버 처리 후 최신 목록을 확인했습니다.')).toBeVisible();
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+});
+it('still rejects malformed non-deleted rows alongside tombstones', async () => {
+  setup('superadmin', [{ status: 'deleted' }, { ...prayer, version: null }]);
+  expect(await screen.findByRole('alert')).toHaveTextContent('서버 응답 형식');
+});

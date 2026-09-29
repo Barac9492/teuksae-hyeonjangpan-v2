@@ -1,3 +1,4 @@
+import { RuntimeProvider } from './features/rehearsal/RuntimeProvider';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { CompanionApp } from './features/companion';
@@ -11,5 +12,5 @@ export function bootstrap(): void {
     if (document.readyState === 'complete') register();
     else window.addEventListener('load', register, { once: true });
   }
-  createRoot(root).render(<StrictMode><CompanionApp /></StrictMode>);
+  createRoot(root).render(<StrictMode><RuntimeProvider><CompanionApp /></RuntimeProvider></StrictMode>);
 }

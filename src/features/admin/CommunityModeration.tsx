@@ -24,6 +24,12 @@ function validItem(value: unknown): value is Item {
     && ['pending', 'approved', 'rejected'].includes(String(x.status)) && Number.isInteger(x.version) && Number(x.version) >= 0
     && (x.photoUrl === undefined || typeof x.photoUrl === 'string');
 }
+function reviewItems(value: unknown): Item[] | null {
+  if (!Array.isArray(value)) return null;
+  // Deleted rows may be redacted tombstones, not valid reviewable items.
+  const visible = value.filter(item => !(item && typeof item === 'object' && item.status === 'deleted'));
+  return visible.every(validItem) ? visible : null;
+}
 async function request(init?: RequestInit): Promise<Record<string, unknown>> {
   const response = await fetch(endpoint, { credentials: 'same-origin', cache: 'no-store', ...init });
   let body: Record<string, unknown> | null = null;
@@ -61,8 +67,9 @@ export function CommunityModeration() {
     setBusy(true); setError(''); setNotice(''); setReviewId(null); setConsent(false); setItems(null);
     try {
       const body = await request();
-      if (!Array.isArray(body.items) || !body.items.every(validItem)) throw new Error('검토 목록의 서버 응답 형식이 올바르지 않습니다.');
-      if (active.current && epoch === generation.current) { setItems(body.items); setBrokenImages({}); setLoadedImages({}); }
+      const visible = reviewItems(body.items);
+      if (!visible) throw new Error('검토 목록의 서버 응답 형식이 올바르지 않습니다.');
+      if (active.current && epoch === generation.current) { setItems(visible); setBrokenImages({}); setLoadedImages({}); }
     } catch (cause) {
       if (active.current && epoch === generation.current) setError(cause instanceof Error ? cause.message : '목록을 불러오지 못했습니다.');
     } finally {
@@ -84,8 +91,9 @@ export function CommunityModeration() {
       // Never retain purged content after a successful privacy action.
       setItems(null);
       const body = await request();
-      if (!Array.isArray(body.items) || !body.items.every(validItem)) throw new Error('처리 후 목록을 확인하지 못했습니다. 새로고침해주세요.');
-      if (active.current && epoch === generation.current) { setItems(body.items); setBrokenImages({}); setLoadedImages({}); setNotice('서버 처리 후 최신 목록을 확인했습니다.'); }
+      const visible = reviewItems(body.items);
+      if (!visible) throw new Error('처리 후 목록을 확인하지 못했습니다. 새로고침해주세요.');
+      if (active.current && epoch === generation.current) { setItems(visible); setBrokenImages({}); setLoadedImages({}); setNotice('서버 처리 후 최신 목록을 확인했습니다.'); }
     } catch (cause) {
       if (active.current && epoch === generation.current) {
         setItems(null);

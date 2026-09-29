@@ -41,3 +41,20 @@ it('hides estimate inputs when schema field is absent and retains state writes',
  await user.selectOptions(screen.getByLabelText('송림 주차 상태'),'busy');await user.click(screen.getByRole('button',{name:'상태 저장'}));
  await waitFor(()=>expect(writes).toHaveLength(1));expect(writes[0].state).toBe('busy');expect(writes[0].occupancyPercent).toBeNull();
 });
+
+it.each(['available', 'busy', 'full'])('requires explicit selection before saving legacy %s with null occupancy', async state => {
+ const session={authenticated:true,username:'TEST',role:'parking',displayName:'담당',expiresAt:'2030-01-01T00:00:00Z',sessionId:'S-test',capabilities:{liveOperations:true}};
+ const resource={id:'parking.calvary',label:'갈보리교회 주차',category:'parking',state,version:4,updatedAt:null,occupancyPercent:null};
+ const writes:Record<string,unknown>[]=[];
+ vi.spyOn(globalThis,'fetch').mockImplementation(async(url,init)=>new Response(JSON.stringify(String(url).endsWith('/session')?session:init?.method==='POST'?(writes.push(JSON.parse(String(init.body))),{resource}):{resources:[resource],history:[],canManageAccounts:false})));
+ const user=userEvent.setup();render(<AdminApp/>);
+ const select=await screen.findByLabelText('갈보리교회 주차 사용률·상태');
+ expect(select).toHaveValue('unselected');
+ await user.click(screen.getByRole('button',{name:'상태 저장'}));
+ expect(writes).toHaveLength(0);
+ expect(screen.getByRole('alert')).toHaveTextContent('직접 선택');
+ await user.selectOptions(select,'checking');
+ await user.click(screen.getByRole('button',{name:'상태 저장'}));
+ await waitFor(()=>expect(writes).toHaveLength(1));
+ expect(writes[0]).toMatchObject({state:'checking',occupancyPercent:null,expectedVersion:4});
+});

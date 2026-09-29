@@ -1,4 +1,5 @@
 import { createHash, createHmac, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
+import { isRehearsal, rpcName, runtimeInfo } from './runtime.js';
 
 export const COOKIE_NAME = '__Host-woori_admin';
 export const SESSION_SECONDS = 2 * 60 * 60;
@@ -10,7 +11,7 @@ const ACCESS_STATES = new Set(['checking', 'closed', 'school_open', 'gym_open', 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const USERNAME = /^[A-Za-z0-9_-]{1,80}$/;
 
-function config(env) {
+function config(env, now = Date.now()) {
   const bootstrapUsername = (env.ADMIN_LOGIN_ID || '').trim().toUpperCase();
   const bootstrapPasswordHash = env.ADMIN_PASSWORD_SCRYPT || '';
   const sessionSecret = env.ADMIN_SESSION_SECRET || '';
@@ -21,7 +22,7 @@ function config(env) {
   const invalidBootstrap = (bootstrapUsername && !USERNAME.test(bootstrapUsername))
     || (bootstrapPasswordHash && !/^scrypt\$[0-9a-f]{32}\$[0-9a-f]{64}$/.test(bootstrapPasswordHash));
   if (invalidBootstrap || !/^[A-Za-z0-9_-]{64,}$/.test(sessionSecret) || !/^https:\/\//.test(supabaseUrl) || serviceKey.length < 30 || !origin.startsWith('https://')) return null;
-  return { bootstrapUsername, bootstrapPasswordHash, sessionSecret, supabaseUrl, serviceKey, origin };
+  return { bootstrapUsername, bootstrapPasswordHash, sessionSecret, supabaseUrl, serviceKey, origin, rehearsal: isRehearsal(env, now) };
 }
 function safeEqual(a, b) { return timingSafeEqual(createHash('sha256').update(String(a)).digest(), createHash('sha256').update(String(b)).digest()); }
 function reply(res, status, body) {
@@ -36,7 +37,8 @@ function reply(res, status, body) {
 function publicReply(res, status, body) {
   res.statusCode = status;
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
-  res.setHeader('Cache-Control', status === 200 ? 'public, max-age=0, s-maxage=10' : 'no-store');
+  // Same URL changes namespace at event cutover: never let a CDN replay rehearsal data.
+  res.setHeader('Cache-Control', 'no-store, max-age=0');
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.end(JSON.stringify(body));
 }
@@ -76,7 +78,7 @@ async function jsonBody(req) {
   return value;
 }
 async function rpc(cfg, name, args, fetcher = fetch) {
-  const response = await fetcher(`${cfg.supabaseUrl}/rest/v1/rpc/${name}`, { method: 'POST', headers: { apikey: cfg.serviceKey, Authorization: `Bearer ${cfg.serviceKey}`, 'Content-Type': 'application/json' }, body: JSON.stringify(args) });
+  const response = await fetcher(`${cfg.supabaseUrl}/rest/v1/rpc/${rpcName(name, cfg.rehearsal)}`, { method: 'POST', headers: { apikey: cfg.serviceKey, Authorization: `Bearer ${cfg.serviceKey}`, 'Content-Type': 'application/json' }, body: JSON.stringify(args) });
   let data = null;
   try { data = await response.json(); } catch { /* fail closed */ }
   if (!response.ok) { const error = new Error('database unavailable'); error.status = response.status; error.code = typeof data?.code === 'string' ? data.code : null; throw error; }
@@ -117,12 +119,12 @@ async function protectedSession(req, res, cfg, fetcher, now) {
 }
 export async function handleAdmin(action, req, res, env = process.env, now = Date.now(), fetcher = fetch) {
   const fixedMethod = { login: 'POST', logout: 'POST', session: 'GET', dashboard: 'GET' }[action];
-  if ((!fixedMethod && !['operations', 'accounts'].includes(action)) || !exactPath(req, action)) return reply(res, 404, { error: '찾을 수 없는 요청입니다.' });
+  if ((!fixedMethod && !['operations', 'accounts', 'rehearsal'].includes(action)) || !exactPath(req, action)) return reply(res, 404, { error: '찾을 수 없는 요청입니다.' });
   if (!['GET', 'POST'].includes(req.method) || (fixedMethod && req.method !== fixedMethod)) {
     res.setHeader('Allow', fixedMethod || 'GET, POST');
     return reply(res, 405, { error: '허용되지 않은 요청입니다.' });
   }
-  const cfg = config(env);
+  const cfg = config(env, now);
   if (!cfg) { clearSession(res); return reply(res, 503, { authenticated: false, error: '관리자 인증 설정을 확인 중입니다.' }); }
   if (req.method === 'POST' && (req.headers?.origin !== cfg.origin || req.headers?.['sec-fetch-site'] === 'cross-site')) return reply(res, 403, { authenticated: false, error: '같은 사이트에서 다시 시도해주세요.' });
   if (req.method === 'GET' && req.headers?.['sec-fetch-site'] === 'cross-site') return reply(res, 403, { authenticated: false, error: '허용되지 않은 요청입니다.' });
@@ -136,6 +138,18 @@ export async function handleAdmin(action, req, res, env = process.env, now = Dat
   const identity = accountView(session, { displayName: session.displayName, expiresAt: session.expiresAt, label: session.label });
   if (action === 'session') return reply(res, 200, identity);
   if (action === 'dashboard') return reply(res, 200, identity);
+  if (action === 'rehearsal') {
+    if (session.role !== 'superadmin') return reply(res, 403, { error: '최고 관리자만 리허설을 초기화할 수 있습니다.' });
+    if (req.method === 'GET') return reply(res, 200, { rehearsal: cfg.rehearsal, canReset: cfg.rehearsal });
+    if (!cfg.rehearsal) return reply(res, 403, { error: '실제 행사 데이터는 초기화할 수 없습니다.' });
+    try {
+      const body = await jsonBody(req);
+      if (body.confirmation !== '리허설 초기화') return reply(res, 400, { error: '리허설 초기화를 정확히 입력해주세요.' });
+      const result = await rpc(cfg, 'ops_reset_rehearsal', { p_session_id: session.tokenId }, fetcher);
+      if (result?.reset !== true) throw new Error('Invalid reset result');
+      return reply(res, 200, { ...result, rehearsal: true });
+    } catch (error) { return reply(res, error?.status === 403 ? 403 : 503, { error: '리허설 초기화를 완료하지 못했습니다. 다시 확인해주세요.' }); }
+  }
   if (action === 'operations') return operations(req, res, cfg, session, fetcher);
   return accounts(req, res, cfg, session, fetcher);
 }
@@ -204,11 +218,11 @@ async function accounts(req, res, cfg, session, fetcher) {
     return reply(res, 200, { account });
   } catch (error) { return reply(res, error?.status === 403 ? 403 : 503, { error: error?.status === 403 ? '권한이 없습니다.' : '계정을 처리하지 못했습니다. 잠시 후 다시 시도해주세요.' }); }
 }
-export async function handlePublicStatus(req, res, env = process.env, fetcher = fetch) {
+export async function handlePublicStatus(req, res, env = process.env, fetcher = fetch, now = Date.now()) {
   let pathname;
   try { pathname = new URL(req.url || '', 'https://internal.invalid').pathname; } catch { return publicReply(res, 400, { enabled: false }); }
   if (pathname !== '/api/status' || req.method !== 'GET') return publicReply(res, req.method === 'GET' ? 404 : 405, { enabled: false });
-  const cfg = config(env);
-  if (!cfg) return publicReply(res, 503, { enabled: false });
-  try { return publicReply(res, 200, { enabled: true, resources: await rpc(cfg, 'ops_public_resources', {}, fetcher) }); } catch { return publicReply(res, 503, { enabled: false }); }
+  const cfg = config(env, now);
+  if (!cfg) return publicReply(res, 503, { enabled: false, ...runtimeInfo(env, now) });
+  try { return publicReply(res, 200, { enabled: true, ...runtimeInfo(env, now), resources: await rpc(cfg, 'ops_public_resources', {}, fetcher) }); } catch { return publicReply(res, 503, { enabled: false, ...runtimeInfo(env, now) }); }
 }

@@ -1,3 +1,4 @@
+import { useRuntime } from '../rehearsal/runtime';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { communityRequest, deleteToken, photoBase64, readReceipts, safePhotoUrl, saveReceipt, validateFeed } from './communityClient';
 import type { CommunityFeed, CommunityKind, Receipt } from './communityClient';
@@ -15,9 +16,11 @@ function isBeforeCommunityLaunch(date = new Date()) {
 export function Community({ kind, text, eventDay = null, file, payloadKey, showComposer = true, defaultPublic = false }: {
   kind: CommunityKind; text: string; eventDay?: number | null; file?: File | null; payloadKey: string; showComposer?: boolean; defaultPublic?: boolean;
 }) {
+  const runtime = useRuntime();
   const [feed, setFeed] = useState<CommunityFeed | null>(null);
   const [feedError, setFeedError] = useState('');
-  const [beforeEvent, setBeforeEvent] = useState(() => isBeforeCommunityLaunch());
+  const [beforeLaunch, setBeforeEvent] = useState(() => isBeforeCommunityLaunch());
+  const beforeEvent = !runtime.rehearsal && beforeLaunch;
   const consentDetailsId = useId();
   const [consentKey, setConsentKey] = useState<string | null>(null);
   const [publicChoice, setPublicChoice] = useState(defaultPublic);

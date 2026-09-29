@@ -1,3 +1,4 @@
+import { runtimeStorageKey } from '../rehearsal/runtime';
 import { useEffect, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { normalizePhotoMemo, renderFramedPhoto } from './canvas';
@@ -10,7 +11,7 @@ const STAMPS_KEY = 'woori-photo-days-2026-v1';
 const validDay = (day: number | null): day is number => day !== null && Number.isInteger(day) && day >= 0 && day < 6;
 function readStamps(): number[] {
   try {
-    const value: unknown = JSON.parse(localStorage.getItem(STAMPS_KEY) ?? '[]');
+    const value: unknown = JSON.parse(localStorage.getItem(runtimeStorageKey(STAMPS_KEY)) ?? '[]');
     return Array.isArray(value) ? [...new Set(value.filter((day): day is number => typeof day === 'number' && validDay(day)))] : [];
   } catch { return []; }
 }
@@ -66,7 +67,7 @@ export function PhotosPanel({ eventDay }: { eventDay: number | null }) {
   const addStamp = () => {
     if (!photo || !readyFile || day === null) return;
     const next = [...new Set([...stamps, day])].sort();
-    try { localStorage.setItem(STAMPS_KEY, JSON.stringify(next)); setStamps(next); setMessage(`${stamp} 도장을 이 기기에 남겼어요. 출석 확인은 아닙니다.`); }
+    try { localStorage.setItem(runtimeStorageKey(STAMPS_KEY), JSON.stringify(next)); setStamps(next); setMessage(`${stamp} 도장을 이 기기에 남겼어요. 출석 확인은 아닙니다.`); }
     catch { setMessage('이 브라우저에서 도장을 저장하지 못했어요.'); }
   };
   return (
@@ -113,7 +114,7 @@ export function PhotosPanel({ eventDay }: { eventDay: number | null }) {
           <ul>{SERVICE_DAYS.map((date, i) => <li key={date} data-stamped={stamps.includes(i)}>10/{date}<span>{stamps.includes(i) ? '남김' : '미기록'}</span></li>)}</ul>
           <button className="tc-secondary" type="button" disabled={!photo || !readyFile || day === null || stamps.includes(day)} onClick={addStamp}>{day !== null && stamps.includes(day) ? '이 날짜는 도장을 남겼어요' : '선택한 날짜에 도장 남기기'}</button>
           <button className="tc-line-action" type="button" onClick={() => {
-            try { localStorage.removeItem(STAMPS_KEY); setStamps([]); setMessage('이 기기의 새벽 도장을 모두 지웠어요.'); }
+            try { localStorage.removeItem(runtimeStorageKey(STAMPS_KEY)); setStamps([]); setMessage('이 기기의 새벽 도장을 모두 지웠어요.'); }
             catch { setMessage('도장을 지우지 못했어요. 브라우저 저장소 설정을 확인해주세요.'); }
           }}>이 기기의 도장 모두 지우기</button>
         </div>

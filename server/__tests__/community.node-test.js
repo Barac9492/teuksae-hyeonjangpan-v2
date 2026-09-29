@@ -7,7 +7,8 @@ import { handleCommunity, sanitizePng } from '../community.js';
 const env={SUPABASE_URL:'https://test.supabase.co',SUPABASE_SERVICE_ROLE_KEY:'x'.repeat(40),ADMIN_SESSION_SECRET:'s'.repeat(64)};
 const origin='https://teuksae-hyeonjangpan-v2.vercel.app';
 const id='11111111-1111-4111-8111-111111111111';
-const now=Date.parse('2026-09-28T12:00:00+09:00');
+// Live submission tests run inside the actual event window; rehearsal has separate routing tests.
+const now=Date.parse('2026-10-05T12:00:00+09:00');
 const submit={requestId:id,kind:'prayer',text:'기도',eventDay:null,consent:true,deleteToken:'a'.repeat(43)};
 function response(data,status=200){return {ok:status<300,status,json:async()=>data};}
 function adminCookie() { const payload=Buffer.from(JSON.stringify({v:2,sid:id,sub:'ADMIN',cv:3,iat:Math.floor(now/1000),exp:Math.floor(now/1000)+7200,nonce:'n'.repeat(32)})).toString('base64url');return `__Host-woori_admin=${payload}.${createHmac('sha256',env.ADMIN_SESSION_SECRET).update(payload).digest('base64url')}`; }

@@ -126,3 +126,39 @@ it('still renders and allows session dismissal when storage getters are blocked'
  await user.click(screen.getByRole('button',{name:'이번에는 닫기'}));
  expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
 });
+
+it.each(['prompt', 'choice'])('recovers when native %s never settles and ignores its late result', async pendingStage => {
+ vi.useFakeTimers();
+ try {
+  let finish!: () => void;
+  const pending = new Promise<void>(resolve => { finish = resolve; });
+  const event = Object.assign(new Event('beforeinstallprompt', {cancelable:true}), {
+   prompt: vi.fn(() => pendingStage === 'prompt' ? pending : Promise.resolve()),
+   userChoice: pendingStage === 'choice' ? pending.then(() => ({outcome:'dismissed' as const})) : Promise.resolve({outcome:'dismissed' as const}),
+  });
+  render(<InstallCard />);
+  await act(async()=>{window.dispatchEvent(event);});
+  await act(async()=>{screen.getByRole('button',{name:'홈 화면에 추가'}).click();});
+  expect(screen.getByRole('button',{name:'설치 창 여는 중…'})).toBeDisabled();
+  await act(async()=>{await vi.advanceTimersByTimeAsync(10000);});
+  expect(screen.getByRole('button',{name:'설치 방법 보기'})).toBeEnabled();
+  expect(screen.getByText(/설치 창을 확인하지 못했어요/)).toBeVisible();
+  expect(screen.getByText(/브라우저에 따라 메뉴 이름/)).toBeVisible();
+  await act(async()=>{finish();});
+  expect(screen.queryByText(/설치는 취소되었어요/)).not.toBeInTheDocument();
+  expect(localStorage.getItem('teuksae:pwa-installed')).toBeNull();
+  expect(event.prompt).toHaveBeenCalledOnce();
+ } finally { cleanup();vi.useRealTimers(); }
+});
+it('cleans up a pending prompt watchdog on unmount',async()=>{
+ vi.useFakeTimers();
+ try {
+  const view=render(<InstallCard/>);
+  const event=Object.assign(new Event('beforeinstallprompt',{cancelable:true}),{prompt:()=>new Promise<void>(()=>{}),userChoice:new Promise(()=>{})});
+  await act(async()=>{window.dispatchEvent(event);});
+  await act(async()=>{screen.getByRole('button',{name:'홈 화면에 추가'}).click();});
+  expect(vi.getTimerCount()).toBe(1);
+  view.unmount();
+  expect(vi.getTimerCount()).toBe(0);
+ } finally { vi.useRealTimers(); }
+});

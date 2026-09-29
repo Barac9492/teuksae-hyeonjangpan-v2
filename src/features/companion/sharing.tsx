@@ -84,7 +84,7 @@ function StorySection({ stories, onAdd, onDelete, onHide, onMore }: { stories: S
               <header><strong>{story.name}</strong><span>나만 보는 메모</span></header>
               <p>{story.text}</p>
               <footer>
-                <button type="button" onClick={() => onDelete(story.id)}>삭제</button>
+                <button type="button" onClick={() => { onDelete(story.id); setMessage('메모를 삭제했어요.'); }}>삭제</button>
                 <button type="button" onClick={() => { onHide(story.id); setMessage('이 메모를 현재 화면에서 숨겼어요. 서버로 전송되지 않았습니다.'); }}>이 메모 숨기기</button>
               </footer>
             </article>

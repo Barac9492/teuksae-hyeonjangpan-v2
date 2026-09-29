@@ -31,7 +31,7 @@ export function DawnJourney({ now, previewDay }: { now: number; previewDay: numb
   let sub: string;
   if (previewDay !== null) {
     headline = <><small>미리 보는 날</small>10월 {SERVICE_DAYS[previewDay]}일({WEEKDAYS[previewDay]})</>;
-    sub = `${previewDay + 1}번째 새벽 · 날짜는 상황 바꿔보기에서 선택`;
+    sub = `${previewDay + 1}번째 새벽 · 미리 선택한 행사일`;
   } else if (phase.phase === 'after') {
     headline = <>여섯 번의 새벽을<br />함께 지나왔어요</>;
     sub = '함께해 주셔서 감사합니다';

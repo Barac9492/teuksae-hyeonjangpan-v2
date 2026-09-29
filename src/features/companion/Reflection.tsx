@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { runtimeStorageKey, useRuntime } from '../rehearsal/runtime';
+import { useEffect, useState } from 'react';
 import { SERVICE_DAYS, WEEKDAYS } from './dawn';
 import { saveReflection } from './shareText';
 import { Community } from './Community';
@@ -10,7 +11,7 @@ type DraftLoad = { drafts: Record<string, string>; error: string };
 function loadDrafts(): DraftLoad {
   if (typeof window === 'undefined') return { drafts: {}, error: '' };
   try {
-    const raw = window.localStorage.getItem(REFLECTION_DRAFTS_KEY);
+    const raw = window.localStorage.getItem(runtimeStorageKey(REFLECTION_DRAFTS_KEY));
     if (!raw) return { drafts: {}, error: '' };
     const saved: unknown = JSON.parse(raw);
     if (!saved || typeof saved !== 'object' || Array.isArray(saved)) throw new Error('invalid reflection drafts');
@@ -26,8 +27,10 @@ function loadDrafts(): DraftLoad {
 }
 
 export function Reflection() {
+  const runtime = useRuntime();
   const [initialDrafts] = useState(loadDrafts);
-  const [day, setDay] = useState('5');
+  const [day, setDay] = useState(String(runtime.rehearsal ? runtime.eventDay + 5 : 5));
+  useEffect(() => { if (runtime.rehearsal) setDay(String(runtime.eventDay + 5)); }, [runtime.rehearsal, runtime.eventDay]);
   const [drafts, setDrafts] = useState<Record<string, string>>(initialDrafts.drafts);
   const [storageError, setStorageError] = useState(initialDrafts.error);
   const [message, setMessage] = useState('');
@@ -37,7 +40,7 @@ export function Reflection() {
     setDrafts(next);
     setMessage('');
     try {
-      window.localStorage.setItem(REFLECTION_DRAFTS_KEY, JSON.stringify(next));
+      window.localStorage.setItem(runtimeStorageKey(REFLECTION_DRAFTS_KEY), JSON.stringify(next));
       setStorageError('');
     } catch {
       setStorageError('자동 저장하지 못했어요. 내용은 현재 화면에만 남아 있으며 새로고침하거나 닫으면 사라질 수 있어요. 필요한 내용은 직접 복사해주세요.');

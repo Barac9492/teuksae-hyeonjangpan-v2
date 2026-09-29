@@ -6,6 +6,7 @@ type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform?: string }>;
 };
 
+const PROMPT_TIMEOUT_MS = 10000;
 const INSTALLED_KEY = 'teuksae:pwa-installed';
 const DISMISSED_KEY = 'teuksae:pwa-install-card-dismissed';
 const appDisplayModes = ['(display-mode: standalone)'];
@@ -46,10 +47,16 @@ export function InstallCard() {
   const [isPrompting, setIsPrompting] = useState(false);
   const [notice, setNotice] = useState('');
   const promptLock = useRef(false);
+  const promptTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const promptEpoch = useRef(0);
   const ios = typeof navigator !== 'undefined' && isIosBrowser();
 
   useEffect(() => {
+    const epochRef = promptEpoch;
+    const timerRef = promptTimer;
     const markInstalled = () => {
+      promptEpoch.current++;
+      if (promptTimer.current) clearTimeout(promptTimer.current);
       writeStorage('localStorage', INSTALLED_KEY);
       setHidden(true);
     };
@@ -76,6 +83,8 @@ export function InstallCard() {
     if (isRunningAsApp()) markInstalled();
 
     return () => {
+      epochRef.current++;
+      if (timerRef.current) clearTimeout(timerRef.current);
       window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt);
       window.removeEventListener('appinstalled', markInstalled);
       for (const media of mediaQueries) {
@@ -95,18 +104,31 @@ export function InstallCard() {
     promptLock.current = true;
     setIsPrompting(true);
     setNotice('');
+    const epoch = ++promptEpoch.current;
+    const event = deferredPrompt;
     try {
-      await deferredPrompt.prompt();
-      const choice = await deferredPrompt.userChoice;
+      const choice = await Promise.race([
+        (async () => { await event.prompt(); return await event.userChoice; })(),
+        new Promise<never>((_, reject) => {
+          promptTimer.current = setTimeout(() => reject(new Error('install-timeout')), PROMPT_TIMEOUT_MS);
+        }),
+      ]);
+      if (epoch !== promptEpoch.current) return;
       if (choice.outcome === 'dismissed') setNotice('설치는 취소되었어요. 다시 설치하려면 브라우저 메뉴를 이용하거나 페이지를 새로고침해주세요.');
       // An accepted choice is not confirmation of installation. appinstalled is the source of truth.
     } catch {
-      setNotice('설치 창을 열지 못했어요. 브라우저 메뉴에서 홈 화면에 추가해 주세요.');
+      if (epoch !== promptEpoch.current) return;
+      setNotice('설치 창을 확인하지 못했어요. 브라우저 메뉴에서 홈 화면에 추가해 주세요.');
+      setShowInstructions(true);
     } finally {
-      // Native install prompt events are single-use, including after dismissal.
-      setDeferredPrompt(null);
-      promptLock.current = false;
-      setIsPrompting(false);
+      if (epoch === promptEpoch.current) {
+        if (promptTimer.current) clearTimeout(promptTimer.current);
+        promptTimer.current = null;
+        // Native events are single-use; late settlement cannot replace fallback feedback.
+        setDeferredPrompt(current => current === event ? null : current);
+        promptLock.current = false;
+        setIsPrompting(false);
+      }
     }
   };
 
