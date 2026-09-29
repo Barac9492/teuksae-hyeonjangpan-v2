@@ -131,6 +131,11 @@ export function useLiveOperations(active = true) {
 
 type Operations = ReturnType<typeof useLiveOperations>;
 
+function hasFreshDisplayedResource(ids: string[], operations: Operations): boolean {
+  return operations.resources.some(resource => ids.includes(resource.id)
+    && freshness(resource.updatedAt, operations.now, operations.offline, operations.enabled) === 'fresh');
+}
+
 function liveItem(id: string, operations: Operations): FloorItem {
   const resource = operations.resources.find((item) => item.id === id)!;
   const status = freshness(resource.updatedAt, operations.now, operations.offline, operations.enabled);
@@ -162,7 +167,7 @@ export function liveStage(operations: Operations): number | null {
 
 export function LiveNotice({ enabled, offline, confirmed }: { enabled: boolean; offline: boolean; confirmed: boolean }) {
   if (offline) return <div className="tc-live-notice tc-live-notice--offline" role="status"><strong>연결 확인 중</strong><span>마지막 안내를 실제 현황으로 표시하지 않습니다.</span></div>;
-  if (!enabled || !confirmed) return <div className="tc-live-notice" role="status"><strong>현장팀 확인 전</strong><span>아직 공개된 현장 현황이 없습니다.</span></div>;
+  if (!enabled || !confirmed) return <div className="tc-live-notice" role="status"><strong>현장팀 확인 전</strong><span>현재 표시된 장소에 최근 확인된 현황이 없습니다.</span></div>;
   return <div className="tc-live-notice tc-live-notice--active"><strong>현장팀 확인 현황</strong><details><summary aria-label="현황 안내 자세히 보기">ⓘ 현황 안내</summary><p>각 항목은 마지막 확인 시각 기준입니다. 사용률은 운영자 추정이며 실측 수용률이 아닙니다. 초록 0~60% · 주황 70~90% · 빨강 100% · 회색 확인 필요</p></details></div>;
 }
 
@@ -178,7 +183,7 @@ function StatusList({ items }: { items: FloorItem[] }) {
 export function LiveWorshipStatus({ venue, operations }: { venue: Venue; operations: Operations }) {
   const ids = venue === 'songrim' ? ['space.songrim.access', 'space.songrim.hall', 'space.songrim.gym'] : ['space.dream.f11', 'space.dream.f7', 'space.dream.f3'];
   const items = ids.map((id) => liveItem(id, operations));
-  return <><OperationsDate now={operations.now} /><LiveNotice enabled={operations.enabled} offline={operations.offline} confirmed={operations.confirmed} />{venue === 'songrim' ? <StatusList items={items} /> : <FloorStack items={items} variant="above" />}</>;
+  return <><OperationsDate now={operations.now} /><LiveNotice enabled={operations.enabled} offline={operations.offline} confirmed={hasFreshDisplayedResource(ids, operations)} />{venue === 'songrim' ? <StatusList items={items} /> : <FloorStack items={items} variant="above" />}</>;
 }
 
 export function LiveParkingPanel({ venue, setVenue, operations, art }: { venue: Venue; setVenue: (venue: Venue) => void; operations: Operations; art?: ReactNode }) {
@@ -191,7 +196,7 @@ export function LiveParkingPanel({ venue, setVenue, operations, art }: { venue: 
       <div className="tc-section tc-section--topless">
         <VenueSwitch venue={venue} onChange={setVenue} label="주차 장소" />
         {venue === 'songrim' && <p className="tc-panel-note">갈보리교회는 예배 장소 선택지가 아닌 별도 주차 안내 구역입니다. 이용 가능 여부는 현장 안내를 확인해주세요.</p>}
-        <OperationsDate now={operations.now} /><LiveNotice enabled={operations.enabled} offline={operations.offline} confirmed={operations.confirmed} />
+        <OperationsDate now={operations.now} /><LiveNotice enabled={operations.enabled} offline={operations.offline} confirmed={hasFreshDisplayedResource(ids, operations)} />
         {venue === 'songrim' ? <StatusList items={items} /> : <FloorStack items={items} variant="below" />}
         {venue === 'songrim' && <div className="tc-quiet"><strong>학교 출입과 예배당 입장은 달라요.</strong><p>학교 문이 열려 차량이 들어가도 본당·체육관은 아직 닫혀 있을 수 있습니다.</p></div>}
         <p className="tc-safety"><span aria-hidden="true">🚗</span> 운전 중 화면을 조작하지 마세요. 동승자가 확인하거나 안전하게 정차한 뒤 이용해주세요.</p>
