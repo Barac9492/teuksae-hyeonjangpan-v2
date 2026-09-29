@@ -15,19 +15,26 @@ it('shows ordinary dated operations before the event without a separate inspecti
  expect(screen.getAllByText(/조회일 2026년 10월 4일/)).toHaveLength(2);
  expect(screen.getAllByText(/2026\. 10\. 4\. 23:59 확인 \(한국 시간\)/).length).toBeGreaterThan(0);
  expect(screen.queryByText('특새 기간에 현장 정보가 표시됩니다')).not.toBeInTheDocument();
- // Rehearsal timestamps are current (not tied to the real event dates), so fresh values may show.
+ // All-date rehearsal availability: fresh readings and real recorded history both show,
+ // regardless of the official event dates (no calendar eligibility gate).
  expect(screen.getAllByText('100%').length).toBeGreaterThan(0);
- // Parking history is still tied to real event dates, so no prior-day record can exist yet.
- expect(screen.queryByText(/09\/27/)).not.toBeInTheDocument();
+ expect(screen.getAllByText(/09\/27/).length).toBeGreaterThan(0);
  expect(liveStage(ops)).toBe(3);
 });
-it('does not turn a recent pre-event rehearsal into opening-day live data', () => {
+it('keeps a fresh reading current across the calendar event boundary, since date eligibility gates were removed', () => {
  const ops = operations('2026-10-05T00:00:00+09:00');
  render(<LiveParkingPanel venue="songrim" setVenue={()=>{}} operations={ops}/>);
- expect(screen.queryByText('100%')).not.toBeInTheDocument();
- expect(screen.queryByText(/09\/27/)).not.toBeInTheDocument();
- expect(screen.getAllByText('확인 필요')).toHaveLength(2);
- expect(liveStage(ops)).toBeNull();
+ expect(screen.getAllByText('100%').length).toBeGreaterThan(0);
+ expect(screen.getAllByText(/09\/27/).length).toBeGreaterThan(0);
+ expect(liveStage(ops)).toBe(3);
+});
+it('does not hide live status after the official event end date, since date-based hiding was removed', () => {
+ const ops = operations('2026-10-12T00:10:00+09:00');
+ ops.resources.forEach(resource => { if (resource.updatedAt) resource.updatedAt = new Date(Date.parse('2026-10-12T00:10:00+09:00') - 60_000).toISOString(); });
+ render(<LiveWorshipStatus venue="songrim" operations={ops}/>);
+ expect(screen.queryByText('특새 기간에 현장 정보가 표시됩니다')).not.toBeInTheDocument();
+ expect(screen.getByText('본당 입장 가능')).toBeInTheDocument();
+ expect(liveStage(ops)).toBe(3);
 });
 
 it('keeps the actual last-checked date on stale data across Korea midnight', () => {
@@ -49,7 +56,9 @@ it('keeps timestamp context while offline without claiming a current value', () 
 it('does not present a future timestamp as a confirmed reading', () => {
  const ops = operations('2026-10-04T23:58:00+09:00');
  render(<LiveParkingPanel venue="songrim" setVenue={()=>{}} operations={ops}/>);
- expect(screen.getAllByText('확인 시각 오류')).toHaveLength(2);
+ // All-date rehearsal availability: real previousDay history (09/27) is no longer gated to the
+ // official event dates, so it renders alongside the freshness warning in the same text node.
+ expect(screen.getAllByText(/^확인 시각 오류/).length).toBeGreaterThan(0);
  expect(screen.queryByText(/23:59 확인/)).not.toBeInTheDocument();
  expect(screen.queryByText('100%')).not.toBeInTheDocument();
 });
