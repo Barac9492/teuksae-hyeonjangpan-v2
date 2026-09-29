@@ -148,7 +148,11 @@ export async function handleAdmin(action, req, res, env = process.env, now = Dat
       const result = await rpc(cfg, 'ops_reset_rehearsal', { p_session_id: session.tokenId }, fetcher);
       if (result?.reset !== true) throw new Error('Invalid reset result');
       return reply(res, 200, { ...result, rehearsal: true });
-    } catch (error) { return reply(res, error?.status === 403 ? 403 : 503, { error: '리허설 초기화를 완료하지 못했습니다. 다시 확인해주세요.' }); }
+    } catch (error) {
+      // Diagnostic codes only: never log request bodies, sessions, tokens or database messages.
+      console.error('rehearsal_reset_failed', { status: Number.isInteger(error?.status) ? error.status : null, code: typeof error?.code === 'string' && /^[A-Z0-9]{3,12}$/.test(error.code) ? error.code : null, invalidResult: error?.message === 'Invalid reset result' });
+      return reply(res, error?.status === 403 ? 403 : 503, { error: '리허설 초기화를 완료하지 못했습니다. 다시 확인해주세요.' });
+    }
   }
   if (action === 'operations') return operations(req, res, cfg, session, fetcher);
   return accounts(req, res, cfg, session, fetcher);
