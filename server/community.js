@@ -5,10 +5,13 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 const TOKEN = /^[A-Za-z0-9_-]{32,128}$/;
 const BUCKET = 'community-photos-v2';
 const MAX = 3 * 1024 * 1024;
-const EVENT_START = Date.parse('2026-10-05T00:00:00+09:00');
 const EVENT_END = Date.parse('2026-10-11T00:00:00+09:00');
-const EVENT_FIRST_DAY = '2026-10-05';
-const EVENT_LAST_DAY = '2026-10-10';
+// Preopening: approved feed/photo items and photo-count eligibility open from Sep29 00:00 KST,
+// through the original Oct11 exclusive event-end boundary. Only the eligibility window widened;
+// moderation, consent, auth and submission/status timing policy are unchanged.
+const COMMUNITY_START = Date.parse('2026-09-29T00:00:00+09:00');
+const COMMUNITY_FIRST_DAY = '2026-09-29';
+const COMMUNITY_LAST_DAY = '2026-10-10';
 const hash = value => createHash('sha256').update(value).digest('hex');
 const fail = (status, message) => Object.assign(new Error(message), { status });
 function config(env) {
@@ -29,13 +32,13 @@ function reply(res, status, body) {
 function eventRecord(value) {
   if (typeof value !== 'string') return false;
   const time = Date.parse(value);
-  return Number.isFinite(time) && time >= EVENT_START && time < EVENT_END;
+  return Number.isFinite(time) && time >= COMMUNITY_START && time < EVENT_END;
 }
 export function filterPublicCommunity(body) {
   if (!body || typeof body !== 'object') return body;
   const filtered = { ...body };
   if (Array.isArray(body.items)) filtered.items = body.items.filter(item => item && eventRecord(item.createdAt));
-  if (Object.prototype.hasOwnProperty.call(body, 'photoCountToday') && (typeof body.today !== 'string' || body.today < EVENT_FIRST_DAY || body.today > EVENT_LAST_DAY)) filtered.photoCountToday = 0;
+  if (Object.prototype.hasOwnProperty.call(body, 'photoCountToday') && (typeof body.today !== 'string' || body.today < COMMUNITY_FIRST_DAY || body.today > COMMUNITY_LAST_DAY)) filtered.photoCountToday = 0;
   return filtered;
 }
 async function body(req) {

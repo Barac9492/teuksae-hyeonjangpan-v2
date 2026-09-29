@@ -2,11 +2,26 @@ import { handlePublicStatus } from '../server/admin-auth.js';
 
 export const EVENT_START = Date.parse('2026-10-05T00:00:00+09:00');
 export const EVENT_END = Date.parse('2026-10-11T00:00:00+09:00');
+// Preopening: rehearsal parking/status readings become publicly visible from this instant,
+// but only as long as the live event window has not started yet (see currentTimestamp below).
+export const PREOPEN_START = Date.parse('2026-09-29T00:00:00+09:00');
 
 function eventTimestamp(value) {
   if (typeof value !== 'string') return false;
   const time = Date.parse(value);
   return Number.isFinite(time) && time >= EVENT_START && time < EVENT_END;
+}
+
+// Governs only the live current-state fields (state/updatedAt/occupancyPercent).
+// Before the event starts, a fresh preopening rehearsal reading (Sep29 KST or later, not in
+// the future relative to `now`) is treated as current. Once the event starts, this reverts to
+// the original strict event-window check so rehearsal readings never carry into the event.
+function currentTimestamp(value, now) {
+  if (typeof value !== 'string') return false;
+  const time = Date.parse(value);
+  if (!Number.isFinite(time)) return false;
+  if (now >= EVENT_START) return time >= EVENT_START && time < EVENT_END;
+  return time >= PREOPEN_START && time <= now;
 }
 
 function eventParkingDay(value) {
@@ -18,11 +33,13 @@ function eventParkingDay(value) {
   };
 }
 
-export function filterEventResources(resources) {
+export function filterEventResources(resources, now = Date.now()) {
   if (!Array.isArray(resources)) return [];
   return resources.map((resource) => {
     if (!resource || typeof resource !== 'object') return resource;
-    const current = eventTimestamp(resource.updatedAt);
+    // Pre-event history (lastClosedAt/lastFullAt/previousDay) intentionally stays on the
+    // original strict event-only window; only the live current reading gets the preopening relief.
+    const current = currentTimestamp(resource.updatedAt, now);
     const filtered = {
       ...resource,
       state: current ? resource.state : 'checking',
@@ -38,19 +55,19 @@ export function filterEventResources(resources) {
   });
 }
 
-export function filterPublicStatus(body) {
+export function filterPublicStatus(body, now = Date.now()) {
   if (!body || typeof body !== 'object' || body.enabled !== true) return body;
-  return { ...body, resources: filterEventResources(body.resources) };
+  return { ...body, resources: filterEventResources(body.resources, now) };
 }
 
-export async function handleStatus(req, res, env = process.env, fetcher = fetch) {
+export async function handleStatus(req, res, env = process.env, fetcher = fetch, now = Date.now()) {
   const boundary = {
     get statusCode() { return res.statusCode; },
     set statusCode(value) { res.statusCode = value; },
     setHeader(name, value) { return res.setHeader(name, value); },
     end(payload) {
       if (res.statusCode !== 200) return res.end(payload);
-      try { return res.end(JSON.stringify(filterPublicStatus(JSON.parse(String(payload))))); }
+      try { return res.end(JSON.stringify(filterPublicStatus(JSON.parse(String(payload)), now))); }
       catch { res.statusCode = 503; return res.end(JSON.stringify({ enabled: false })); }
     },
   };
