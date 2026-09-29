@@ -1,5 +1,3 @@
-import { useRuntime } from '../rehearsal/runtime';
-import { RehearsalBanner } from '../rehearsal/RehearsalBanner';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import crownImage from './assets/crown.jpg';
@@ -63,8 +61,7 @@ function ParkingArt() {
 type ModalState = { type: 'settings' } | { type: 'route'; venue: Venue } | { type: 'prayer'; text: string } | { type: 'stories' } | null;
 
 export function CompanionApp() {
-  const runtime = useRuntime();
-  const isPreview = !runtime.rehearsal && typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('preview') === '1';
+  const isPreview = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('preview') === '1';
   const operations = useLiveOperations(!isPreview);
   const now = useClock();
   const [liveDay, setLiveDay] = useState(() => liveEventDay());
@@ -85,7 +82,7 @@ export function CompanionApp() {
   const mainId = useId();
   const mainRef = useRef<HTMLElement>(null);
   const visibleStories = stories.filter((story) => !hiddenStories.has(story.id));
-  const dayForContent = runtime.rehearsal ? runtime.eventDay : isPreview ? eventDay : liveDay;
+  const dayForContent = isPreview ? eventDay : liveDay;
   const tabIndex = tabs.findIndex((item) => item.id === tab);
 
   const selectTab = (next: TabId, focus = false) => {
@@ -155,13 +152,12 @@ export function CompanionApp() {
             <a className="tc-admin-link" href="/admin" aria-label="관리자 로그인">관리자 로그인</a>
           </div>
         </header>
-        <RehearsalBanner publicView />
         {isPreview
           ? <div className="tc-demo-banner"><span><i aria-hidden="true" />디자인 미리보기 · 실제 현황 아님</span><button type="button" onClick={() => setModal({ type: 'settings' })}>상황 바꿔보기</button></div>
           : operations.offline ? <div className="tc-live-banner" data-offline="true" role="status">오프라인 · 최신 현황을 확인할 수 없습니다.</div> : null}
         <main id={mainId} ref={mainRef} tabIndex={-1}>
           <div hidden={tab !== 'worship'}>
-            <WorshipPanel crownImage={crownImage} venue={venue} setVenue={setVenue} now={now} previewDay={runtime.rehearsal ? runtime.eventDay : isPreview ? eventDay : null} stage={isPreview ? (stale ? null : stage) : liveStage(operations)} actions={worshipActions} after={worshipAfter}>{worshipStatus}</WorshipPanel>
+            <WorshipPanel crownImage={crownImage} venue={venue} setVenue={setVenue} now={now} previewDay={isPreview ? eventDay : null} stage={isPreview ? (stale ? null : stage) : liveStage(operations)} actions={worshipActions} after={worshipAfter}>{worshipStatus}</WorshipPanel>
           </div>
           <div hidden={tab !== 'parking'}>
             {isPreview

@@ -138,22 +138,7 @@ export async function handleAdmin(action, req, res, env = process.env, now = Dat
   const identity = accountView(session, { displayName: session.displayName, expiresAt: session.expiresAt, label: session.label });
   if (action === 'session') return reply(res, 200, identity);
   if (action === 'dashboard') return reply(res, 200, identity);
-  if (action === 'rehearsal') {
-    if (session.role !== 'superadmin') return reply(res, 403, { error: '최고 관리자만 리허설을 초기화할 수 있습니다.' });
-    if (req.method === 'GET') return reply(res, 200, { rehearsal: cfg.rehearsal, canReset: cfg.rehearsal });
-    if (!cfg.rehearsal) return reply(res, 403, { error: '실제 행사 데이터는 초기화할 수 없습니다.' });
-    try {
-      const body = await jsonBody(req);
-      if (body.confirmation !== '리허설 초기화') return reply(res, 400, { error: '리허설 초기화를 정확히 입력해주세요.' });
-      const result = await rpc(cfg, 'ops_reset_rehearsal', { p_session_id: session.tokenId }, fetcher);
-      if (result?.reset !== true) throw new Error('Invalid reset result');
-      return reply(res, 200, { ...result, rehearsal: true });
-    } catch (error) {
-      // Diagnostic codes only: never log request bodies, sessions, tokens or database messages.
-      console.error('rehearsal_reset_failed', { status: Number.isInteger(error?.status) ? error.status : null, code: typeof error?.code === 'string' && /^[A-Z0-9]{3,12}$/.test(error.code) ? error.code : null, invalidResult: error?.message === 'Invalid reset result', cardinalityReason: error?.cardinalityReason ?? null });
-      return reply(res, error?.status === 403 ? 403 : 503, { error: '리허설 초기화를 완료하지 못했습니다. 다시 확인해주세요.' });
-    }
-  }
+  if (action === 'rehearsal') return reply(res, 410, { error: '별도 리허설은 종료했습니다. 현황을 수정하거나 게시물을 개별 삭제해주세요.' });
   if (action === 'operations') return operations(req, res, cfg, session, fetcher);
   return accounts(req, res, cfg, session, fetcher);
 }

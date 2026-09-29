@@ -1,7 +1,6 @@
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 import { PNG } from 'pngjs';
 import { readSession } from './admin-auth.js';
-import { isRehearsal, rpcName } from './runtime.js';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const TOKEN = /^[A-Za-z0-9_-]{32,128}$/;
 const BUCKET = 'community-photos-v2';
@@ -58,18 +57,18 @@ export async function handleCommunity(route, req, res, env = process.env, fetche
       if (typeof supplied !== 'string' || !timingSafeEqual(createHash('sha256').update(supplied).digest(), createHash('sha256').update('Bearer ' + env.CRON_SECRET).digest())) throw fail(401, '인증이 필요합니다.');
     }
     const cfg = config(env);
-    const rehearsal = isRehearsal(env, now);
-    const bucketFor = (scope = rehearsal) => scope ? `rehearsal-${BUCKET}` : BUCKET;
-    const publicView = value => rehearsal ? value : filterPublicCommunity(value);
+    // Public and admin actions always use the same operational data.
+    const bucketFor = (scope = false) => scope ? `rehearsal-${BUCKET}` : BUCKET;
+    const publicView = filterPublicCommunity;
     const url = new URL(req.url, cfg.origin);
     if (url.pathname !== ({ public: '/api/community', photo: '/api/community/photo', admin: '/api/admin/community', cleanup: '/api/community/cleanup' })[route]) throw fail(404, '찾을 수 없습니다.');
     if (!['GET','POST'].includes(req.method) || (['photo','cleanup'].includes(route) && req.method !== 'GET')) throw fail(405, '허용되지 않은 요청입니다.');
     if ((req.method === 'POST' && req.headers?.origin !== cfg.origin) || req.headers?.['sec-fetch-site'] === 'cross-site' || (req.headers?.origin && req.headers.origin !== cfg.origin)) throw fail(403, '같은 사이트에서 다시 시도해주세요.');
     const headers = { apikey: cfg.serviceKey, Authorization: `Bearer ${cfg.serviceKey}`, 'Content-Type': 'application/json' };
-    async function rpc(name, args, scope = rehearsal) { const response = await fetcher(`${cfg.supabaseUrl}/rest/v1/rpc/${rpcName(name, scope)}`, { method:'POST', headers, body:JSON.stringify(args) }); let data; try { data = await response.json(); } catch { throw fail(503, '서버 응답을 확인하지 못했습니다.'); } if (!response.ok) throw fail(response.status === 403 ? 403 : 503, '요청을 처리하지 못했습니다.'); if (data == null) throw fail(503, '서버 응답을 확인하지 못했습니다.'); return data; }
+    async function rpc(name, args, scope = false) { const response = await fetcher(`${cfg.supabaseUrl}/rest/v1/rpc/${scope ? `rehearsal_${name}` : name}`, { method:'POST', headers, body:JSON.stringify(args) }); let data; try { data = await response.json(); } catch { throw fail(503, '서버 응답을 확인하지 못했습니다.'); } if (!response.ok) throw fail(response.status === 403 ? 403 : 503, '요청을 처리하지 못했습니다.'); if (data == null) throw fail(503, '서버 응답을 확인하지 못했습니다.'); return data; }
     async function moderator() { const token = readSession(req,cfg,now); if (!token) throw fail(401,'관리자 로그인이 필요합니다.'); const session = await rpc('ops_get_session',{p_session_id:token.id}); if (session.username !== token.username || session.credentialVersion !== token.credentialVersion || session.role !== 'superadmin') throw fail(403,'최고 관리자 권한이 필요합니다.'); return token.id; }
-    const call = (action,args = {},scope = rehearsal) => rpc('community_v2',{p_action:action,p_args:args},scope);
-    async function cleanup(data, scope = rehearsal) { if (data.cleanupPath) { const response = await fetcher(`${cfg.supabaseUrl}/storage/v1/object/${bucketFor(scope)}`, { method:'DELETE',headers,body:JSON.stringify({prefixes:[data.cleanupPath]}) }); if (!response.ok) throw fail(503,'삭제 처리 중입니다. 다시 시도해주세요.'); } const clean = {...data}; delete clean.cleanupPath; delete clean.path; delete clean.ready; return clean; }
+    const call = (action,args = {},scope = false) => rpc('community_v2',{p_action:action,p_args:args},scope);
+    async function cleanup(data, scope = false) { if (data.cleanupPath) { const response = await fetcher(`${cfg.supabaseUrl}/storage/v1/object/${bucketFor(scope)}`, { method:'DELETE',headers,body:JSON.stringify({prefixes:[data.cleanupPath]}) }); if (!response.ok) throw fail(503,'삭제 처리 중입니다. 다시 시도해주세요.'); } const clean = {...data}; delete clean.cleanupPath; delete clean.path; delete clean.ready; return clean; }
     function checked(data) { const statuses = { conflict:409, payload_mismatch:409, limited:429, missing:404, forbidden:403 }; if (statuses[data.status]) throw fail(statuses[data.status], '요청을 처리하지 못했습니다. 잠시 후 확인해주세요.'); return data; }
     if (route === 'cleanup') {
       let cleaned = 0, failed = 0;
@@ -119,7 +118,6 @@ export async function handleCommunity(route, req, res, env = process.env, fetche
       return reply(res,200,await cleanup(checked(await call('moderate',{...b,session}))));
     }
     if (req.method === 'GET') { const kind = url.searchParams.get('kind'); if (!['prayer','photo','reflection'].includes(kind)) throw fail(400,'종류를 확인해주세요.'); return reply(res,200,publicView(await call('list',{kind}))); }
-    if (env.REHEARSAL_ENABLED === 'true' && req.headers?.['x-woori-mode'] !== (rehearsal ? 'rehearsal' : 'live')) throw fail(409,'운영 모드가 바뀌었습니다. 새로고침 후 다시 시도해주세요.');
     const b = await body(req);
     if (b.action) { if (!['delete','status'].includes(b.action) || !UUID.test(b.id || '') || !TOKEN.test(b.deleteToken || '')) throw fail(400,'요청을 확인해주세요.'); return reply(res,200,publicView(await cleanup(checked(await call(b.action,{id:b.id,tokenHash:hash(b.deleteToken)}))))); }
     // Vercel's platform-controlled header, never arbitrary X-Forwarded-For. Missing IP shares a conservative bucket.

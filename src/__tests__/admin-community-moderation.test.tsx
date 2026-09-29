@@ -33,7 +33,7 @@ describe('superadmin community moderation', () => {
     const fetch = setup('superadmin', [photo]);
     expect(await screen.findByText(photo.text)).toBeVisible();
     expect(screen.getByAltText('공개 검토용 제출 사진')).toHaveAttribute('src', 'http://localhost/api/community/photo/photo-1?review=1');
-    expect(screen.getByText(/2026\. 10\. 5\. 오전 9:00/)).toBeVisible();
+    expect(screen.getByText(new Intl.DateTimeFormat('ko-KR', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Seoul' }).format(new Date(photo.createdAt)))).toBeVisible();
     expect(screen.getByText(/로그인 없이 누구나 인터넷/)).toBeVisible();
     expect(screen.getByText(/아동·청소년의 공개 동의/)).toBeVisible();
     expect(fetch).toHaveBeenCalledWith('/api/admin/community', expect.objectContaining({ credentials: 'same-origin', cache: 'no-store' }));

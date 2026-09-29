@@ -16,50 +16,36 @@ const session={id,username:'ADMIN',credentialVersion:1,role:'superadmin',display
 const req=(url,method='GET',body,headers={})=>({url,method,body,headers:{origin,'content-type':'application/json','x-woori-mode':'rehearsal',...headers}});
 const post={requestId:id,kind:'prayer',text:'QA rehearsal',eventDay:5,deleteToken:'a'.repeat(43),consent:true};
 
-test('rehearsal requires explicit server flag and stops exactly at Korea midnight',()=>{
- assert.equal(isRehearsal({},now),false);assert.equal(isRehearsal({...env,REHEARSAL_ENABLED:'false'},now),false);
- assert.equal(isRehearsal(env,REHEARSAL_END-1),true);assert.equal(isRehearsal(env,REHEARSAL_END),false);assert.equal(isRehearsal(env,NaN),false);
-});
-test('status uses only rehearsal namespace before cutoff and live namespace with original filters after',async()=>{
- for(const [time,scope] of [[now,true],[REHEARSAL_END,false]]){
+test('one dataset is used before and after the event even with the retired flag enabled',async()=>{
+ for(const time of [now,REHEARSAL_END-1,REHEARSAL_END,REHEARSAL_END+1]){
+  assert.equal(isRehearsal(env,time),false);
   const r=res();await handleStatus(req('/api/status?rehearsal=1'),r,env,async url=>{
-   assert.ok(url.endsWith(`/rpc/${scope?'rehearsal_':''}ops_public_resources`));
-   return ok([{id:'parking.songrim',state:'full',updatedAt:'2026-09-29T03:00:00Z',occupancyPercent:100}]);
-  },time);
-  assert.equal(r.statusCode,200);assert.equal(r.body.rehearsal,scope);assert.equal(r.body.resources[0].state,'full');assert.match(r.headers['Cache-Control'],/no-store/);
+   assert.ok(url.endsWith('/rpc/ops_public_resources'));return ok([]);
+  },time);assert.equal(r.statusCode,200);assert.equal(r.body.rehearsal,false);
  }
 });
-test('community rehearsal list and count are real isolated data, not date-filtered examples',async()=>{
- const r=res();await handleCommunity('public',req('/api/community?kind=prayer'),r,env,async(url,opts)=>{
-  assert.ok(url.endsWith('/rpc/rehearsal_community_v2'));assert.equal(JSON.parse(opts.body).p_action,'list');
-  return ok({enabled:true,items:[{id,kind:'prayer',text:'QA',createdAt:'2026-09-29T03:00:00Z'}],photoCountToday:2,today:'2026-09-29'});
- },now);assert.equal(r.statusCode,200);assert.equal(r.body.items.length,1);assert.equal(r.body.photoCountToday,2);
-});
-test('rehearsal submissions hit isolated RPC; stale or unmarked client cannot cross cutoff',async()=>{
- const calls=[];const db=async(url,opts)=>{calls.push(url);const a=JSON.parse(opts.body).p_action;return ok(a==='preflight'?{status:'ok'}:{id,status:'pending',ready:true});};
- const r=res();await handleCommunity('public',req('/api/community','POST',post),r,env,db,now);assert.equal(r.statusCode,200);assert.equal(calls.length,2);assert.ok(calls.every(u=>u.endsWith('/rehearsal_community_v2')));
- for(const [time,mode] of [[REHEARSAL_END,'rehearsal'],[now,'live'],[now,undefined]]){const blocked=res();await handleCommunity('public',req('/api/community','POST',post,{'x-woori-mode':mode}),blocked,env,()=>{throw Error('must not query');},time);assert.equal(blocked.statusCode,409);}
- const liveOpen=res();await handleCommunity('public',req('/api/community','POST',post),liveOpen,{...env,REHEARSAL_ENABLED:'false'},async(url,opts)=>{assert.ok(url.endsWith('/rpc/community_v2'));return ok(JSON.parse(opts.body).p_action==='preflight'?{status:'ok'}:{id,status:'pending',ready:true});},now);assert.equal(liveOpen.statusCode,200);
-});
-test('reset is authenticated superadmin only, requires typed confirmation, and cannot reset live namespace',async()=>{
- for(const [role,time,confirmation,status] of [['superadmin',now,'리허설 초기화',200],['parking',now,'리허설 초기화',403],['superadmin',now,'',400],['superadmin',REHEARSAL_END,'리허설 초기화',403]]){
-  let resetCalls=0;const r=res();await handleAdmin('rehearsal',req('/api/admin/rehearsal','POST',{confirmation},{cookie:cookie(time)}),r,env,time,async(url)=>{
-   if(url.endsWith('ops_get_session')) return ok({...session,role});
-   assert.ok(url.endsWith('/rehearsal_ops_reset_rehearsal'));resetCalls++;return ok({reset:true});
-  });assert.equal(r.statusCode,status);assert.equal(resetCalls,status===200?1:0);
+test('submissions use the same RPC without a mode header or cutover conflict',async()=>{
+ for(const time of [now,REHEARSAL_END]) {
+  const r=res();await handleCommunity('public',req('/api/community','POST',post,{'x-woori-mode':undefined}),r,env,async(url,opts)=>{
+   assert.ok(url.endsWith('/rpc/community_v2'));return ok(JSON.parse(opts.body).p_action==='preflight'?{status:'ok'}:{id,status:'pending',ready:true});
+  },time);assert.equal(r.statusCode,200);
  }
- const r=res();await handleAdmin('rehearsal',req('/api/admin/rehearsal','POST',{confirmation:'리허설 초기화'}),r,env,now,()=>{throw Error('must not query');});assert.equal(r.statusCode,401);
+});
+test('retired reset cannot delete either dataset',async()=>{
+ const r=res();await handleAdmin('rehearsal',req('/api/admin/rehearsal','POST',{confirmation:'리허설 초기화'},{cookie:cookie()}),r,env,now,async url=>{
+  assert.ok(url.endsWith('/rpc/ops_get_session'));return ok(session);
+ });assert.equal(r.statusCode,410);
 });
 test('moderation strips deleted tombstones while retaining pending items',async()=>{
  const r=res();await handleCommunity('admin',req('/api/admin/community','GET',undefined,{cookie:cookie()}),r,env,async(url)=>url.endsWith('ops_get_session')?ok(session):ok({items:[{id,status:'deleted'},{id:'pending',status:'pending'}]}),now);assert.equal(r.statusCode,200);assert.deepEqual(r.body.items,[{id:'pending',status:'pending'}]);
 });
-test('approved rehearsal photo reads only rehearsal private bucket, never live storage',async()=>{
+test('approved photo uses the operational private bucket throughout the event',async()=>{
  const urls=[];const r={...res(),end(v){this.body=v;}};
  await handleCommunity('photo',req(`/api/community/photo?id=${id}`),r,env,async(url)=>{
   urls.push(url);if(url.includes('/rpc/'))return ok({path:id+'.png'});
   if(url.includes('/rest/'))return ok([{created_at:'2026-09-29T03:00:00Z'}]);
   return {ok:true,arrayBuffer:async()=>new Uint8Array([137,80,78,71])};
- },now);assert.equal(r.statusCode,200);assert.ok(urls.some(u=>u.includes('/object/authenticated/rehearsal-community-photos-v2/')));assert.ok(urls.filter(u=>u.includes('/rest/')).every(u=>u.includes('rehearsal_')));
+ },now);assert.equal(r.statusCode,200);assert.ok(urls.some(u=>u.includes('/object/authenticated/community-photos-v2/')));assert.ok(urls.filter(u=>u.includes('/rest/')).every(u=>!u.includes('rehearsal_')));
 });
 test('orphan cleanup continues both isolated namespaces after event cutover',async()=>{
  const urls=[];const r=res();await handleCommunity('cleanup',req('/api/community/cleanup','GET',undefined,{authorization:'Bearer fixture'}),r,{...env,CRON_SECRET:'fixture'},async(url)=>{urls.push(url);return ok({items:[]});},REHEARSAL_END);

@@ -1,4 +1,4 @@
-import { runtimeStorageKey, runtimeModeHeader } from '../rehearsal/runtime';
+import { runtimeStorageKey } from '../rehearsal/runtime';
 export type CommunityKind = 'prayer' | 'photo' | 'reflection';
 export type Receipt = { id: string; kind: CommunityKind; token: string };
 export type CommunityItem = { id: string; kind: CommunityKind; text: string; createdAt: string; eventDay: number | null; photoUrl?: string };
@@ -26,9 +26,9 @@ export function saveReceipt(receipt: Receipt, replaceId?: string): boolean {
 export async function communityRequest(body?: object, kind?: CommunityKind): Promise<Record<string, unknown>> {
   const response = await fetch(body ? '/api/community' : `/api/community?kind=${kind}`, {
     method: body ? 'POST' : 'GET', cache: 'no-store', credentials: 'same-origin',
-    ...(body ? { headers: { 'Content-Type': 'application/json', 'X-Woori-Mode': runtimeModeHeader() }, body: JSON.stringify(body) } : {}),
+    ...(body ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}),
   });
-  if (response?.status === 409) throw new Error('운영 모드가 바뀌었거나 요청이 충돌했습니다. 새로고침 후 접수 여부를 확인해주세요.');
+  if (response?.status === 409) throw new Error('요청 내용이 기존 접수와 충돌했습니다. 내 제출 기록에서 접수 여부를 확인해주세요.');
   if (!response?.ok) throw new Error('공개 나눔 서버에 연결하지 못했어요. 접수 여부를 확인하거나 다시 시도해주세요.');
   const result: unknown = await response.json();
   if (!result || typeof result !== 'object' || ('enabled' in result && result.enabled === false)) throw new Error('지금은 공개 나눔을 이용할 수 없어요.');

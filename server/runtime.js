@@ -1,12 +1,7 @@
-// Server-owned mode boundary. URL parameters and the device clock cannot enable rehearsal.
+// One operational dataset and account set, before, during and after the event.
+// Kept as compatibility helpers for callers and previously deployed configuration.
 export const REHEARSAL_UNTIL = '2026-10-05T00:00:00+09:00';
 export const REHEARSAL_END = Date.parse(REHEARSAL_UNTIL);
-export function isRehearsal(env = process.env, now = Date.now()) {
-  return env.REHEARSAL_ENABLED === 'true' && Number.isFinite(now) && now < REHEARSAL_END;
-}
-export function runtimeInfo(env = process.env, now = Date.now()) {
-  return { rehearsal: isRehearsal(env, now), rehearsalUntil: REHEARSAL_UNTIL };
-}
-export function rpcName(name, rehearsal) {
-  return rehearsal ? `rehearsal_${name}` : name;
-}
+export function isRehearsal() { return false; }
+export function runtimeInfo() { return { rehearsal: false }; }
+export function rpcName(name) { return name; }
