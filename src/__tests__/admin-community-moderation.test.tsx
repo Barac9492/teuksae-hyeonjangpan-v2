@@ -145,3 +145,30 @@ it('recognizes reflection separately and requires review before public approval'
   await waitFor(() => expect(posts(fetch)).toHaveLength(1));
   expect(JSON.parse(String(posts(fetch)[0][1]?.body))).toEqual({ id: 'reflection-1', decision: 'approved', expectedVersion: 3 });
 });
+
+it('keeps pending prayers and photos reviewable when adminList includes deleted tombstones', async () => {
+  setup('superadmin', [prayer, { ...prayer, id: 'deleted-1', status: 'deleted', text: 'must never be displayed' }, photo]);
+  expect(await screen.findByText(prayer.text)).toBeVisible();
+  expect(screen.getByText(photo.text)).toBeVisible();
+  expect(screen.queryByText('must never be displayed')).not.toBeInTheDocument();
+  expect(screen.queryByText(/검토 목록의 서버 응답 형식/)).not.toBeInTheDocument();
+});
+it('shows an empty review queue when only deleted tombstones remain', async () => {
+  setup('superadmin', [{ ...prayer, id: 'deleted-1', status: 'deleted', text: '' }]);
+  expect(await screen.findByText('현재 검토 목록에 게시물이 없습니다.')).toBeVisible();
+  expect(screen.queryByText(/검토 목록의 서버 응답 형식/)).not.toBeInTheDocument();
+});
+it('keeps validating nondeleted rows instead of silently dropping malformed pending submissions', async () => {
+  setup('superadmin', [{ ...prayer, status: 'deleted' }, { ...photo, version: 'bad' }]);
+  expect(await screen.findByText('검토 목록의 서버 응답 형식이 올바르지 않습니다.')).toBeVisible();
+  expect(screen.queryByText(photo.text)).not.toBeInTheDocument();
+});
+it('keeps remaining submissions visible after deleting an approved entry and reloading tombstones', async () => {
+  let reads = 0;
+  const fetch = setup('superadmin', [], { get: async () => response({ items: reads++ === 0 ? [{ ...prayer, status: 'approved' }, photo] : [{ ...prayer, status: 'deleted', text: '' }, photo] }) });
+  fireEvent.click(await screen.findByRole('button', { name: '공개 철회 및 삭제' }));
+  expect(await screen.findByText('서버 처리 후 최신 목록을 확인했습니다.')).toBeVisible();
+  expect(screen.getByText(photo.text)).toBeVisible();
+  expect(screen.queryByText(prayer.text)).not.toBeInTheDocument();
+  expect(posts(fetch)).toHaveLength(1);
+});
