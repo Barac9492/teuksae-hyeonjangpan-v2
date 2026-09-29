@@ -26,7 +26,7 @@ test('status uses only rehearsal namespace before cutoff and live namespace with
    assert.ok(url.endsWith(`/rpc/${scope?'rehearsal_':''}ops_public_resources`));
    return ok([{id:'parking.songrim',state:'full',updatedAt:'2026-09-29T03:00:00Z',occupancyPercent:100}]);
   },time);
-  assert.equal(r.statusCode,200);assert.equal(r.body.rehearsal,scope);assert.equal(r.body.resources[0].state,scope?'full':'checking');
+  assert.equal(r.statusCode,200);assert.equal(r.body.rehearsal,scope);assert.equal(r.body.resources[0].state,'full');assert.match(r.headers['Cache-Control'],/no-store/);
  }
 });
 test('community rehearsal list and count are real isolated data, not date-filtered examples',async()=>{
@@ -39,7 +39,7 @@ test('rehearsal submissions hit isolated RPC; stale or unmarked client cannot cr
  const calls=[];const db=async(url,opts)=>{calls.push(url);const a=JSON.parse(opts.body).p_action;return ok(a==='preflight'?{status:'ok'}:{id,status:'pending',ready:true});};
  const r=res();await handleCommunity('public',req('/api/community','POST',post),r,env,db,now);assert.equal(r.statusCode,200);assert.equal(calls.length,2);assert.ok(calls.every(u=>u.endsWith('/rehearsal_community_v2')));
  for(const [time,mode] of [[REHEARSAL_END,'rehearsal'],[now,'live'],[now,undefined]]){const blocked=res();await handleCommunity('public',req('/api/community','POST',post,{'x-woori-mode':mode}),blocked,env,()=>{throw Error('must not query');},time);assert.equal(blocked.statusCode,409);}
- const liveClosed=res();await handleCommunity('public',req('/api/community','POST',post),liveClosed,{...env,REHEARSAL_ENABLED:'false'},()=>{throw Error('must not query');},now);assert.equal(liveClosed.statusCode,403);
+ const liveOpen=res();await handleCommunity('public',req('/api/community','POST',post),liveOpen,{...env,REHEARSAL_ENABLED:'false'},async(url,opts)=>{assert.ok(url.endsWith('/rpc/community_v2'));return ok(JSON.parse(opts.body).p_action==='preflight'?{status:'ok'}:{id,status:'pending',ready:true});},now);assert.equal(liveOpen.statusCode,200);
 });
 test('reset is authenticated superadmin only, requires typed confirmation, and cannot reset live namespace',async()=>{
  for(const [role,time,confirmation,status] of [['superadmin',now,'리허설 초기화',200],['parking',now,'리허설 초기화',403],['superadmin',now,'',400],['superadmin',REHEARSAL_END,'리허설 초기화',403]]){

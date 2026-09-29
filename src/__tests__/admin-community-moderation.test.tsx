@@ -5,7 +5,7 @@ import { AdminApp } from '../features/admin';
 
 const response = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
 const prayer = { id: 'prayer-1', kind: 'prayer', text: '우리 가족을 위한 기도', createdAt: '2026-10-05T00:00:00Z', eventDay: '2026-10-05', status: 'pending', version: 3 };
-const photo = { ...prayer, id: 'photo-1', kind: 'photo', text: '새벽의 함께한 순간', photoUrl: '/api/community/photo/photo-1' };
+const photo = { ...prayer, id: 'photo-1', kind: 'photo', text: '새벽의 함께한 순간', photoUrl: '/api/community/photo/photo-1?review=1' };
 function setup(role = 'superadmin', items: unknown[] = [prayer], handlers: { get?: () => Promise<Response>; post?: () => Promise<Response> } = {}) {
   const fetch = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
     if (url === '/api/admin/session') return response({ authenticated: true, username: 'owner', role, displayName: '관리자', expiresAt: '2026-10-06T00:00:00Z', sessionId: 'session-1', capabilities: { liveOperations: true, photoReview: false, prayerInbox: false, sharingModeration: false } });
@@ -32,7 +32,7 @@ describe('superadmin community moderation', () => {
   it('shows actual photo, text, Korean time and privacy guidance despite legacy false capabilities', async () => {
     const fetch = setup('superadmin', [photo]);
     expect(await screen.findByText(photo.text)).toBeVisible();
-    expect(screen.getByAltText('공개 검토용 제출 사진')).toHaveAttribute('src', 'http://localhost/api/community/photo/photo-1');
+    expect(screen.getByAltText('공개 검토용 제출 사진')).toHaveAttribute('src', 'http://localhost/api/community/photo/photo-1?review=1');
     expect(screen.getByText(/2026\. 10\. 5\. 오전 9:00/)).toBeVisible();
     expect(screen.getByText(/로그인 없이 누구나 인터넷/)).toBeVisible();
     expect(screen.getByText(/아동·청소년의 공개 동의/)).toBeVisible();
@@ -160,4 +160,31 @@ it('filters redacted deleted tombstones before validating initial and refreshed 
 it('still rejects malformed non-deleted rows alongside tombstones', async () => {
   setup('superadmin', [{ status: 'deleted' }, { ...prayer, version: null }]);
   expect(await screen.findByRole('alert')).toHaveTextContent('서버 응답 형식');
+});
+
+it('keeps pending prayers and photos reviewable when adminList includes deleted tombstones', async () => {
+  setup('superadmin', [prayer, { ...prayer, id: 'deleted-1', status: 'deleted', text: 'must never be displayed' }, photo]);
+  expect(await screen.findByText(prayer.text)).toBeVisible();
+  expect(screen.getByText(photo.text)).toBeVisible();
+  expect(screen.queryByText('must never be displayed')).not.toBeInTheDocument();
+  expect(screen.queryByText(/검토 목록의 서버 응답 형식/)).not.toBeInTheDocument();
+});
+it('shows an empty review queue when only deleted tombstones remain', async () => {
+  setup('superadmin', [{ ...prayer, id: 'deleted-1', status: 'deleted', text: '' }]);
+  expect(await screen.findByText('현재 검토 목록에 게시물이 없습니다.')).toBeVisible();
+  expect(screen.queryByText(/검토 목록의 서버 응답 형식/)).not.toBeInTheDocument();
+});
+it('keeps validating nondeleted rows instead of silently dropping malformed pending submissions', async () => {
+  setup('superadmin', [{ ...prayer, status: 'deleted' }, { ...photo, version: 'bad' }]);
+  expect(await screen.findByText('검토 목록의 서버 응답 형식이 올바르지 않습니다.')).toBeVisible();
+  expect(screen.queryByText(photo.text)).not.toBeInTheDocument();
+});
+it('keeps remaining submissions visible after deleting an approved entry and reloading tombstones', async () => {
+  let reads = 0;
+  const fetch = setup('superadmin', [], { get: async () => response({ items: reads++ === 0 ? [{ ...prayer, status: 'approved' }, photo] : [{ ...prayer, status: 'deleted', text: '' }, photo] }) });
+  fireEvent.click(await screen.findByRole('button', { name: '공개 철회 및 삭제' }));
+  expect(await screen.findByText('서버 처리 후 최신 목록을 확인했습니다.')).toBeVisible();
+  expect(screen.getByText(photo.text)).toBeVisible();
+  expect(screen.queryByText(prayer.text)).not.toBeInTheDocument();
+  expect(posts(fetch)).toHaveLength(1);
 });

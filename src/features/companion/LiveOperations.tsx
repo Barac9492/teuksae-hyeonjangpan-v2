@@ -26,11 +26,10 @@ type LiveResource = { id: string; label: string; category: Category; state: Live
 type StatusResponse = { enabled: boolean; resources: LiveResource[] };
 type Freshness = 'fresh' | 'unconfirmed' | 'stale' | 'invalid' | 'future' | 'offline';
 
-const EVENT_START = Date.parse('2026-10-05T00:00:00+09:00');
-const EVENT_END = Date.parse('2026-10-11T00:00:00+09:00');
-const eventActive = (now: number) => now >= EVENT_START && now < EVENT_END;
-const eventNotice = '특새 기간에 현장 정보가 표시됩니다';
-
+// All-date rehearsal availability: no calendar/event-window gate hides features. The real event
+// schedule stays accurate elsewhere (e.g. countdown/calendar exports outside this file); this
+// file only decides what is safe to show as a *current* reading, using finite/not-future
+// timestamp safety, independent of the official event dates.
 const REFRESH_MS = 20_000;
 const REQUEST_TIMEOUT_MS = 8_000;
 const FRESH_MS = 10 * 60_000;
@@ -65,9 +64,9 @@ function validResource(value: unknown): LiveResource | null {
   return { ...fallback, previousDay: parkingDay(raw.previousDay), ...(Object.prototype.hasOwnProperty.call(raw, 'occupancyPercent') ? { occupancyPercent: raw.occupancyPercent as number | null } : {}), lastClosedAt: raw.lastClosedAt as string | null | undefined, lastFullAt: raw.lastFullAt as string | null | undefined, state: raw.state as LiveResourceState, version: raw.version as number, updatedAt: raw.updatedAt as string | null };
 }
 
-function freshness(updatedAt: string | null, now: number, offline: boolean, enabled: boolean, rehearsal = false): Freshness {
+function freshness(updatedAt: string | null, now: number, offline: boolean, enabled: boolean): Freshness {
   if (offline) return 'offline';
-  if (!enabled || !updatedAt || (!rehearsal && Date.parse(updatedAt) < EVENT_START)) return 'unconfirmed';
+  if (!enabled || !updatedAt) return 'unconfirmed';
   const time = Date.parse(updatedAt);
   if (!Number.isFinite(time)) return 'invalid';
   if (time > now) return 'future';
@@ -84,7 +83,7 @@ function stateTone(state: LiveResourceState): ValueTone {
   return 'neutral';
 }
 function historyClock(time: string): string { return new Intl.DateTimeFormat('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Seoul' }).format(new Date(time)); }
-function clockText(updatedAt: string): string { return new Intl.DateTimeFormat('ko-KR', { hour: '2-digit', minute: '2-digit', month: 'numeric', day: 'numeric', timeZone: 'Asia/Seoul' }).format(new Date(updatedAt)); }
+function clockText(updatedAt: string): string { return new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Seoul' }).format(new Date(updatedAt)); }
 function historyTime(value: string): string { return new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Seoul' }).format(new Date(value)); }
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -136,23 +135,33 @@ export function useLiveOperations(active = true) {
   const effectiveOffline = runtime.managed ? runtime.offline : offline;
   const resources = useMemo(() => { const remote = new Map((effectiveResponse?.resources ?? []).map((resource) => [resource.id, resource])); return defaults.map((fallback) => remote.get(fallback.id) ?? fallback); }, [effectiveResponse]);
   const effectiveNow = runtime.managed ? Math.max(now, runtime.lastSync ?? now) : now;
-  const confirmed = (runtime.rehearsal || eventActive(effectiveNow)) && resources.some((resource) => freshness(resource.updatedAt, effectiveNow, effectiveOffline, effectiveResponse?.enabled === true, runtime.rehearsal) === 'fresh');
+  const confirmed = resources.some((resource) => freshness(resource.updatedAt, effectiveNow, effectiveOffline, effectiveResponse?.enabled === true) === 'fresh');
   return { resources, enabled: effectiveResponse?.enabled === true, offline: effectiveOffline, now: effectiveNow, confirmed, lastSync: runtime.managed ? runtime.lastSync : lastSync, rehearsal: runtime.rehearsal };
 }
 
 
 type Operations = Omit<ReturnType<typeof useLiveOperations>, 'rehearsal'> & { rehearsal?: boolean };
 
+function hasFreshDisplayedResource(ids: string[], operations: Operations): boolean {
+  return operations.resources.some(resource => ids.includes(resource.id)
+    && freshness(resource.updatedAt, operations.now, operations.offline, operations.enabled) === 'fresh');
+}
+
 function liveItem(id: string, operations: Operations): FloorItem {
   const resource = operations.resources.find((item) => item.id === id)!;
-  const status = freshness(resource.updatedAt, operations.now, operations.offline, operations.enabled, operations.rehearsal);
+  const status = freshness(resource.updatedAt, operations.now, operations.offline, operations.enabled);
   const capacity = hasOccupancySchema(resource);
   const value = status !== 'fresh' ? '확인 필요' : capacity ? resource.state === 'closed' ? stateText(resource) : resource.occupancyPercent == null ? '사용률 확인 전' : `${resource.occupancyPercent}%` : stateText(resource);
-  const sub = status === 'fresh' && resource.updatedAt ? `${clockText(resource.updatedAt)} 확인` : status === 'offline' ? '연결 확인 전' : status === 'stale' ? '마지막 확인 후 10분 경과' : status === 'future' || status === 'invalid' ? '확인 시각 오류' : '현장팀 확인 전';
-  const previous = resource.category === 'parking' && resource.previousDay && (operations.rehearsal || resource.previousDay.date >= '2026-10-05') && resource.previousDay.date < koreaDate(operations.now) ? resource.previousDay : undefined;
+  const checkedAt = resource.updatedAt && Number.isFinite(Date.parse(resource.updatedAt)) && Date.parse(resource.updatedAt) <= operations.now ? `${clockText(resource.updatedAt)} 확인 (한국 시간)` : '';
+  const warning = status === 'fresh' ? '' : status === 'offline' ? '연결 확인 전' : status === 'stale' ? '마지막 확인 후 10분 경과' : status === 'future' || status === 'invalid' ? '확인 시각 오류' : '현장팀 확인 전';
+  const sub = [checkedAt, warning].filter(Boolean).join(' · ');
+  // Real previous day, not gated to the official event dates: any recorded day strictly before
+  // today (Korea time) is shown, as long as its own timestamps are finite and not in the future.
+  const previous = resource.category === 'parking' && resource.previousDay && resource.previousDay.date < koreaDate(operations.now) ? resource.previousDay : undefined;
   const priorLabel = previous ? `${previous.date === koreaDate(operations.now - 86400000) ? '전날 ' : ''}${previous.date.slice(5).replace('-', '/')} 주차 기록` : '';
   const priorHistory = previous ? `${priorLabel} · 첫 만차 ${previous.firstFullAt ? historyClock(previous.firstFullAt) : '기록 없음'} · 마감 ${previous.closedAt ? historyClock(previous.closedAt) : '기록 없음'}` : '';
-  const history = [priorHistory,resource.lastClosedAt && (operations.rehearsal || Date.parse(resource.lastClosedAt) >= EVENT_START) && Date.parse(resource.lastClosedAt) <= operations.now ? `최근 닫힘·입장 마감 기록 ${historyTime(resource.lastClosedAt)}` : '', resource.lastFullAt && (operations.rehearsal || Date.parse(resource.lastFullAt) >= EVENT_START) && Date.parse(resource.lastFullAt) <= operations.now ? `최근 만차·만석 기록 ${historyTime(resource.lastFullAt)}` : ''].filter(Boolean).join(' · ');
+  const validHistory = (value: string | null | undefined) => typeof value === 'string' && Number.isFinite(Date.parse(value)) && Date.parse(value) <= operations.now;
+  const history = [priorHistory, validHistory(resource.lastClosedAt) ? `최근 닫힘·입장 마감 기록 ${historyTime(resource.lastClosedAt as string)}` : '', validHistory(resource.lastFullAt) ? `최근 만차·만석 기록 ${historyTime(resource.lastFullAt as string)}` : ''].filter(Boolean).join(' · ');
   const tone = status !== 'fresh' ? 'neutral' : capacity ? resource.state === 'closed' ? stateTone(resource.state) : resource.occupancyPercent == null ? 'neutral' : occupancyTone(resource.occupancyPercent) : stateTone(resource.state);
   return { key: id, label: resource.label, sub: history ? `${sub} · ${history}` : sub, value, tone };
 }
@@ -161,8 +170,7 @@ function liveItem(id: string, operations: Operations): FloorItem {
 // eslint-disable-next-line react-refresh/only-export-components
 export function liveStage(operations: Operations): number | null {
   const access = operations.resources.find((item) => item.id === 'space.songrim.access')!;
-  if (!(operations.rehearsal || eventActive(operations.now))) return null;
-  if (freshness(access.updatedAt, operations.now, operations.offline, operations.enabled, operations.rehearsal) !== 'fresh') return null;
+  if (freshness(access.updatedAt, operations.now, operations.offline, operations.enabled) !== 'fresh') return null;
   const order: LiveResourceState[] = ['closed', 'school_open', 'gym_open', 'hall_open', 'hall_closed'];
   const index = order.indexOf(access.state);
   return index === -1 ? null : index;
@@ -170,8 +178,13 @@ export function liveStage(operations: Operations): number | null {
 
 export function LiveNotice({ enabled, offline, confirmed }: { enabled: boolean; offline: boolean; confirmed: boolean }) {
   if (offline) return <div className="tc-live-notice tc-live-notice--offline" role="status"><strong>연결 확인 중</strong><span>마지막 안내를 실제 현황으로 표시하지 않습니다.</span></div>;
-  if (!enabled || !confirmed) return <div className="tc-live-notice" role="status"><strong>현장팀 확인 전</strong><span>아직 공개된 현장 현황이 없습니다.</span></div>;
+  if (!enabled || !confirmed) return <div className="tc-live-notice" role="status"><strong>현장팀 확인 전</strong><span>현재 표시된 장소에 최근 확인된 현황이 없습니다.</span></div>;
   return <div className="tc-live-notice tc-live-notice--active"><strong>현장팀 확인 현황</strong><details><summary aria-label="현황 안내 자세히 보기">ⓘ 현황 안내</summary><p>각 항목은 마지막 확인 시각 기준입니다. 사용률은 운영자 추정이며 실측 수용률이 아닙니다. 초록 0~60% · 주황 70~90% · 빨강 100% · 회색 확인 필요</p></details></div>;
+}
+
+function OperationsDate({ now }: { now: number }) {
+  const date = new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short', timeZone: 'Asia/Seoul' }).format(new Date(now));
+  return <p className="tc-panel-note"><strong>조회일 {date} · 한국 시간</strong><br />각 항목에 표시된 마지막 확인 날짜·시각을 확인해주세요.</p>;
 }
 
 function StatusList({ items }: { items: FloorItem[] }) {
@@ -179,10 +192,9 @@ function StatusList({ items }: { items: FloorItem[] }) {
 }
 
 export function LiveWorshipStatus({ venue, operations }: { venue: Venue; operations: Operations }) {
-  if (!(operations.rehearsal || eventActive(operations.now))) return <p className="tc-live-notice" role="status">{eventNotice}</p>;
   const ids = venue === 'songrim' ? ['space.songrim.access', 'space.songrim.hall', 'space.songrim.gym'] : ['space.dream.f11', 'space.dream.f7', 'space.dream.f3'];
   const items = ids.map((id) => liveItem(id, operations));
-  return <><LiveNotice enabled={operations.enabled} offline={operations.offline} confirmed={operations.confirmed} />{venue === 'songrim' ? <StatusList items={items} /> : <FloorStack items={items} variant="above" />}</>;
+  return <><OperationsDate now={operations.now} /><LiveNotice enabled={operations.enabled} offline={operations.offline} confirmed={hasFreshDisplayedResource(ids, operations)} />{venue === 'songrim' ? <StatusList items={items} /> : <FloorStack items={items} variant="above" />}</>;
 }
 
 export function LiveParkingPanel({ venue, setVenue, operations, art }: { venue: Venue; setVenue: (venue: Venue) => void; operations: Operations; art?: ReactNode }) {
@@ -191,12 +203,12 @@ export function LiveParkingPanel({ venue, setVenue, operations, art }: { venue: 
   return (
     <section id="tc-panel-parking" className="tc-panel" role="tabpanel" aria-labelledby="tc-tab-parking">
       <PageHeading eyebrow="도착하기 전에" title="주차 안내" art={art}>예배 장소별 주차 안내를 확인하세요.</PageHeading>
-      {(operations.rehearsal || eventActive(operations.now)) && <details className="tc-guidelines"><summary>ⓘ 주차 기록 안내</summary><p>전날 기록은 운영자 입력 이력입니다. 마감은 운영 중에서 닫힘으로 바뀐 기록이며, 오늘도 같은 시각에 마감된다는 뜻은 아닙니다.</p></details>}
+      <details className="tc-guidelines"><summary>ⓘ 주차 기록 안내</summary><p>전날 기록은 운영자 입력 이력입니다. 마감은 운영 중에서 닫힘으로 바뀐 기록이며, 오늘도 같은 시각에 마감된다는 뜻은 아닙니다.</p></details>
       <div className="tc-section tc-section--topless">
         <VenueSwitch venue={venue} onChange={setVenue} label="주차 장소" />
         {venue === 'songrim' && <p className="tc-panel-note">갈보리교회는 예배 장소 선택지가 아닌 별도 주차 안내 구역입니다. 이용 가능 여부는 현장 안내를 확인해주세요.</p>}
-        {!(operations.rehearsal || eventActive(operations.now)) ? <p className="tc-live-notice" role="status">{eventNotice}</p> : <><LiveNotice enabled={operations.enabled} offline={operations.offline} confirmed={operations.confirmed} />
-        {venue === 'songrim' ? <StatusList items={items} /> : <FloorStack items={items} variant="below" />}</>}
+        <OperationsDate now={operations.now} /><LiveNotice enabled={operations.enabled} offline={operations.offline} confirmed={hasFreshDisplayedResource(ids, operations)} />
+        {venue === 'songrim' ? <StatusList items={items} /> : <FloorStack items={items} variant="below" />}
         {venue === 'songrim' && <div className="tc-quiet"><strong>학교 출입과 예배당 입장은 달라요.</strong><p>학교 문이 열려 차량이 들어가도 본당·체육관은 아직 닫혀 있을 수 있습니다.</p></div>}
         <p className="tc-safety"><span aria-hidden="true">🚗</span> 운전 중 화면을 조작하지 마세요. 동승자가 확인하거나 안전하게 정차한 뒤 이용해주세요.</p>
       </div>

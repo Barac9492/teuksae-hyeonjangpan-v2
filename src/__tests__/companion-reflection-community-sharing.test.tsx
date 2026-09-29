@@ -47,27 +47,25 @@ describe('reflection local-device drafts', () => {
   });
 });
 
-describe('community launch privacy gate and consent', () => {
-  it('does not expose photo counts and wall test content before launch', async () => {
+describe('community sharing is open before the calendar launch date, with consent unaffected', () => {
+  it('shows real feed counts and content and permits a consented submission before Oct 5, with no date gate copy', async () => {
     const fetchSpy = vi.fn(async () => response({
       enabled: true,
-      photoCountToday: 999,
+      photoCountToday: 3,
       today: '2026-10-04',
-      items: [{ id: 'test-photo', kind: 'photo', text: '행사 전 테스트 사진', eventDay: null, createdAt: '2026-10-04T01:00:00Z' }],
+      items: [{ id: 'rehearsal-photo', kind: 'photo', text: '사전 점검 사진', eventDay: null, createdAt: '2026-10-04T01:00:00Z' }],
     }));
     vi.stubGlobal('fetch', fetchSpy);
 
-    render(<Community kind="photo" text="행사 전 초안" file={new File(['png'], 'before.png', { type: 'image/png' })} payloadKey="before-event" />);
+    render(<Community kind="photo" text="사전 점검 초안" file={new File(['png'], 'before.png', { type: 'image/png' })} payloadKey="before-event" />);
     await act(async () => { await Promise.resolve(); });
 
-    expect(screen.getByText('사진 참여 수는 10월 5일부터 보여드려요.')).toBeVisible();
-    expect(screen.getByText('공개 나눔은 10월 5일부터 시작합니다.')).toBeVisible();
-    expect(screen.getByText(/공개 접수는 10월 5일부터 가능합니다/)).toBeVisible();
+    expect(screen.getByText('오늘 사진 참여 3건')).toBeVisible();
+    expect(screen.getByText('사전 점검 사진')).toBeVisible();
+    expect(screen.queryByText(/10월 5일부터/)).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '앱에 들어온 모든 분께 공개하기' })).toBeVisible();
     fireEvent.click(screen.getByRole('checkbox', { name: '모두에게 공개하는 데 동의합니다.' }));
-    expect(screen.getByRole('button', { name: '공개 접수하기 · 검수 후 게시' })).toBeDisabled();
-    expect(screen.queryByText('오늘 사진 참여 999건')).not.toBeInTheDocument();
-    expect(screen.queryByText('행사 전 테스트 사진')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '공개 접수하기 · 검수 후 게시' })).not.toBeDisabled();
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
