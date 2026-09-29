@@ -81,7 +81,7 @@ async function rpc(cfg, name, args, fetcher = fetch) {
   const response = await fetcher(`${cfg.supabaseUrl}/rest/v1/rpc/${rpcName(name, cfg.rehearsal)}`, { method: 'POST', headers: { apikey: cfg.serviceKey, Authorization: `Bearer ${cfg.serviceKey}`, 'Content-Type': 'application/json' }, body: JSON.stringify(args) });
   let data = null;
   try { data = await response.json(); } catch { /* fail closed */ }
-  if (!response.ok) { const error = new Error('database unavailable'); error.status = response.status; error.code = typeof data?.code === 'string' ? data.code : null; throw error; }
+  if (!response.ok) { const error = new Error('database unavailable'); error.status = response.status; error.code = typeof data?.code === 'string' ? data.code : null; if (name === 'ops_reset_rehearsal' && error.code === '21000') error.cardinalityReason = typeof data?.message === 'string' ? data.message.replace(/[0-9a-f]{8}-[0-9a-f-]{27,}/gi, '[id]').replace(/'[^']*'/g, '[value]').slice(0, 250) : null; throw error; }
   return data;
 }
 function hashPassword(password) { const salt = randomBytes(16); return `scrypt$${salt.toString('hex')}$${scryptSync(password, salt, 32, { N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 }).toString('hex')}`; }
@@ -150,7 +150,7 @@ export async function handleAdmin(action, req, res, env = process.env, now = Dat
       return reply(res, 200, { ...result, rehearsal: true });
     } catch (error) {
       // Diagnostic codes only: never log request bodies, sessions, tokens or database messages.
-      console.error('rehearsal_reset_failed', { status: Number.isInteger(error?.status) ? error.status : null, code: typeof error?.code === 'string' && /^[A-Z0-9]{3,12}$/.test(error.code) ? error.code : null, invalidResult: error?.message === 'Invalid reset result' });
+      console.error('rehearsal_reset_failed', { status: Number.isInteger(error?.status) ? error.status : null, code: typeof error?.code === 'string' && /^[A-Z0-9]{3,12}$/.test(error.code) ? error.code : null, invalidResult: error?.message === 'Invalid reset result', cardinalityReason: error?.cardinalityReason ?? null });
       return reply(res, error?.status === 403 ? 403 : 503, { error: '리허설 초기화를 완료하지 못했습니다. 다시 확인해주세요.' });
     }
   }
