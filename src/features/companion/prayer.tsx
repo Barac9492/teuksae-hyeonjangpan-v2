@@ -75,7 +75,6 @@ export function PrayerPanel({ onPreview }: { onPreview: (text: string) => void }
             </div>
             <div className="tc-form-meta"><span>이름·연락처는 쓰지 않아도 돼요.</span><span>{text.length} / 600</span></div>
             <button className="tc-primary" type="submit">입력 내용 미리보기 <span aria-hidden="true">→</span></button>
-            <p className="tc-lock-note"><span aria-hidden="true">🔒</span> 함께 나누기가 기본으로 선택되어 있어요. 아래에서 ‘기도제목 공개로 올리기’를 누르면 접수됩니다.</p>
             <p className="tc-footnote">다른 사람의 실명·연락처·민감한 사정은 적지 말아주세요.</p>
           </form>
         ) : null}
