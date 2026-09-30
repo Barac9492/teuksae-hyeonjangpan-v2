@@ -82,9 +82,6 @@ function stateTone(state: LiveResourceState): ValueTone {
   if (state === 'full' || state === 'closed' || state === 'hall_closed') return 'stop';
   return 'neutral';
 }
-function historyClock(time: string): string { return new Intl.DateTimeFormat('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Seoul' }).format(new Date(time)); }
-function clockText(updatedAt: string): string { return new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Seoul' }).format(new Date(updatedAt)); }
-function historyTime(value: string): string { return new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Seoul' }).format(new Date(value)); }
 
 // eslint-disable-next-line react-refresh/only-export-components
 export function useLiveOperations(active = true) {
@@ -152,18 +149,8 @@ function liveItem(id: string, operations: Operations): FloorItem {
   const status = freshness(resource.updatedAt, operations.now, operations.offline, operations.enabled);
   const capacity = hasOccupancySchema(resource);
   const value = status !== 'fresh' ? '확인 필요' : capacity ? resource.state === 'closed' ? stateText(resource) : resource.occupancyPercent == null ? '사용률 확인 전' : `${resource.occupancyPercent}%` : stateText(resource);
-  const checkedAt = resource.updatedAt && Number.isFinite(Date.parse(resource.updatedAt)) && Date.parse(resource.updatedAt) <= operations.now ? `${clockText(resource.updatedAt)} 확인 (한국 시간)` : '';
-  const warning = status === 'fresh' ? '' : status === 'offline' ? '연결 확인 전' : status === 'stale' ? '마지막 확인 후 10분 경과' : status === 'future' || status === 'invalid' ? '확인 시각 오류' : '현장팀 확인 전';
-  const sub = [checkedAt, warning].filter(Boolean).join(' · ');
-  // Real previous day, not gated to the official event dates: any recorded day strictly before
-  // today (Korea time) is shown, as long as its own timestamps are finite and not in the future.
-  const previous = resource.category === 'parking' && resource.previousDay && resource.previousDay.date < koreaDate(operations.now) ? resource.previousDay : undefined;
-  const priorLabel = previous ? `${previous.date === koreaDate(operations.now - 86400000) ? '전날 ' : ''}${previous.date.slice(5).replace('-', '/')} 주차 기록` : '';
-  const priorHistory = previous ? `${priorLabel} · 첫 만차 ${previous.firstFullAt ? historyClock(previous.firstFullAt) : '기록 없음'} · 마감 ${previous.closedAt ? historyClock(previous.closedAt) : '기록 없음'}` : '';
-  const validHistory = (value: string | null | undefined) => typeof value === 'string' && Number.isFinite(Date.parse(value)) && Date.parse(value) <= operations.now;
-  const history = [priorHistory, validHistory(resource.lastClosedAt) ? `최근 닫힘·입장 마감 기록 ${historyTime(resource.lastClosedAt as string)}` : '', validHistory(resource.lastFullAt) ? `최근 만차·만석 기록 ${historyTime(resource.lastFullAt as string)}` : ''].filter(Boolean).join(' · ');
   const tone = status !== 'fresh' ? 'neutral' : capacity ? resource.state === 'closed' ? stateTone(resource.state) : resource.occupancyPercent == null ? 'neutral' : occupancyTone(resource.occupancyPercent) : stateTone(resource.state);
-  return { key: id, label: resource.label, sub: history ? `${sub} · ${history}` : sub, value, tone };
+  return { key: id, label: resource.label, value, tone };
 }
 
 /** Songrim's current step, only when the access value is fresh. */
@@ -182,11 +169,6 @@ export function LiveNotice({ enabled, offline, confirmed }: { enabled: boolean; 
   return <div className="tc-live-notice tc-live-notice--active"><strong>현장팀 확인 현황</strong><details><summary aria-label="현황 안내 자세히 보기">ⓘ 현황 안내</summary><p>각 항목은 마지막 확인 시각 기준입니다. 사용률은 운영자 추정이며 실측 수용률이 아닙니다. 초록 0~60% · 주황 70~90% · 빨강 100% · 회색 확인 필요</p></details></div>;
 }
 
-function OperationsDate({ now }: { now: number }) {
-  const date = new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short', timeZone: 'Asia/Seoul' }).format(new Date(now));
-  return <p className="tc-panel-note"><strong>조회일 {date} · 한국 시간</strong><br />각 항목에 표시된 마지막 확인 날짜·시각을 확인해주세요.</p>;
-}
-
 function StatusList({ items }: { items: FloorItem[] }) {
   return <div className="tc-status-list">{items.map((item) => <StatusRow key={item.key} name={item.label} extra={item.sub} value={item.value} tone={item.tone} />)}</div>;
 }
@@ -194,7 +176,7 @@ function StatusList({ items }: { items: FloorItem[] }) {
 export function LiveWorshipStatus({ venue, operations }: { venue: Venue; operations: Operations }) {
   const ids = venue === 'songrim' ? ['space.songrim.access', 'space.songrim.hall', 'space.songrim.gym'] : ['space.dream.f11', 'space.dream.f7', 'space.dream.f3'];
   const items = ids.map((id) => liveItem(id, operations));
-  return <><OperationsDate now={operations.now} /><LiveNotice enabled={operations.enabled} offline={operations.offline} confirmed={hasFreshDisplayedResource(ids, operations)} />{venue === 'songrim' ? <StatusList items={items} /> : <FloorStack items={items} variant="above" />}</>;
+  return <><LiveNotice enabled={operations.enabled} offline={operations.offline} confirmed={hasFreshDisplayedResource(ids, operations)} />{venue === 'songrim' ? <StatusList items={items} /> : <FloorStack items={items} variant="above" />}</>;
 }
 
 export function LiveParkingPanel({ venue, setVenue, operations, art }: { venue: Venue; setVenue: (venue: Venue) => void; operations: Operations; art?: ReactNode }) {
@@ -203,11 +185,10 @@ export function LiveParkingPanel({ venue, setVenue, operations, art }: { venue: 
   return (
     <section id="tc-panel-parking" className="tc-panel" role="tabpanel" aria-labelledby="tc-tab-parking">
       <PageHeading eyebrow="도착하기 전에" title="주차 안내" art={art}>예배 장소별 주차 안내를 확인하세요.</PageHeading>
-      <details className="tc-guidelines"><summary>ⓘ 주차 기록 안내</summary><p>전날 기록은 운영자 입력 이력입니다. 마감은 운영 중에서 닫힘으로 바뀐 기록이며, 오늘도 같은 시각에 마감된다는 뜻은 아닙니다.</p></details>
       <div className="tc-section tc-section--topless">
         <VenueSwitch venue={venue} onChange={setVenue} label="주차 장소" />
         {venue === 'songrim' && <p className="tc-panel-note">갈보리교회는 예배 장소 선택지가 아닌 별도 주차 안내 구역입니다. 이용 가능 여부는 현장 안내를 확인해주세요.</p>}
-        <OperationsDate now={operations.now} /><LiveNotice enabled={operations.enabled} offline={operations.offline} confirmed={hasFreshDisplayedResource(ids, operations)} />
+        <LiveNotice enabled={operations.enabled} offline={operations.offline} confirmed={hasFreshDisplayedResource(ids, operations)} />
         {venue === 'songrim' ? <StatusList items={items} /> : <FloorStack items={items} variant="below" />}
         {venue === 'songrim' && <div className="tc-quiet"><strong>학교 출입과 예배당 입장은 달라요.</strong><p>학교 문이 열려 차량이 들어가도 본당·체육관은 아직 닫혀 있을 수 있습니다.</p></div>}
         <p className="tc-safety"><span aria-hidden="true">🚗</span> 운전 중 화면을 조작하지 마세요. 동승자가 확인하거나 안전하게 정차한 뒤 이용해주세요.</p>
