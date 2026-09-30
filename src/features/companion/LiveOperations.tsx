@@ -180,17 +180,21 @@ export function LiveWorshipStatus({ venue, operations }: { venue: Venue; operati
 }
 
 export function LiveParkingPanel({ venue, setVenue, operations, art }: { venue: Venue; setVenue: (venue: Venue) => void; operations: Operations; art?: ReactNode }) {
-  const ids = venue === 'songrim' ? ['parking.songrim', 'parking.calvary'] : ['parking.dream.b1', 'parking.dream.b2', 'parking.dream.b3', 'parking.dream.b4', 'parking.dream.b5'];
+  // Public parking rows intentionally exclude Calvary: the underlying resource stays in
+  // `defaults`/schema validation (see byId/validResource) so DB/admin tracking and audit
+  // history are untouched, but it is never part of the public ids list, so a fresh Calvary
+  // update can never confirm the public banner (see hasFreshDisplayedResource below).
+  const ids = venue === 'songrim' ? ['parking.songrim'] : ['parking.dream.b1', 'parking.dream.b2', 'parking.dream.b3', 'parking.dream.b4', 'parking.dream.b5'];
   const items = ids.map((id) => liveItem(id, operations));
   return (
     <section id="tc-panel-parking" className="tc-panel" role="tabpanel" aria-labelledby="tc-tab-parking">
       <PageHeading eyebrow="도착하기 전에" title="주차 안내" art={art}>예배 장소별 주차 안내를 확인하세요.</PageHeading>
       <div className="tc-section tc-section--topless">
         <VenueSwitch venue={venue} onChange={setVenue} label="주차 장소" />
-        {venue === 'songrim' && <p className="tc-panel-note">갈보리교회는 예배 장소 선택지가 아닌 별도 주차 안내 구역입니다. 이용 가능 여부는 현장 안내를 확인해주세요.</p>}
         <LiveNotice enabled={operations.enabled} offline={operations.offline} confirmed={hasFreshDisplayedResource(ids, operations)} />
         {venue === 'songrim' ? <StatusList items={items} /> : <FloorStack items={items} variant="below" />}
         {venue === 'songrim' && <div className="tc-quiet"><strong>학교 출입과 예배당 입장은 달라요.</strong><p>학교 문이 열려 차량이 들어가도 본당·체육관은 아직 닫혀 있을 수 있습니다.</p></div>}
+        <p className="tc-panel-note">실제와 조금 차이가 있을 수 있습니다.</p>
         <p className="tc-safety"><span aria-hidden="true">🚗</span> 운전 중 화면을 조작하지 마세요. 동승자가 확인하거나 안전하게 정차한 뒤 이용해주세요.</p>
       </div>
     </section>
