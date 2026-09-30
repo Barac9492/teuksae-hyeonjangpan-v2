@@ -25,7 +25,7 @@ afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 describe('superadmin community moderation', () => {
   it.each(['parking', 'space'])('never requests or exposes moderation for %s', async role => {
-    const fetch = setup(role); await screen.findByRole('heading', { name: '현장 운영' });
+    const fetch = setup(role); await screen.findByRole('heading', { name: '예배·주차 현황판' });
     expect(screen.queryByRole('heading', { name: '커뮤니티 공개 검토' })).not.toBeInTheDocument();
     expect(fetch.mock.calls.some(([url]) => url === '/api/admin/community')).toBe(false);
   });

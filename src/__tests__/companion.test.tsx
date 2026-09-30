@@ -100,7 +100,8 @@ describe('CompanionApp', () => {
     const user = userEvent.setup();
     render(<CompanionApp />);
     await chooseTab(user, '나눔');
-    expect(screen.getByText('1청년부 3팀이 간식을 준비합니다.')).toBeVisible();
+    expect(screen.getByText('간식을 준비하지 않으셔도 편하게 함께해 주세요.')).toBeVisible();
+    expect(screen.queryByText(/1청년부|피켓|바구니/)).not.toBeInTheDocument();
     const dialog = await openSettings(user);
     expect(within(dialog).getByText(/실제 날짜나 현장 상태와 무관하게/)).toBeVisible();
     await user.selectOptions(within(dialog).getByLabelText('미리 볼 예배일'), '1');
@@ -147,7 +148,7 @@ describe('CompanionApp', () => {
     expect(screen.queryByText(/이 기도제목을 내가 선택한 사람에게/)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '함께 기도하기' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.queryByLabelText('어떤 마음으로 기도하고 있나요?')).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: '기도제목 올리기' }));
+    await user.click(within(screen.getByRole('group', { name: '기도 메뉴' })).getByRole('button', { name: '기도제목 올리기' }));
     expect(screen.getByRole('checkbox', { name: /함께 나누기 · 공개/ })).toBeChecked();
     await user.type(screen.getByLabelText('어떤 마음으로 기도하고 있나요?'), '가족을 위해 기도합니다.');
     await user.click(screen.getByRole('button', { name: /입력 내용 미리보기/ }));
@@ -168,7 +169,7 @@ describe('CompanionApp', () => {
     Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: revokeObjectURL });
     const view = render(<CompanionApp />);
     await chooseTab(user, '사진');
-    const input = screen.getByLabelText(/내 사진으로 미리보기/);
+    const input = screen.getByLabelText('사진 올리기');
     fireEvent.change(input, { target: { files: [new File(['bad'], 'bad.gif', { type: 'image/gif' })] } });
     expect(screen.getByRole('status')).toHaveTextContent('JPG·PNG·WebP 형식의 8MB 이하');
     expect(createObjectURL).not.toHaveBeenCalled();

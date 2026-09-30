@@ -25,7 +25,7 @@ describe('role-aware AdminApp', () => {
 
   it('renders only the role-filtered operation form and never grants UI privileges', async () => {
     queue(response(parkingSession), response(resources)); render(<AdminApp />);
-    expect(await screen.findByRole('heading', { name: '현장 운영' })).toBeVisible();
+    expect(await screen.findByRole('heading', { name: '예배·주차 현황판' })).toBeVisible();
     expect(screen.getByLabelText('본관 주차 상태')).toBeVisible();
     expect(screen.queryByRole('heading', { name: '팀 계정 관리' })).not.toBeInTheDocument();
     expect(screen.queryByText('사진 검토')).not.toBeInTheDocument();
@@ -62,11 +62,11 @@ describe('role-aware AdminApp', () => {
   it('does not restore private UI from a stale response after logout', async () => {
     let resolveOperations: ((value: Response) => void) | undefined; const delayed = new Promise<Response>((resolve) => { resolveOperations = resolve; }); let calls = 0;
     vi.spyOn(globalThis, 'fetch').mockImplementation(async () => { calls += 1; if (calls === 1) return response(parkingSession); if (calls === 2) return response(resources); if (calls === 3) return delayed; if (calls === 4) return response({ authenticated: false }); throw new Error('unexpected'); });
-    const user = userEvent.setup(); render(<AdminApp />); await screen.findByRole('heading', { name: '현장 운영' });
+    const user = userEvent.setup(); render(<AdminApp />); await screen.findByRole('heading', { name: '예배·주차 현황판' });
     await user.selectOptions(screen.getByLabelText('본관 주차 상태'), 'busy'); await user.click(screen.getByLabelText('본관 주차 상태').closest('article')!.querySelector('button')!);
     await waitFor(() => expect(calls).toBe(3));
     await user.click(screen.getByRole('button', { name: '로그아웃' })); expect(await screen.findByRole('heading', { name: '로그인' })).toBeVisible();
-    resolveOperations?.(response(resources)); await waitFor(() => expect(screen.queryByRole('heading', { name: '현장 운영' })).not.toBeInTheDocument());
+    resolveOperations?.(response(resources)); await waitFor(() => expect(screen.queryByRole('heading', { name: '예배·주차 현황판' })).not.toBeInTheDocument());
   });
 });
 

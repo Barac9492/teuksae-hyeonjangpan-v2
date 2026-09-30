@@ -83,7 +83,7 @@ it('keeps logout effective when an overlapping operations poll resolves afterwar
   await act(async () => { logout.resolve(reply({ authenticated: false })); });
   expect(await screen.findByRole('heading', { name: '로그인' })).toBeVisible();
   await act(async () => { lateRead.resolve(reply(data())); });
-  expect(screen.queryByRole('heading', { name: '현장 운영' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('heading', { name: '예배·주차 현황판' })).not.toBeInTheDocument();
 });
 
 it('keeps a conflict locked when latest-state refresh fails', async () => {

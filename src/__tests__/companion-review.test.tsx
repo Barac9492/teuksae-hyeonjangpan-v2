@@ -16,7 +16,7 @@ describe('Companion independent regression review', () => {
     const user = userEvent.setup();
     render(<CompanionApp />);
     await user.click(screen.getByRole('tab', { name: '기도' }));
-    await user.click(screen.getByRole('button', { name: '기도제목 올리기' }));
+    await user.click(within(screen.getByRole('group', { name: '기도 메뉴' })).getByRole('button', { name: '기도제목 올리기' }));
     await user.type(screen.getByLabelText('어떤 마음으로 기도하고 있나요?'), '입력 중인 마음');
     await user.click(screen.getByRole('tab', { name: '주차' }));
     expect(screen.getAllByRole('tabpanel')).toHaveLength(1);
@@ -69,7 +69,7 @@ describe('Companion independent regression review', () => {
     Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: revoke });
     const view = render(<CompanionApp />);
     await user.click(screen.getByRole('tab', { name: '사진' }));
-    const input = screen.getByLabelText(/내 사진으로 미리보기/);
+    const input = screen.getByLabelText(/사진 올리기/);
     const oversized = new File(['x'], 'large.jpg', { type: 'image/jpeg' });
     Object.defineProperty(oversized, 'size', { value: 8 * 1024 * 1024 + 1 });
     fireEvent.change(input, { target: { files: [oversized] } });
