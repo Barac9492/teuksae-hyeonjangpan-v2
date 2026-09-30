@@ -19,6 +19,7 @@ it('shows ordinary dated operations before the event without a separate inspecti
  // official event dates (no calendar eligibility gate), even though per-row history copy
  // is no longer rendered publicly.
  expect(screen.getAllByText('100%').length).toBeGreaterThan(0);
+ expect(screen.queryByText(/갈보리/)).not.toBeInTheDocument();
  expect(liveStage(ops)).toBe(3);
 });
 it('keeps a fresh reading current across the calendar event boundary, since date eligibility gates were removed', () => {
@@ -42,14 +43,16 @@ it('falls back to a checking state on stale data across Korea midnight, without 
  render(<LiveParkingPanel venue="songrim" setVenue={()=>{}} operations={ops}/>);
  expect(screen.queryByText(/조회일/)).not.toBeInTheDocument();
  expect(screen.queryByText('100%')).not.toBeInTheDocument();
- expect(screen.getAllByText('확인 필요')).toHaveLength(2);
+ expect(screen.getAllByText('확인 필요')).toHaveLength(1);
+ expect(screen.queryByText(/갈보리/)).not.toBeInTheDocument();
 });
 it('does not claim a current value while offline', () => {
  const ops = {...operations('2026-10-04T23:59:59+09:00'), offline: true};
  render(<LiveParkingPanel venue="songrim" setVenue={()=>{}} operations={ops}/>);
  expect(screen.queryByText(/확인 \(한국 시간\)/)).not.toBeInTheDocument();
  expect(screen.queryByText('100%')).not.toBeInTheDocument();
- expect(screen.getAllByText('확인 필요')).toHaveLength(2);
+ expect(screen.getAllByText('확인 필요')).toHaveLength(1);
+ expect(screen.queryByText(/갈보리/)).not.toBeInTheDocument();
  expect(liveStage(ops)).toBeNull();
 });
 it('does not present a future timestamp as a confirmed reading', () => {

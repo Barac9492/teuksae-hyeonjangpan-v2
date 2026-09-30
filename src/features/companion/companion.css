@@ -82,7 +82,7 @@ body { background: #fbfbfa; }
   z-index: 3;
 }
 .tc-brand { display: flex; align-items: center; min-height: 44px; }
-.tc-brand img { display: block; width: 162px; height: auto; object-fit: contain; }
+.tc-brand img { display: block; width: 162px; height: auto; object-fit: contain; mix-blend-mode: multiply; }
 .tc-header-actions { display: flex; align-items: center; gap: 6px; }
 .tc-admin-link {
   display: inline-flex; align-items: center; min-height: 40px; padding: 0 10px; border-radius: 999px;

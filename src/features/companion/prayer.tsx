@@ -81,8 +81,7 @@ export function PrayerPanel({ onPreview }: { onPreview: (text: string) => void }
         ) : null}
         <div hidden={view === 'reflection'}><Community kind="prayer" text={text} payloadKey={text} showComposer={view === 'write'} defaultPublic /></div>
         {view === 'read' && <>
-          <p className="tc-footnote">짧은 한 줄도 괜찮아요. 함께 기도할 마음을 나눠주세요.</p>
-          <button type="button" className="tc-primary" onClick={() => { setView('write'); window.setTimeout(() => document.getElementById('tc-prayer')?.focus(), 0); }}>나도 기도제목 올리기 <span aria-hidden="true">→</span></button>
+          <button type="button" className="tc-primary" onClick={() => { setView('write'); window.setTimeout(() => document.getElementById('tc-prayer')?.focus(), 0); }}>기도제목 올리기 <span aria-hidden="true">→</span></button>
           <QuietMinute />
         </>}
       </div>

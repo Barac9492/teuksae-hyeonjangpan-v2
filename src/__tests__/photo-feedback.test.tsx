@@ -6,7 +6,7 @@ import { downloadBlob } from '../features/companion/dawn';
 vi.mock('../features/companion/canvas', async (original) => ({ ...await original<typeof import('../features/companion/canvas')>(), renderFramedPhoto: vi.fn() }));
 vi.mock('../features/companion/dawn', async (original) => ({ ...await original<typeof import('../features/companion/dawn')>(), downloadBlob: vi.fn() }));
 const key = 'woori-photo-days-2026-v1';
-const upload = () => fireEvent.change(screen.getByLabelText('내 사진으로 미리보기'), { target: { files: [new File(['pixels'], 'private-name.jpg', { type: 'image/jpeg' })] } });
+const upload = () => fireEvent.change(screen.getByLabelText('사진 올리기'), { target: { files: [new File(['pixels'], 'private-name.jpg', { type: 'image/jpeg' })] } });
 beforeEach(() => {
   localStorage.clear(); vi.clearAllMocks();
   vi.mocked(renderFramedPhoto).mockResolvedValue(new Blob(['png'], { type: 'image/png' }));
@@ -49,7 +49,7 @@ describe('local photo feedback', () => {
   });
   it('validates file type and size before preparing image', () => {
     render(<PhotosPanel eventDay={0} />);
-    fireEvent.change(screen.getByLabelText('내 사진으로 미리보기'), { target: { files: [new File(['x'], 'bad.svg', { type: 'image/svg+xml' })] } });
+    fireEvent.change(screen.getByLabelText('사진 올리기'), { target: { files: [new File(['x'], 'bad.svg', { type: 'image/svg+xml' })] } });
     expect(renderFramedPhoto).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: '선택한 날짜에 도장 남기기' })).toBeDisabled();
   });

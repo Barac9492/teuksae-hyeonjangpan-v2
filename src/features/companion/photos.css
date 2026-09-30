@@ -8,3 +8,9 @@
 .tc-photo-days li { padding: 12px 2px; text-align: center; border: 1px dashed var(--line); border-radius: 50%; font-size: 12px; }
 .tc-photo-days li span { display: block; font-size: 10px; margin-top: 4px; }
 .tc-photo-days li[data-stamped='true'] { border: 1px solid var(--ink); background: #f2e5db; color: var(--ink); }
+
+/* Scoped override (not shared companion.css): preserve the full source photo instead of
+   cropping it to fill the square frame. Letterbox bars show the paper background so
+   landscape, panorama, and portrait sources are never cropped left/right or top/bottom. */
+.tc-photo-preview .tc-polaroid__image { background: var(--paper, #fbfbfa); }
+.tc-photo-preview .tc-polaroid__image img { object-fit: contain; background: var(--paper, #fbfbfa); }
