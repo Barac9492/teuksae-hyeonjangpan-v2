@@ -50,12 +50,13 @@ it('does not submit on checkbox changes and still requires selection and an expl
   expect(screen.getByRole('status')).toHaveTextContent('관리자가 검수한 뒤에만 공개');
 });
 
-it('keeps photo consent disclosure and its unchecked default intact', () => {
+it('keeps compact photo consent accessible and its unchecked default intact', () => {
   vi.stubGlobal('fetch', vi.fn(async () => response(feed)));
   const { container } = render(<Community kind="photo" text="" payloadKey="photo" />);
-  expect(container.querySelector('.tc-community-compose--compact')).toBeNull();
-  expect(screen.getByRole('heading', { name: '앱에 들어온 모든 분께 공개하기' })).toBeVisible();
-  expect(screen.getByText('공개 범위와 삭제 한계 자세히 보기')).toBeVisible();
+  expect(container.querySelector('.tc-community-compose--compact')).not.toBeNull();
+  expect(screen.queryByRole('heading', { name: '앱에 들어온 모든 분께 공개하기' })).not.toBeInTheDocument();
+  expect(screen.queryByText('공개 범위와 삭제 한계 자세히 보기')).not.toBeInTheDocument();
+  expect(screen.getByRole('checkbox')).toHaveAccessibleDescription(/미성년자는 보호자 동의를 확인했습니다/);
   expect(screen.getByRole('checkbox')).not.toBeChecked();
 });
 
