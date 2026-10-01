@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { PageHeading } from './ui';
-import { Reflection } from './Reflection';
 import { Community } from './Community';
 
-type PrayerView = 'write' | 'read' | 'reflection';
+type PrayerView = 'write' | 'read';
 
 const QUIET_SECONDS = 60;
 const quietPrompts = ['천천히 숨을 들이쉬어요', '내쉬면서 어깨의 힘을 풀어요', '지금 마음에 떠오르는 이름을 올려드려요', '말없이 그 곁에 머물러요'];
@@ -64,10 +63,8 @@ export function PrayerPanel({ onPreview }: { onPreview: (text: string) => void }
         <div className="tc-subtabs" role="group" aria-label="기도 메뉴">
           <button type="button" aria-pressed={view === 'read'} onClick={() => setView('read')}>함께 기도하기</button>
           <button type="button" aria-pressed={view === 'write'} onClick={() => setView('write')}>기도제목 올리기</button>
-          <button type="button" aria-pressed={view === 'reflection'} onClick={() => setView('reflection')}>특새 묵상</button>
         </div>
-        <div hidden={view !== 'reflection'}><Reflection /></div>
-        {view === 'reflection' ? null : view === 'write' ? (
+        {view === 'write' ? (
           <form onSubmit={(event) => { event.preventDefault(); if (text.trim()) onPreview(text.trim()); }}>
             <label className="tc-field-label" htmlFor="tc-prayer">어떤 마음으로 기도하고 있나요?</label>
             <div className="tc-paper-field">
@@ -78,7 +75,7 @@ export function PrayerPanel({ onPreview }: { onPreview: (text: string) => void }
             <p className="tc-footnote">다른 사람의 실명·연락처·민감한 사정은 적지 말아주세요.</p>
           </form>
         ) : null}
-        <div hidden={view === 'reflection'}><Community kind="prayer" text={text} payloadKey={text} showComposer={view === 'write'} defaultPublic /></div>
+        <Community kind="prayer" text={text} payloadKey={text} showComposer={view === 'write'} defaultPublic />
         {view === 'read' && <>
           <button type="button" className="tc-primary" onClick={() => { setView('write'); window.setTimeout(() => document.getElementById('tc-prayer')?.focus(), 0); }}>기도제목 올리기 <span aria-hidden="true">→</span></button>
           <QuietMinute />

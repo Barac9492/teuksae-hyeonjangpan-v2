@@ -2,7 +2,7 @@ import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { CompanionApp } from '../features/companion';
-import { REFLECTION_DRAFTS_KEY } from '../features/companion/Reflection';
+import { REFLECTION_DRAFTS_KEY, Reflection } from '../features/companion/Reflection';
 import { shareText } from '../features/companion/shareText';
 
 beforeEach(() => { window.history.replaceState({}, '', '/?preview=1'); localStorage.clear(); });
@@ -24,10 +24,8 @@ it('offers all-visitor public prayer posting instead of recipient sharing', asyn
   expect(share).not.toHaveBeenCalled();
   expect(localStorage.length).toBe(0);
 });
-it('keeps daily reflection drafts separate and resets sharing consent on edits', async () => {
-  const user = userEvent.setup(); render(<CompanionApp />);
-  await user.click(screen.getByRole('tab', { name: '기도' }));
-  await user.click(screen.getByRole('button', { name: '특새 묵상' }));
+it('keeps archived reflection drafts separate and resets sharing consent on edits', async () => {
+  const user = userEvent.setup(); render(<Reflection />);
   await user.type(screen.getByLabelText('나의 묵상'), '먼저 듣기');
   await user.click(screen.getByRole('checkbox', { name: /모두에게 공개하는 데 동의/ }));
   await user.type(screen.getByLabelText('나의 묵상'), '.');
