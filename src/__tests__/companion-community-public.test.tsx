@@ -16,7 +16,7 @@ beforeEach(() => {
   }));
 });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.useRealTimers(); });
-const submit = () => screen.getByRole('button', { name: /^(공개 접수하기 · 검수 후 게시|사진 공개로 올리기)$/ });
+const submit = () => screen.getByRole('button', { name: /^(공개 접수하기 · 검수 후 게시|사진 공개하기)$/ });
 const consent = () => screen.getByRole('checkbox');
 describe('public companion submissions', () => {
   it('requires separate unchecked consent, retains only capability receipts and supports deletion', async () => {

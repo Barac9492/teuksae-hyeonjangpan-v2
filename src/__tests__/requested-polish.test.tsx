@@ -38,5 +38,5 @@ it('offers a short photo picker while keeping explicit public consent separate',
  expect(screen.getByLabelText('사진 올리기')).toHaveAttribute('type','file');
  expect(screen.queryByText('내 사진에 프레임과 짧은 메모를 남겨보세요.')).not.toBeInTheDocument();
  expect(screen.getByRole('checkbox',{name:'함께 나누기 · 공개'})).not.toBeChecked();
- expect(screen.getByRole('button',{name:'사진 공개로 올리기'})).toBeDisabled();
+ expect(screen.getByRole('button',{name:'사진 공개하기'})).toBeDisabled();
 });

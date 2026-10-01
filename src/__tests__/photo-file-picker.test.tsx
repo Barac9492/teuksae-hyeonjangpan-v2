@@ -35,7 +35,7 @@ it('keeps photo selection local and public submission opt-in only', async () => 
   expect(input.closest('label')).toHaveTextContent('다른 사진 고르기');
   expect(input).toHaveAccessibleName('다른 사진 고르기');
   expect(screen.getByRole('checkbox', { name: '함께 나누기 · 공개' })).not.toBeChecked();
-  expect(screen.getByRole('button', { name: '사진 공개로 올리기' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '사진 공개하기' })).toBeDisabled();
   expect(vi.mocked(fetch).mock.calls.every((call) => !call[1] || call[1].method !== 'POST')).toBe(true);
   fireEvent.click(screen.getByRole('button', { name: '사진·메모 지우기' }));
   expect(input.closest('label')).toHaveTextContent('사진 올리기');
