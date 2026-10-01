@@ -18,7 +18,7 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 describe('local photo feedback', () => {
   it('never stamps without a photo or silently defaults outside the event to October 5', () => {
     render(<PhotosPanel eventDay={null} />);
-    expect(screen.getByLabelText(/사진에 남길 행사 날짜/)).toHaveValue('');
+    expect(screen.getByRole('button', { name: /사진에 남길 행사 날짜.*날짜를 선택해주세요/ })).toHaveAttribute('aria-expanded', 'false');
     const button = screen.getByRole('button', { name: '선택한 날짜에 도장 남기기' });
     expect(button).toBeDisabled(); fireEvent.click(button);
     expect(localStorage.getItem(key)).toBeNull();
@@ -27,7 +27,8 @@ describe('local photo feedback', () => {
     render(<PhotosPanel eventDay={null} />); upload();
     await waitFor(() => expect(screen.getByRole('button', { name: '사진 다운로드' })).toBeEnabled());
     expect(screen.getByRole('button', { name: '선택한 날짜에 도장 남기기' })).toBeDisabled();
-    fireEvent.change(screen.getByLabelText(/사진에 남길 행사 날짜/), { target: { value: '2' } });
+    fireEvent.click(screen.getByRole('button', { name: /사진에 남길 행사 날짜/ }));
+    fireEvent.click(screen.getByRole('button', { name: '10월 7일 (수)' }));
     fireEvent.change(screen.getByLabelText(/사진 아래 한 줄/), { target: { value: '함께 걸었던 새벽' } });
     await waitFor(() => expect(renderFramedPhoto).toHaveBeenLastCalledWith('blob:local-photo', '10월 7일(수) 새벽', '함께 걸었던 새벽'));
     await waitFor(() => expect(screen.getByRole('button', { name: '선택한 날짜에 도장 남기기' })).toBeEnabled());
