@@ -60,8 +60,8 @@ describe('local photo feedback', () => {
     render(<PhotosPanel eventDay={1} />); upload();
     const button = await screen.findByRole('button', { name: '사진 다운로드' });
     expect(screen.queryByRole('button', { name: '사진 공유하기' })).not.toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: '앱에 들어온 모든 분께 공개하기' })).toBeVisible();
-    expect(screen.getByRole('checkbox', { name: /모두에게 공개하는 데 동의합니다/ })).not.toBeChecked();
+    expect(screen.queryByRole('heading', { name: '앱에 들어온 모든 분께 공개하기' })).not.toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: '함께 나누기 · 공개' })).not.toBeChecked();
     fireEvent.click(button);
     expect(downloadBlob).toHaveBeenCalledOnce();
     expect(share).not.toHaveBeenCalled();

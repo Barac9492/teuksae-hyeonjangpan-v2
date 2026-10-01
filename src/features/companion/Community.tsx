@@ -23,6 +23,7 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
   const attempt = useRef<{ key: string; requestId: string; token: string; done: boolean } | null>(null);
   const key = JSON.stringify([kind, text, eventDay, payloadKey]);
   const publicByDefault = kind === 'prayer' && defaultPublic;
+  const compactConsent = publicByDefault || kind === 'photo';
   const canShare = publicByDefault ? publicChoice && submittedKey !== key : consentKey === key;
   const currentKey = useRef(key); currentKey.current = key;
   useEffect(() => { setConsentKey(null); attempt.current = null; }, [key]);
@@ -76,7 +77,7 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
     finally { locked.current = false; setBusy(false); }
   };
   const submitButton = (
-      <button type="button" className="tc-primary" disabled={busy || !canShare || !feed || !!feedError || (kind !== 'photo' ? !text.trim() : !file)} onClick={() => void submit()}>{busy ? '처리 중…' : publicByDefault ? submittedKey === key ? '접수 완료 · 검수 후 게시' : '기도제목 공개로 올리기' : '공개 접수하기 · 검수 후 게시'}</button>
+      <button type="button" className="tc-primary" disabled={busy || !canShare || !feed || !!feedError || (kind !== 'photo' ? !text.trim() : !file)} onClick={() => void submit()}>{busy ? '처리 중…' : publicByDefault ? submittedKey === key ? '접수 완료 · 검수 후 게시' : '기도제목 공개로 올리기' : kind === 'photo' ? '사진 공개로 올리기' : '공개 접수하기 · 검수 후 게시'}</button>
   );
   const visibleItems = !feed ? [] : feed.items.filter(item => item.kind === kind);
   return <section className="tc-community" aria-label={kind === 'photo' ? '공개 사진 나눔' : kind === 'reflection' ? '공개 묵상 나눔' : '공개 기도 나눔'}>
@@ -85,21 +86,20 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
     </header>
     {feedError ? <p role="alert">{feedError} 이전 정보는 최신이 아닐 수 있어요. <button type="button" className="tc-line-action" onClick={() => void refresh()}>다시 불러오기</button></p> : !feed ? <p role="status">공개 나눔 정보를 불러오는 중이에요.</p> : null}
     {showComposer && <>
-      <div className={`tc-community-compose${publicByDefault ? ' tc-community-compose--compact' : ''}`}>
-        {!publicByDefault && <><h3>앱에 들어온 모든 분께 공개하기</h3><p>특정 사람에게 보내는 메시지가 아닙니다. 접수 후 관리자 검수가 끝나면 앱에 들어온 누구나 볼 수 있습니다.</p></>}
+      <div className={`tc-community-compose${compactConsent ? ' tc-community-compose--compact' : ''}`}>
+        {!compactConsent && <><h3>앱에 들어온 모든 분께 공개하기</h3><p>특정 사람에게 보내는 메시지가 아닙니다. 접수 후 관리자 검수가 끝나면 앱에 들어온 누구나 볼 수 있습니다.</p></>}
         {publicByDefault
           ? <label className="tc-checkbox"><input type="checkbox" aria-describedby={consentDetailsId} checked={publicChoice} disabled={busy} onChange={e => setPublicChoice(e.target.checked)} /><span>함께 나누기 · 공개</span></label>
-          : <label className="tc-checkbox"><input type="checkbox" aria-describedby={consentDetailsId} checked={consentKey === key} disabled={busy} onChange={e => setConsentKey(e.target.checked ? key : null)} /><span>모두에게 공개하는 데 동의합니다.</span></label>}
-        {publicByDefault
-          ? <p id={consentDetailsId} hidden>공개를 원하지 않으면 선택을 해제하고 미리보기에서 기도 카드를 저장할 수 있어요. 관리자는 검수 대기 내용도 읽을 수 있습니다. 승인 후에는 로그인 없이 앱에 들어온 누구나 볼 수 있고, 캡처·외부 저장 사본은 삭제 후에도 남을 수 있습니다. 다른 사람의 실명이나 민감한 사정은 적지 말아주세요. 다른 사람의 정보는 당사자 동의를, 미성년자는 보호자 동의를 확인해주세요. 내 제출 기록에서 삭제할 수 있고 관리자도 검수·삭제할 수 있습니다.</p>
+          : <label className="tc-checkbox"><input type="checkbox" aria-describedby={consentDetailsId} checked={consentKey === key} disabled={busy} onChange={e => setConsentKey(e.target.checked ? key : null)} /><span>{compactConsent ? '함께 나누기 · 공개' : '모두에게 공개하는 데 동의합니다.'}</span></label>}
+        {compactConsent
+          ? <p id={consentDetailsId} hidden>{kind === 'photo' ? '관리자는 검수 대기 내용도 읽을 수 있습니다. 승인 후에는 로그인 없이 앱에 들어온 누구나 볼 수 있고, 캡처·외부 저장 사본은 삭제 후에도 남을 수 있습니다. 다른 사람의 정보·사진은 당사자 동의를, 미성년자는 보호자 동의를 확인했습니다. 내 제출 기록에서 삭제할 수 있고 관리자도 검수·삭제할 수 있습니다. 프레임을 입힌 PNG만 전송합니다. 최대 3MB이며 원본 EXIF는 포함하지 않습니다.' : '공개를 원하지 않으면 선택을 해제하고 미리보기에서 기도 카드를 저장할 수 있어요. 관리자는 검수 대기 내용도 읽을 수 있습니다. 승인 후에는 로그인 없이 앱에 들어온 누구나 볼 수 있고, 캡처·외부 저장 사본은 삭제 후에도 남을 수 있습니다. 다른 사람의 실명이나 민감한 사정은 적지 말아주세요. 다른 사람의 정보는 당사자 동의를, 미성년자는 보호자 동의를 확인해주세요. 내 제출 기록에서 삭제할 수 있고 관리자도 검수·삭제할 수 있습니다.'}</p>
           : <>
             <details id={consentDetailsId} className="tc-footnote"><summary>공개 범위와 삭제 한계 자세히 보기</summary><p>관리자는 검수 대기 내용도 읽을 수 있습니다. 승인 후에는 로그인 없이 앱에 들어온 누구나 볼 수 있고, 캡처·외부 저장 사본은 삭제 후에도 남을 수 있습니다. 다른 사람의 정보·사진은 당사자 동의를, 미성년자는 보호자 동의를 확인했습니다.</p></details>
             <p className="tc-footnote">내 제출 기록에서 삭제 가능. 관리자도 검수·삭제할 수 있습니다.</p>
             {submitButton}
-            {kind === 'photo' && <p className="tc-footnote">프레임을 입힌 PNG만 전송합니다. 최대 3MB이며 원본 EXIF는 포함하지 않습니다.</p>}
           </>}
       </div>
-      {publicByDefault && submitButton}
+      {compactConsent && submitButton}
     </>}
     {storageFailed && <p role="alert">{storageWarning}</p>}
     {message && <p role="status">{message}</p>}
