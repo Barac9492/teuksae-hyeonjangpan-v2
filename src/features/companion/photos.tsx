@@ -117,8 +117,10 @@ export function PhotosPanel({ eventDay }: { eventDay: number | null }) {
             <div className="tc-polaroid-stack" aria-hidden="true"><span><i /></span><span><i /></span><span><i /><b>우리의 새벽</b></span></div>
           </div>
         )}
-        <label className={photo ? 'tc-secondary tc-upload' : 'tc-primary tc-upload'} htmlFor="tc-photo-input">{photo ? '다른 사진 고르기' : '사진 올리기'}</label>
-        <input ref={inputRef} id="tc-photo-input" aria-label="사진 올리기" type="file" accept="image/jpeg,image/png,image/webp" onChange={choose} hidden />
+        <label className={photo ? 'tc-secondary tc-upload' : 'tc-primary tc-upload'}>
+          {photo ? '다른 사진 고르기' : '사진 올리기'}
+          <input ref={inputRef} id="tc-photo-input" aria-label={photo ? '다른 사진 고르기' : '사진 올리기'} type="file" accept="image/jpeg,image/png,image/webp" onChange={choose} />
+        </label>
         <p className="tc-footnote">사진과 메모는 자동 저장·업로드하지 않아요. 공개 게시판 접수는 아래에서 별도로 동의해야 합니다. 검수 후 앱에 들어온 모든 분에게 공개됩니다. 내보낸 PNG에는 원본 EXIF 정보가 포함되지 않아요. JPG·PNG·WebP, 최대 8MB</p>
         <div className="tc-photo-days">
           <h2>이 기기에 남긴 새벽 도장</h2>
