@@ -44,10 +44,10 @@ it('does not submit on checkbox changes and still requires selection and an expl
   expect(button).toBeEnabled();
   expect(posts()).toHaveLength(0);
   fireEvent.click(button);
-  await waitFor(() => expect(screen.getByRole('button', { name: '접수 완료 · 검수 후 게시' })).toBeDisabled());
+  await waitFor(() => expect(screen.getByRole('button', { name: '접수 완료' })).toBeDisabled());
   expect(posts()).toHaveLength(1);
   expect(JSON.parse(posts()[0][1]!.body as string)).toMatchObject({ kind: 'prayer', text: '평안을 위해', consent: true });
-  expect(screen.getByRole('status')).toHaveTextContent('관리자가 검수한 뒤에만 공개');
+  expect(screen.getByRole('status')).toHaveTextContent('내 제출 기록에서 현재 상태를 확인할 수 있어요.');
 });
 
 it('keeps compact photo consent accessible and its unchecked default intact', () => {

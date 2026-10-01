@@ -58,7 +58,7 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
       a.done = true;
       setSubmittedKey(key);
       setStatuses(s => ({ ...s, [result.id as string]: statusLabels[result.status as string] }));
-      setMessage(result.status === 'pending' ? '서버에 접수했어요. 관리자가 검수한 뒤에만 공개됩니다.' : `이 요청의 기존 접수 상태를 확인했어요: ${statusLabels[result.status as string]}`);
+      setMessage(result.status === 'pending' ? '서버에 접수했어요. 내 제출 기록에서 현재 상태를 확인할 수 있어요.' : `이 요청의 기존 접수 상태를 확인했어요: ${statusLabels[result.status as string]}`);
       if (currentKey.current === key) setConsentKey(null);
       void refresh();
     } catch (error) { setMessage(error instanceof Error ? error.message : '접수 여부를 확인하지 못했어요. 같은 내용으로 다시 시도해주세요.'); }
@@ -77,7 +77,7 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
     finally { locked.current = false; setBusy(false); }
   };
   const submitButton = (
-      <button type="button" className="tc-primary" disabled={busy || !canShare || !feed || !!feedError || (kind !== 'photo' ? !text.trim() : !file)} onClick={() => void submit()}>{busy ? '처리 중…' : publicByDefault ? submittedKey === key ? '접수 완료 · 검수 후 게시' : '기도제목 공개로 올리기' : kind === 'photo' ? '사진 공개하기' : '공개 접수하기 · 검수 후 게시'}</button>
+      <button type="button" className="tc-primary" disabled={busy || !canShare || !feed || !!feedError || (kind !== 'photo' ? !text.trim() : !file)} onClick={() => void submit()}>{busy ? '처리 중…' : publicByDefault ? submittedKey === key ? '접수 완료' : '기도제목 공개로 올리기' : kind === 'photo' ? '사진 공개하기' : '공개 접수하기 · 검수 후 게시'}</button>
   );
   const visibleItems = !feed ? [] : feed.items.filter(item => item.kind === kind);
   const composer = showComposer && <>
@@ -106,7 +106,7 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
     {kind !== 'photo' && composer}
     {storageFailed && <p role="alert">{storageWarning}</p>}
     {message && <p role="status">{message}</p>}
-    {feed && !feedError && (visibleItems.length ? <ul className="tc-community-wall">{visibleItems.map(item => <li key={item.id}>{kind === 'photo' && safePhotoUrl(item.photoUrl) && <a href={safePhotoUrl(item.photoUrl)!} target="_blank" rel="noopener noreferrer"><img src={safePhotoUrl(item.photoUrl)!} alt="공개 동의 후 승인된 새벽 사진" loading="lazy" /></a>}{kind === 'reflection' && item.eventDay !== null && <strong>10월 {item.eventDay + 5}일 묵상</strong>}<p>{item.text}</p><small>검수 후 공개</small></li>)}</ul> : <p className="tc-community-empty">아직 승인되어 공개된 {kind === 'photo' ? '사진이' : kind === 'reflection' ? '묵상이' : '기도제목이'} 없어요. 접수한 내용은 검수 후 보입니다.</p>)}
+    {feed && !feedError && (visibleItems.length ? <ul className="tc-community-wall">{visibleItems.map(item => <li key={item.id}>{kind === 'photo' && safePhotoUrl(item.photoUrl) && <a href={safePhotoUrl(item.photoUrl)!} target="_blank" rel="noopener noreferrer"><img src={safePhotoUrl(item.photoUrl)!} alt="공개 동의 후 승인된 새벽 사진" loading="lazy" /></a>}{kind === 'reflection' && item.eventDay !== null && <strong>10월 {item.eventDay + 5}일 묵상</strong>}<p>{item.text}</p></li>)}</ul> : <p className="tc-community-empty">아직 승인되어 공개된 {kind === 'photo' ? '사진이' : kind === 'reflection' ? '묵상이' : '기도제목이'} 없어요. 접수한 내용은 검수 후 보입니다.</p>)}
     <details className="tc-community-receipts"><summary>내 제출 기록 ({records.filter(r => r.kind === kind).length})</summary><p>이 브라우저에 남은 삭제 권한으로 조회합니다. 저장소를 지우면 삭제 권한을 잃을 수 있어요.</p>
       {records.filter(r => r.kind === kind).map((r, index) => <div key={r.id}><strong>제출 {index + 1}</strong><span> · {statuses[r.id] ?? '상태를 확인해주세요'}</span><button type="button" disabled={busy} onClick={() => void receiptAction(r, 'status')}>상태 확인</button><button type="button" disabled={busy || statuses[r.id] === '삭제됨'} onClick={() => void receiptAction(r, 'delete')}>제출 철회·삭제</button></div>)}
     </details>
