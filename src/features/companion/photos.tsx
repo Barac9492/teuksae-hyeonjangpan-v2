@@ -21,6 +21,8 @@ export function PhotosPanel({ eventDay }: { eventDay: number | null }) {
   const [photoName, setPhotoName] = useState('');
   const [memo, setMemo] = useState('');
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [dayOptionsOpen, setDayOptionsOpen] = useState(false);
+  const dayButtonRef = useRef<HTMLButtonElement>(null);
   const [message, setMessage] = useState('');
   const [failedKey, setFailedKey] = useState<string | null>(null);
   const [stamps, setStamps] = useState(readStamps);
@@ -74,12 +76,23 @@ export function PhotosPanel({ eventDay }: { eventDay: number | null }) {
     <section id="tc-panel-photos" className="tc-panel" role="tabpanel" aria-labelledby="tc-tab-photos">
       <PageHeading eyebrow="이 새벽을 오래 기억하도록" title="우리의 사진">함께한 순간을 앱에 들어온 모든 분과 나눠요.</PageHeading>
       <div className="tc-section tc-section--topless">
-        <label className="tc-photo-field" htmlFor="tc-photo-day">사진에 남길 행사 날짜 (직접 선택 가능)
-          <select id="tc-photo-day" value={day ?? ''} onChange={(e) => { setSelectedDay(e.target.value === '' ? null : Number(e.target.value)); setMessage(''); }}>
-            {!validDay(eventDay) && <option value="">날짜를 선택해주세요</option>}
-            {SERVICE_DAYS.map((date, i) => <option key={date} value={i}>10월 {date}일 ({WEEKDAYS[i]})</option>)}
-          </select>
-        </label>
+        <div className="tc-photo-field">
+          <span id="tc-photo-day-label">사진에 남길 행사 날짜 (직접 선택 가능)</span>
+          <button ref={dayButtonRef} id="tc-photo-day" className="tc-photo-day-trigger" type="button"
+            aria-labelledby="tc-photo-day-label tc-photo-day-value" aria-expanded={dayOptionsOpen} aria-controls="tc-photo-day-options"
+            onClick={() => setDayOptionsOpen((open) => !open)}
+            onKeyDown={(e) => { if (e.key === 'Escape') setDayOptionsOpen(false); }}>
+            <span id="tc-photo-day-value">{day === null ? '날짜를 선택해주세요' : `10월 ${SERVICE_DAYS[day]}일 (${WEEKDAYS[day]})`}</span>
+            <span aria-hidden="true">⌄</span>
+          </button>
+          <div id="tc-photo-day-options" className="tc-photo-day-options" role="group" aria-label="행사 날짜 선택"
+            hidden={!dayOptionsOpen} onKeyDown={(e) => { if (e.key === 'Escape') { setDayOptionsOpen(false); dayButtonRef.current?.focus(); } }}>
+            {SERVICE_DAYS.map((date, i) => <button key={date} type="button" aria-pressed={day === i}
+              onClick={() => { setSelectedDay(i); setDayOptionsOpen(false); setMessage(''); dayButtonRef.current?.focus(); }}>
+              10월 {date}일 ({WEEKDAYS[i]})
+            </button>)}
+          </div>
+        </div>
         <p className="tc-footnote">{selectedDay !== null ? '직접 선택한 날짜이며 촬영일이나 출석을 확인하지 않습니다.' : validDay(eventDay) ? '오늘의 행사 날짜를 표시했어요. 다른 날짜로 바꿀 수 있어요.' : '오늘은 행사 기간이 아니에요. 기록할 날짜를 직접 선택해주세요.'}</p>
         {photo ? (
           <div className="tc-photo-preview">
