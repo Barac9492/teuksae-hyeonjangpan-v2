@@ -21,3 +21,9 @@
    landscape, panorama, and portrait sources are never cropped left/right or top/bottom. */
 .tc-photo-preview .tc-polaroid__image { background: var(--paper, #fbfbfa); }
 .tc-photo-preview .tc-polaroid__image img { object-fit: contain; background: var(--paper, #fbfbfa); }
+
+/* The real file input covers the visible control. A direct tap works even where
+   activating a display:none input through a label does not open the picker. */
+.tc-upload { position: relative; overflow: hidden; }
+.tc-upload input[type='file'] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.tc-upload:focus-within { outline: 2px solid var(--ink); outline-offset: 3px; }
