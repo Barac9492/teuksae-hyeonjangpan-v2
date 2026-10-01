@@ -27,3 +27,16 @@
 .tc-upload { position: relative; overflow: hidden; }
 .tc-upload input[type='file'] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 .tc-upload:focus-within { outline: 2px solid var(--ink); outline-offset: 3px; }
+
+/* Secondary photo tools are available without competing with the publish action. */
+.tc-photo-extras { margin: 20px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.tc-photo-extras > summary { display: flex; align-items: center; min-height: 48px; cursor: pointer; font-size: 13px; color: var(--ink); }
+.tc-photo-extras > summary:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.tc-photo-extras[open] { padding-bottom: 20px; }
+.tc-photo-extras .tc-photo-days { margin-top: 18px; padding-top: 18px; }
+
+/* Keep the publish action visible after selection on a short phone viewport. The image
+   still uses contain, so neither portraits nor landscapes are cropped. */
+@media (max-width: 480px) {
+  .tc-photo-preview .tc-polaroid__image { height: 140px; aspect-ratio: auto; }
+}

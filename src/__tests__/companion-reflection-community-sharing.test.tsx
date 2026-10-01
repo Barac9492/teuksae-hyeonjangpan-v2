@@ -65,7 +65,7 @@ describe('community sharing is open before the calendar launch date, with consen
     expect(screen.queryByText(/10월 5일부터/)).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: '앱에 들어온 모든 분께 공개하기' })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('checkbox', { name: '함께 나누기 · 공개' }));
-    expect(screen.getByRole('button', { name: '사진 공개로 올리기' })).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: '사진 공개하기' })).not.toBeDisabled();
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 

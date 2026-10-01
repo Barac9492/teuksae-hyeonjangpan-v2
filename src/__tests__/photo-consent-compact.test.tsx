@@ -29,14 +29,14 @@ it('renders only one visible photo-consent label and puts explicit posting outsi
   expect(check).toHaveAccessibleDescription(/원본 EXIF/);
   expect(screen.queryByRole('heading', { name: '앱에 들어온 모든 분께 공개하기' })).not.toBeInTheDocument();
   expect(screen.queryByText('공개 범위와 삭제 한계 자세히 보기')).not.toBeInTheDocument();
-  expect(screen.getByRole('button', { name: '사진 공개로 올리기' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '사진 공개하기' })).toBeDisabled();
 });
 it('never uploads on checkbox click and requires an explicit prepared-photo submit', async () => {
   render(<Community kind="photo" text="새벽" payloadKey="A" file={image} eventDay={1} />);
   await screen.findByText('오늘 사진 참여 0건');
   fireEvent.click(screen.getByRole('checkbox', { name: '함께 나누기 · 공개' }));
   expect(writes).toHaveLength(0);
-  const publish = screen.getByRole('button', { name: '사진 공개로 올리기' });
+  const publish = screen.getByRole('button', { name: '사진 공개하기' });
   expect(publish).toBeEnabled(); fireEvent.click(publish);
   await screen.findByText(/서버에 접수했어요/);
   expect(writes).toHaveLength(1);
@@ -62,6 +62,6 @@ it('keeps posting disabled without a prepared file even with consent', async () 
   render(<Community kind="photo" text="" payloadKey="empty" file={null} />);
   await screen.findByText('오늘 사진 참여 0건');
   fireEvent.click(screen.getByRole('checkbox'));
-  expect(screen.getByRole('button', { name: '사진 공개로 올리기' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '사진 공개하기' })).toBeDisabled();
   await waitFor(() => expect(writes).toHaveLength(0));
 });
