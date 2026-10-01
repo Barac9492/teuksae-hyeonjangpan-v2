@@ -49,7 +49,14 @@ describe('public companion submissions', () => {
     fireEvent.click(submit()); await screen.findByText(/서버에 접수했어요/);
     expect(posted[0].requestId).toBe(posted[1].requestId); expect(posted[0].deleteToken).toBe(posted[1].deleteToken);
   });
-  it.each([['approved', '공개 중'], ['rejected', '반려'], ['deleted', '삭제됨']])('accepts a retry already moderated to %s without claiming a new pending submission', async (status, label) => {
+  it.each([
+    { status: 'approved', label: '공개 중', defaultPublic: false },
+    { status: 'rejected', label: '반려', defaultPublic: false },
+    { status: 'deleted', label: '삭제됨', defaultPublic: false },
+    { status: 'approved', label: '공개 중', defaultPublic: true },
+    { status: 'rejected', label: '반려', defaultPublic: true },
+    { status: 'deleted', label: '삭제됨', defaultPublic: true },
+  ])('accepts a retry already moderated to $status with defaultPublic=$defaultPublic without claiming a new pending submission', async ({ status, label, defaultPublic }) => {
     let first = true;
     vi.stubGlobal('fetch', vi.fn(async (_url, options) => {
       if (options.method === 'GET') return response(feed);
@@ -57,19 +64,22 @@ describe('public companion submissions', () => {
       if (first) { first = false; throw new Error('response interrupted'); }
       return response({ id: body.requestId, status });
     }));
-    render(<Community kind="prayer" text="moderated retry" payloadKey={status} />);
+    render(<Community kind="prayer" text="moderated retry" payloadKey={status} defaultPublic={defaultPublic} />);
     await screen.findByText(/아직 승인되어/);
-    fireEvent.click(consent()); fireEvent.click(submit());
+    const retry = () => defaultPublic ? screen.getByRole('button', { name: '기도제목 공개로 올리기' }) : submit();
+    if (!defaultPublic) fireEvent.click(consent());
+    fireEvent.click(retry());
     await screen.findByText('response interrupted');
-    fireEvent.click(submit());
+    fireEvent.click(retry());
     await screen.findByText('이 요청의 기존 접수 상태를 확인했어요: ' + label);
     expect(screen.queryByText(/서버에 접수했어요/)).not.toBeInTheDocument();
     expect(screen.queryByText(/· 검수 대기/)).not.toBeInTheDocument();
     expect(posted).toHaveLength(2);
     expect(posted[0].requestId).toBe(posted[1].requestId);
     expect(posted[0].deleteToken).toBe(posted[1].deleteToken);
-    expect(consent()).not.toBeChecked();
-    expect(submit()).toBeDisabled();
+    expect(consent().matches(':checked')).toBe(defaultPublic);
+    expect(defaultPublic ? screen.getByRole('button', { name: '접수 완료' }) : submit()).toBeDisabled();
+    expect(screen.queryByRole('button', { name: '접수 완료 · 검수 후 게시' })).not.toBeInTheDocument();
     const saved = JSON.parse(localStorage.getItem(RECEIPTS_KEY)!);
     expect(saved.some((r: { id: string; token: string }) => r.id === posted[1].requestId && r.token === posted[1].deleteToken)).toBe(true);
   });
@@ -163,5 +173,5 @@ it('defaults new prayer sharing to public, respects opting out across edits, and
   await screen.findByText(/서버에 접수했어요/);
   expect(posted).toHaveLength(1);
   expect(posted[0]).toMatchObject({ kind: 'prayer', text: 'B', consent: true });
-  expect(screen.getByRole('button', { name: '접수 완료 · 검수 후 게시' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '접수 완료' })).toBeDisabled();
 });
