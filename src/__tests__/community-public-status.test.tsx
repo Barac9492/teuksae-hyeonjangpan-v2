@@ -12,7 +12,7 @@ beforeEach(() => { localStorage.clear(); });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 describe.each(kinds)('%s public status copy', kind => {
-  it('labels an approved public card as currently public', async () => {
+  it('shows an approved public card without a redundant status caption', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => response({
       ...feed,
       items: [{ id: 'approved', kind, text: '승인된 테스트 내용', eventDay: 0, photoUrl: '/api/community/photo?id=approved' }],
@@ -20,8 +20,9 @@ describe.each(kinds)('%s public status copy', kind => {
     render(<Community kind={kind} text="" payloadKey="read-only" showComposer={false} />);
 
     const card = await screen.findByRole('listitem');
-    expect(within(card).getByText('공개 중')).toBeVisible();
-    expect(within(card).queryByText(/검수 후|검수 대기/)).not.toBeInTheDocument();
+    expect(within(card).getByText('승인된 테스트 내용')).toBeVisible();
+    expect(within(card).queryByText(/공개 중|검수 후|검수 대기/)).not.toBeInTheDocument();
+    expect(card.querySelector('small')).not.toBeInTheDocument();
   });
 
   it.each([
@@ -67,7 +68,9 @@ describe.each(kinds)('%s public status copy', kind => {
     expect(screen.queryByRole('button', { name: '접수 완료 · 검수 후 게시' })).not.toBeInTheDocument();
     if (nextStatus === 'approved') {
       const card = await screen.findByRole('listitem');
-      expect(within(card).getByText('공개 중')).toBeVisible();
+      expect(within(card).getByText('상태 전환 테스트')).toBeVisible();
+      expect(within(card).queryByText(/공개 중|검수 후|검수 대기/)).not.toBeInTheDocument();
+      expect(card.querySelector('small')).not.toBeInTheDocument();
     } else {
       expect(screen.queryByRole('listitem')).not.toBeInTheDocument();
     }
