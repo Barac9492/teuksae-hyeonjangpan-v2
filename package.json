@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint . --max-warnings=0",
-    "test:server": "node --test server/__tests__/*.node-test.js"
+    "test:server": "node --test server/__tests__/*.node-test.js",
+    "test:community-sql": "node tests/scripts/community-db.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.3",
