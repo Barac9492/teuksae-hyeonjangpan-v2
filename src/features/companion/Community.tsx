@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
-import { communityRequest, deleteToken, photoBase64, readReceipts, safePhotoUrl, saveReceipt, validateFeed } from './communityClient';
+import { communityRequest, finishSubmission, photoBase64, readReceipts, safePhotoUrl, saveReceipt, submissionAttempt, validateFeed } from './communityClient';
 import type { CommunityFeed, CommunityKind, Receipt } from './communityClient';
 import './community.css';
 const storageWarning = '삭제 기록을 이 기기에 저장하지 못했어요. 이 화면에서는 확인·삭제할 수 있지만 새로고침하거나 닫으면 삭제 권한을 잃을 수 있어요. 먼저 내 제출 기록에서 확인하거나 삭제해주세요.';
@@ -20,23 +20,60 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
   const [records, setRecords] = useState(readReceipts);
   const [statuses, setStatuses] = useState<Record<string, string>>({});
   const locked = useRef(false);
-  const attempt = useRef<{ key: string; requestId: string; token: string; done: boolean } | null>(null);
+  const active = useRef(false);
+  const actionGeneration = useRef(0);
+  const actionRequest = useRef<AbortController | null>(null);
+  const feedGeneration = useRef(0);
+  const feedRequest = useRef<AbortController | null>(null);
   const key = JSON.stringify([kind, text, eventDay, payloadKey]);
+  // Retry identity follows the transmitted payload, not raw editor text. Keep
+  // the photo render identity: different image bytes must never share a retry.
+  const submissionKey = JSON.stringify([kind, text.trim(), eventDay, kind === 'photo' ? payloadKey : null]);
   const publicByDefault = kind === 'prayer' && defaultPublic;
   const compactConsent = publicByDefault || kind === 'photo';
   const canShare = publicByDefault ? publicChoice && submittedKey !== key : consentKey === key;
   const currentKey = useRef(key); currentKey.current = key;
-  useEffect(() => { setConsentKey(null); attempt.current = null; }, [key]);
-  const refresh = useCallback(async () => {
-    try { const next = validateFeed(await communityRequest(undefined, kind)); setFeed(next); setFeedError(''); }
-    catch (error) { setFeedError(error instanceof Error ? error.message : '정보를 불러오지 못했어요.'); }
+  useEffect(() => { setConsentKey(null); }, [key]);
+  const refresh = useCallback(async (supersede = false) => {
+    if (!active.current || (feedRequest.current && !supersede)) return;
+    feedRequest.current?.abort();
+    const controller = new AbortController();
+    feedRequest.current = controller;
+    const epoch = ++feedGeneration.current;
+    try {
+      const next = validateFeed(await communityRequest(undefined, kind, controller.signal));
+      if (active.current && epoch === feedGeneration.current) { setFeed(next); setFeedError(''); }
+    } catch (error) {
+      if (active.current && epoch === feedGeneration.current) {
+        // Hide stale public content/counts as soon as freshness cannot be verified.
+        setFeed(null);
+        setFeedError(error instanceof Error ? error.message : '정보를 불러오지 못했어요.');
+      }
+    } finally { if (epoch === feedGeneration.current) feedRequest.current = null; }
   }, [kind]);
+  const invalidateFeed = () => {
+    feedGeneration.current++;
+    feedRequest.current?.abort(); feedRequest.current = null;
+    setFeed(null);
+  };
   useEffect(() => {
+    const feedEpoch = feedGeneration, actionEpoch = actionGeneration;
+    active.current = true; setFeed(null); setFeedError(''); setBusy(false);
     void refresh();
     const timer = window.setInterval(() => { if (document.visibilityState !== 'hidden') void refresh(); }, 30000);
-    const onVisible = () => { if (document.visibilityState !== 'hidden') void refresh(); };
+    const onVisible = () => {
+      // A hidden tab must not display an unverified pre-navigation snapshot on return.
+      feedGeneration.current++; feedRequest.current?.abort(); feedRequest.current = null;
+      setFeed(null); setFeedError('');
+      if (document.visibilityState !== 'hidden') void refresh(true);
+    };
     document.addEventListener('visibilitychange', onVisible);
-    return () => { clearInterval(timer); document.removeEventListener('visibilitychange', onVisible); };
+    return () => {
+      active.current = false; feedEpoch.current++; actionEpoch.current++;
+      feedRequest.current?.abort(); feedRequest.current = null;
+      actionRequest.current?.abort(); actionRequest.current = null; locked.current = false;
+      clearInterval(timer); document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [refresh]);
   const remember = (receipt: Receipt, replaceId?: string) => {
     if (!saveReceipt(receipt, replaceId)) setStorageFailed(true);
@@ -45,36 +82,62 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
   const submit = async () => {
     if (locked.current || !canShare || !feed || feedError || (kind !== 'photo' ? !text.trim() : !file)) return;
     locked.current = true; setBusy(true); setMessage('');
+    const epoch = ++actionGeneration.current;
+    const controller = new AbortController(); actionRequest.current = controller;
+    const isCurrent = () => active.current && epoch === actionGeneration.current;
+    let attemptedId: string | undefined;
     try {
-      if (!attempt.current || attempt.current.key !== key || attempt.current.done) attempt.current = { key, requestId: crypto.randomUUID(), token: deleteToken(), done: false };
-      const a = attempt.current;
-      const imageBase64 = kind === 'photo' && file ? await photoBase64(file) : undefined;
-      // Write the capability before the request: an interrupted response must not silently lose it.
+      const a = submissionAttempt(submissionKey); attemptedId = a.requestId;
+      const imageBase64 = kind === 'photo' && file ? await photoBase64(file, controller.signal) : undefined;
+      if (!isCurrent()) return;
+      // Write the capability before the request: abort/timeout does not prove the
+      // server rolled back. A retry uses the same request ID and deletion token.
       remember({ id: a.requestId, kind, token: a.token });
       setStatuses(s => ({ ...s, [a.requestId]: '접수 확인 중 · 응답이 없으면 같은 내용으로 재시도해주세요' }));
-      const result = await communityRequest({ requestId: a.requestId, kind, text: text.trim(), eventDay, consent: true, deleteToken: a.token, ...(imageBase64 ? { imageBase64 } : {}) });
+      const result = await communityRequest({ requestId: a.requestId, kind, text: text.trim(), eventDay, consent: true, deleteToken: a.token, ...(imageBase64 ? { imageBase64 } : {}) }, undefined, controller.signal);
+      if (!isCurrent()) return;
       if (typeof result.id !== 'string' || typeof result.status !== 'string' || !Object.hasOwn(statusLabels, result.status)) throw new Error('접수 응답을 확인하지 못했어요. 같은 내용으로 다시 시도하면 중복 접수를 방지합니다.');
       remember({ id: result.id, kind, token: a.token }, a.requestId);
-      a.done = true;
+      finishSubmission(a);
       setSubmittedKey(key);
       setStatuses(s => ({ ...s, [result.id as string]: statusLabels[result.status as string] }));
       setMessage(result.status === 'pending' ? '서버에 접수했어요. 내 제출 기록에서 현재 상태를 확인할 수 있어요.' : `이 요청의 기존 접수 상태를 확인했어요: ${statusLabels[result.status as string]}`);
       if (currentKey.current === key) setConsentKey(null);
-      void refresh();
-    } catch (error) { setMessage(error instanceof Error ? error.message : '접수 여부를 확인하지 못했어요. 같은 내용으로 다시 시도해주세요.'); }
-    finally { locked.current = false; setBusy(false); }
+      void refresh(true);
+    } catch (error) {
+      if (isCurrent()) {
+        const id = attemptedId;
+        if (id) setStatuses(s => ({ ...s, [id]: '접수 여부 확인 필요 · 상태 확인 또는 같은 내용으로 재시도' }));
+        setMessage(error instanceof Error ? error.message : '접수 여부를 확인하지 못했어요. 같은 내용으로 다시 시도해주세요.');
+      }
+    } finally {
+      if (isCurrent()) { locked.current = false; actionRequest.current = null; setBusy(false); }
+    }
   };
   const receiptAction = async (record: Receipt, action: 'status' | 'delete') => {
     if (locked.current) return;
     locked.current = true; setBusy(true);
+    const epoch = ++actionGeneration.current;
+    const controller = new AbortController(); actionRequest.current = controller;
+    const isCurrent = () => active.current && epoch === actionGeneration.current;
+    if (action === 'delete') invalidateFeed();
     try {
-      const result = await communityRequest({ action, id: record.id, deleteToken: record.token });
+      const result = await communityRequest({ action, id: record.id, deleteToken: record.token }, undefined, controller.signal);
+      if (!isCurrent()) return;
       const status = typeof result.status === 'string' && Object.hasOwn(statusLabels, result.status) ? statusLabels[result.status] : action === 'delete' && result.deleted === true ? '삭제됨' : undefined;
       if (!status) throw new Error('처리 결과를 확인하지 못했어요. 다시 확인해주세요.');
       setStatuses(s => ({ ...s, [record.id]: status }));
-      if (action === 'delete') { setMessage('서버의 제출 기록 삭제 결과를 확인했어요. 외부에 저장된 사본은 회수할 수 없어요.'); void refresh(); }
-    } catch (error) { setMessage(error instanceof Error ? error.message : '처리하지 못했어요.'); }
-    finally { locked.current = false; setBusy(false); }
+      if (action === 'delete') { setMessage('서버의 제출 기록 삭제 결과를 확인했어요. 외부에 저장된 사본은 회수할 수 없어요.'); void refresh(true); }
+      else if (result.status === 'deleted' || result.status === 'rejected') { invalidateFeed(); void refresh(true); }
+    } catch (error) {
+      if (isCurrent()) {
+        setStatuses(s => ({ ...s, [record.id]: '처리 결과 확인 필요 · 상태를 다시 확인해주세요' }));
+        setMessage(`${error instanceof Error ? error.message : '처리하지 못했어요.'} 상태 확인으로 결과를 확인해주세요. 같은 제출 기록으로 철회·삭제를 다시 시도할 수 있어요.`);
+        if (action === 'delete') { invalidateFeed(); setFeedError('삭제 결과와 최신 공개 목록을 확인하지 못했어요.'); }
+      }
+    } finally {
+      if (isCurrent()) { locked.current = false; actionRequest.current = null; setBusy(false); }
+    }
   };
   const submitButton = (
       <button type="button" className="tc-primary" disabled={busy || !canShare || !feed || !!feedError || (kind !== 'photo' ? !text.trim() : !file)} onClick={() => void submit()}>{busy ? '처리 중…' : publicByDefault ? submittedKey === key ? '접수 완료' : '기도제목 공개로 올리기' : kind === 'photo' ? '사진 공개하기' : '공개 접수하기 · 검수 후 게시'}</button>
@@ -102,7 +165,7 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
     <header><h2>{kind === 'photo' ? '함께 남긴 새벽 사진' : kind === 'reflection' ? '함께 나누는 묵상' : '함께 나누는 기도'}</h2>
       {kind === 'photo' && <><strong className="tc-community-count">{feed && !feedError ? `오늘 사진 참여 ${feed.photoCountToday}건` : feedError ? '오늘 사진 참여 건수 확인 불가' : '오늘 사진 참여 건수 확인 중'}</strong><details className="tc-footnote"><summary>ⓘ 참여 수 안내</summary><p>한국 시간 실제 접수일 기준입니다. 같은 사람의 여러 제출도 각각 셉니다. 검수 대기·공개 사진을 포함하고 반려·삭제는 제외합니다. 사진에 선택한 행사 날짜와는 무관해요.{feed && !feedError && ` (${feed.today})`}</p></details></>}
     </header>
-    {feedError ? <p role="alert">{feedError} 이전 정보는 최신이 아닐 수 있어요. <button type="button" className="tc-line-action" onClick={() => void refresh()}>다시 불러오기</button></p> : !feed ? <p role="status">공개 나눔 정보를 불러오는 중이에요.</p> : null}
+    {feedError ? <p role="alert">{feedError} 최신 여부를 확인할 수 없어 이전 게시물과 참여 건수를 숨겼어요. <button type="button" className="tc-line-action" onClick={() => void refresh(true)}>다시 불러오기</button></p> : !feed ? <p role="status">공개 나눔 정보를 불러오는 중이에요.</p> : null}
     {kind !== 'photo' && composer}
     {storageFailed && <p role="alert">{storageWarning}</p>}
     {message && <p role="status">{message}</p>}
