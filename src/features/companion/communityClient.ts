@@ -24,7 +24,7 @@ export function saveReceipt(receipt: Receipt, replaceId?: string): boolean {
   receipts.push(receipt);
   try { localStorage.setItem(runtimeStorageKey(RECEIPTS_KEY), JSON.stringify(receipts)); return true; } catch { return false; }
 }
-export type SubmissionAttempt = { key: string; requestId: string; token: string; done: boolean };
+export type SubmissionAttempt = { key: string; requestId: string; token: string; done: boolean; imageBase64?: string };
 // Only unresolved attempts are kept in memory across tab switches. Never persist
 // payload text/photos: localStorage still contains only the deletion capability.
 const unresolvedAttempts = new Map<string, SubmissionAttempt>();
@@ -39,7 +39,15 @@ export function submissionAttempt(key: string): SubmissionAttempt {
 }
 export function finishSubmission(attempt: SubmissionAttempt) {
   attempt.done = true;
+  delete attempt.imageBase64;
   for (const [key, value] of unresolvedAttempts) if (value === attempt) unresolvedAttempts.delete(key);
+}
+export function finishSubmissionForReceipt(id: string) {
+  const keys: string[] = [];
+  for (const attempt of unresolvedAttempts.values()) {
+    if (attempt.requestId === id) { keys.push(attempt.key); finishSubmission(attempt); }
+  }
+  return keys;
 }
 export async function communityRequest(body?: object, kind?: CommunityKind, signal?: AbortSignal): Promise<Record<string, unknown>> {
   return requestWithDeadline(async requestSignal => {
