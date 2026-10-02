@@ -108,6 +108,10 @@ export function SharingPanel({ eventDay, stories, onAddStory, onDeleteStory, onH
         {view === 'snacks' ? (
           <>
             <div className="tc-snack-place"><strong>송림본당만</strong><span>학교 개방 전 · 학교 밖 대기 장소</span></div>
+            <section className="tc-gym-setup" aria-labelledby="tc-gym-setup-title">
+              <h2 id="tc-gym-setup-title">함께 준비해요</h2>
+              <p>체육관 세팅은 오전 3시 30분부터 시작합니다. 먼저 도착하신 성도님들의 자발적인 참여를 부탁드립니다.</p>
+            </section>
             <h2 className="tc-serif-title">작은 간식으로 마음을 나눠요.</h2>
             <DayChips eventDay={eventDay} />
             {eventDay === null ? (
