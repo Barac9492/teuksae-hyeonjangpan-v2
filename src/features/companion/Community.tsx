@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
-import { communityRequest, finishSubmission, photoBase64, readReceipts, safePhotoUrl, saveReceipt, submissionAttempt, validateFeed } from './communityClient';
+import { communityRequest, finishSubmission, finishSubmissionForReceipt, photoBase64, readReceipts, safePhotoUrl, saveReceipt, submissionAttempt, validateFeed } from './communityClient';
 import type { CommunityFeed, CommunityKind, Receipt } from './communityClient';
 import './community.css';
 const storageWarning = '삭제 기록을 이 기기에 저장하지 못했어요. 이 화면에서는 확인·삭제할 수 있지만 새로고침하거나 닫으면 삭제 권한을 잃을 수 있어요. 먼저 내 제출 기록에서 확인하거나 삭제해주세요.';
@@ -88,8 +88,12 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
     let attemptedId: string | undefined;
     try {
       const a = submissionAttempt(submissionKey); attemptedId = a.requestId;
-      const imageBase64 = kind === 'photo' && file ? await photoBase64(file, controller.signal) : undefined;
+      const imageBase64 = kind === 'photo' && file ? a.imageBase64 ?? await photoBase64(file, controller.signal) : undefined;
       if (!isCurrent()) return;
+      // Returning to the same photo/date/memo can regenerate different grain
+      // pixels. Replay the first transmitted bytes along with its request ID,
+      // only in memory until confirmation; never persist the image in receipts.
+      if (imageBase64 !== undefined) a.imageBase64 = imageBase64;
       // Write the capability before the request: abort/timeout does not prove the
       // server rolled back. A retry uses the same request ID and deletion token.
       remember({ id: a.requestId, kind, token: a.token });
@@ -126,9 +130,20 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
       if (!isCurrent()) return;
       const status = typeof result.status === 'string' && Object.hasOwn(statusLabels, result.status) ? statusLabels[result.status] : action === 'delete' && result.deleted === true ? '삭제됨' : undefined;
       if (!status) throw new Error('처리 결과를 확인하지 못했어요. 다시 확인해주세요.');
+      // A pending status may still need an exact-byte retry to finish uploading.
+      // Approved/terminal results and confirmed withdrawal no longer need pixels.
+      if (record.kind === 'photo' && (['approved', 'rejected', 'deleted'].includes(String(result.status)) || (action === 'delete' && result.deleted === true))) {
+        const resolvedKeys = finishSubmissionForReceipt(record.id);
+        // A confirmed old request is no longer an uncertain retry. Require a
+        // new choice before submitting it again, but never reset another draft.
+        if (resolvedKeys.includes(submissionKey) && currentKey.current === key) setConsentKey(null);
+      }
       setStatuses(s => ({ ...s, [record.id]: status }));
       if (action === 'delete') { setMessage('서버의 제출 기록 삭제 결과를 확인했어요. 외부에 저장된 사본은 회수할 수 없어요.'); void refresh(true); }
-      else if (result.status === 'deleted' || result.status === 'rejected') { invalidateFeed(); void refresh(true); }
+      else {
+        setMessage('서버에 접수했어요. 내 제출 기록에서 현재 상태를 확인할 수 있어요.');
+        if (result.status === 'deleted' || result.status === 'rejected') { invalidateFeed(); void refresh(true); }
+      }
     } catch (error) {
       if (isCurrent()) {
         setStatuses(s => ({ ...s, [record.id]: '처리 결과 확인 필요 · 상태를 다시 확인해주세요' }));
