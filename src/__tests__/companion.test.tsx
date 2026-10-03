@@ -89,34 +89,32 @@ describe('CompanionApp', () => {
     const user = userEvent.setup();
     render(<CompanionApp />);
     await chooseTab(user, '나눔');
-    expect(screen.getByText('송림본당만')).toBeVisible();
-    expect(screen.getByText('학교 개방 전 · 학교 밖 대기 장소')).toBeVisible();
+    expect(screen.getByText('송림본당 · 서현')).toBeVisible();
+    expect(screen.getByText('송림본당: 학교 개방 전 · 학교 밖 대기 장소')).toBeVisible();
     expect(screen.getByText(/개인 보온병에 따뜻한 물을 준비해 오시거나/)).toBeVisible();
     expect(screen.getByText(/체육관이 열린 뒤 내부 온수 정수기/)).toBeVisible();
     expect(screen.getByText(/학교 출입문만 열렸을 때는 이용할 수 없습니다/)).toBeVisible();
     expect(screen.getByText(/학교 밖에서는 뜨거운 물을 나눠드리지 않습니다/)).toBeVisible();
   });
 
-  it('shows the accessible gym setup notice immediately in default sharing, before snack content', async () => {
+  it('keeps the approved two-location challenge copy and omits public gym volunteering after navigation', async () => {
     window.history.replaceState({}, '', '/');
     const user = userEvent.setup();
     render(<CompanionApp />);
     await chooseTab(user, '나눔');
+    const checkCopy = () => {
+      const panel = screen.getByRole('tabpanel', { name: '나눔' });
+      expect(within(panel).getByText('송림본당 · 서현')).toBeVisible();
+      expect(within(panel).getByRole('heading', { name: '잠을 깨우는 소소한 간식나눔 챌린지' })).toBeVisible();
+      expect(panel).not.toHaveTextContent(/함께 준비해요|체육관 세팅|3시 30분|송림본당만|작은 간식으로 마음을 나눠요|핫팩/);
+    };
     expect(screen.getByRole('button', { name: '오병이어 챌린지' })).toHaveAttribute('aria-pressed', 'true');
-    const notice = screen.getByRole('region', { name: '함께 준비해요' });
-    expect(notice).toBeVisible();
-    expect(within(notice).getByRole('heading', { name: '함께 준비해요', level: 2 })).toBeVisible();
-    expect(within(notice).getByText('체육관 세팅은 오전 3시 30분부터 시작합니다. 먼저 도착하신 성도님들의 자발적인 참여를 부탁드립니다.')).toBeVisible();
-    expect(screen.getByText('송림본당만').compareDocumentPosition(notice) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(notice.compareDocumentPosition(screen.getByRole('heading', { name: '작은 간식으로 마음을 나눠요.' })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-
+    checkCopy();
     await user.click(screen.getByRole('button', { name: '아침 식사' }));
-    expect(screen.queryByRole('region', { name: '함께 준비해요' })).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '오병이어 챌린지' }));
     await chooseTab(user, '예배');
     await chooseTab(user, '나눔');
-    expect(screen.getAllByRole('region', { name: '함께 준비해요' })).toHaveLength(1);
-    expect(screen.getByRole('region', { name: '함께 준비해요' })).toBeVisible();
+    checkCopy();
   });
 
   it('shows first-day preparation and subsequent voluntary packaged snacks without an attendance obligation', async () => {

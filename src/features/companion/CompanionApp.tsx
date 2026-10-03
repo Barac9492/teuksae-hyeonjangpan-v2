@@ -190,7 +190,7 @@ export function CompanionApp() {
           <select id="tc-stage" value={stage} onChange={(event) => setStage(Number(event.target.value) as Stage)}>{stageNames.map((name, index) => <option value={index} key={name}>{index + 1}. {name}</option>)}</select>
           <label className="tc-checkbox"><input type="checkbox" checked={stale} onChange={(event) => setStale(event.target.checked)} /><span>현황 정보가 오래된 상황</span></label>
           <label className="tc-checkbox"><input type="checkbox" checked={parkingFull[venue]} onChange={(event) => setParkingFull((current) => ({ ...current, [venue]: event.target.checked }))} /><span>선택 장소의 모든 주차 공간 만차</span><small>현재 선택: {venue === 'songrim' ? '송림본당' : '드림센터'}</small></label>
-          <div className="tc-quiet"><strong>운영자용 시안 메모</strong><p>송림본당만 · 학교 개방 전 학교 밖 · 최종 정리 역할: 교육자<br />학교 밖 온수 배부 없음 · 보온병은 선택 · 체육관 자체 개방 후 내부 온수 정수기 이용<br />정확한 나눔 지점과 시작·종료 시각은 미정</p></div>
+          <div className="tc-quiet"><strong>운영자용 시안 메모</strong><p>송림본당 · 서현 · 잠을 깨우는 소소한 간식나눔 챌린지<br />송림본당: 학교 개방 전 학교 밖 · 최종 정리 역할: 교육자<br />송림본당: 학교 밖 온수 배부 없음 · 보온병은 선택 · 체육관 자체 개방 후 내부 온수 정수기 이용<br />정확한 나눔 지점과 시작·종료 시각은 미정</p></div>
           <button className="tc-primary" type="button" onClick={() => setModal(null)}>선택한 상황 보기</button>
         </Modal>
       )}

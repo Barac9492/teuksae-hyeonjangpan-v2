@@ -107,12 +107,8 @@ export function SharingPanel({ eventDay, stories, onAddStory, onDeleteStory, onH
         </div>
         {view === 'snacks' ? (
           <>
-            <div className="tc-snack-place"><strong>송림본당만</strong><span>학교 개방 전 · 학교 밖 대기 장소</span></div>
-            <section className="tc-gym-setup" aria-labelledby="tc-gym-setup-title">
-              <h2 id="tc-gym-setup-title">함께 준비해요</h2>
-              <p>체육관 세팅은 오전 3시 30분부터 시작합니다. 먼저 도착하신 성도님들의 자발적인 참여를 부탁드립니다.</p>
-            </section>
-            <h2 className="tc-serif-title">작은 간식으로 마음을 나눠요.</h2>
+            <div className="tc-snack-place"><strong>송림본당 · 서현</strong><span>송림본당: 학교 개방 전 · 학교 밖 대기 장소</span></div>
+            <h2 className="tc-serif-title">잠을 깨우는 소소한 간식나눔 챌린지</h2>
             <DayChips eventDay={eventDay} />
             {eventDay === null ? (
               <div className="tc-day-copy"><span className="tc-tiny">특새 기간</span><p>간식을 준비하지 않으셔도 편하게 함께해 주세요.</p></div>
@@ -145,7 +141,7 @@ export function SharingPanel({ eventDay, stories, onAddStory, onDeleteStory, onH
             </div>
 
             <div className="tc-water">
-              <strong>따뜻한 물은 이렇게 이용해요.</strong>
+              <strong>송림본당의 따뜻한 물은 이렇게 이용해요.</strong>
               <div className="tc-water__flow" aria-hidden="true">
                 <span>{Icon.flask}<small>내 보온병</small></span>
                 <i>또는</i>
