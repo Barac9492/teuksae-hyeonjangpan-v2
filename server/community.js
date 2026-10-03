@@ -5,15 +5,15 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 const TOKEN = /^[A-Za-z0-9_-]{32,128}$/;
 const BUCKET = 'community-photos-v2';
 const MAX = 3 * 1024 * 1024;
-const ADMIN_STATUSES = ['all','pending','approved','rejected'];
+const ADMIN_STATUSES = ['all','pending','approved','rejected','trashed'];
 // Preserve PostgreSQL microseconds in cursor timestamps; Date.toISOString would
 // round them and skip same-millisecond rows at a page boundary.
 const CURSOR_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[+-]\d{2}:\d{2})$/;
 const hash = value => createHash('sha256').update(value).digest('hex');
 const fail = (status, message) => Object.assign(new Error(message), { status });
-function validAdminCursor(cursor, status) {
+function validAdminCursor(cursor, status, kind = 'all') {
   return cursor && typeof cursor === 'object' && !Array.isArray(cursor)
-    && Object.keys(cursor).length === 5
+    && Object.keys(cursor).length === (kind === 'all' ? 5 : 6) && (cursor.kind ?? 'all') === kind
     && cursor.v === 1 && cursor.status === status && [0,1].includes(cursor.priority)
     && (status === 'all' || cursor.priority === (status === 'pending' ? 0 : 1))
     && typeof cursor.id === 'string' && UUID.test(cursor.id) && typeof cursor.createdAt === 'string'
@@ -21,9 +21,11 @@ function validAdminCursor(cursor, status) {
 }
 function adminPageArgs(search) {
   const status = search.get('status') ?? 'all';
+  const kind = search.get('kind') ?? 'all';
+  if (!['all','prayer','photo'].includes(kind) || search.getAll('kind').length > 1) throw fail(400,'종류를 확인해주세요.');
   if (!ADMIN_STATUSES.includes(status) || search.getAll('status').length > 1 || search.getAll('cursor').length > 1) throw fail(400,'검토 목록 조건을 확인해주세요.');
   const encoded = search.get('cursor');
-  if (encoded === null) return {status};
+  if (encoded === null) return {status,...kind !== 'all' ? {kind} : {}};
   if (!/^[A-Za-z0-9_-]{1,1024}$/.test(encoded)) throw fail(400,'검토 목록 위치를 확인해주세요.');
   let cursor;
   try {
@@ -31,8 +33,8 @@ function adminPageArgs(search) {
     if (bytes.toString('base64url') !== encoded) throw new Error('encoding');
     cursor = JSON.parse(bytes.toString('utf8'));
   } catch { throw fail(400,'검토 목록 위치를 확인해주세요.'); }
-  if (!validAdminCursor(cursor,status)) throw fail(400,'검토 목록 위치를 확인해주세요.');
-  return {status,cursor};
+  if (!validAdminCursor(cursor,status,kind)) throw fail(400,'검토 목록 위치를 확인해주세요.');
+  return {status,cursor,...kind !== 'all' ? {kind} : {}};
 }
 function config(env) {
   const origin = env.COMMUNITY_ALLOWED_ORIGIN || 'https://teuksae-hyeonjangpan-v2.vercel.app';
@@ -138,17 +140,18 @@ export async function handleCommunity(route, req, res, env = process.env, fetche
       if (req.method === 'GET') {
         const args = adminPageArgs(url.searchParams);
         const data = await call('adminList',{session,...args});
+        if ((args.kind && data.kind !== args.kind) || (args.status === 'trashed' && !data.trashSupported)) throw fail(503,'검토 목록 DB 업데이트가 필요합니다.');
         // A pre-011 RPC ignores these arguments. Do not silently claim a filter
         // or next page was applied if the database has not been migrated yet.
         if (data.nextCursor === undefined && (args.status !== 'all' || args.cursor)) throw fail(503,'검토 목록 업데이트가 필요합니다. 잠시 후 다시 시도해주세요.');
-        if (!Array.isArray(data.items) || data.items.length > 100 || (data.nextCursor != null && !validAdminCursor(data.nextCursor,args.status))) throw fail(503,'검토 목록을 확인하지 못했습니다.');
+        if (!Array.isArray(data.items) || data.items.length > (args.kind || args.status === 'trashed' ? 20 : 100) || (data.nextCursor != null && !validAdminCursor(data.nextCursor,args.status,args.kind))) throw fail(503,'검토 목록을 확인하지 못했습니다.');
         // Old API callers can ignore this field. Never expose the SQL cursor as
         // an object: browsers treat this bounded opaque token as a page pointer.
         const nextCursor = data.nextCursor == null ? null : Buffer.from(JSON.stringify(data.nextCursor)).toString('base64url');
         return reply(res,200,{...data, nextCursor, items:data.items.filter(item => item?.status !== 'deleted')});
       }
       const b = await body(req);
-      if (!UUID.test(b.id || '') || !['approved','rejected','deleted'].includes(b.decision) || !Number.isSafeInteger(b.expectedVersion) || b.expectedVersion < 0) throw fail(400,'검토 요청을 확인해주세요.');
+      if (!UUID.test(b.id || '') || !['approved','rejected','deleted','trashed','restored'].includes(b.decision) || !Number.isSafeInteger(b.expectedVersion) || b.expectedVersion < 0) throw fail(400,'검토 요청을 확인해주세요.');
       return reply(res,200,await cleanup(checked(await call('moderate',{...b,session}))));
     }
     if (req.method === 'GET') {

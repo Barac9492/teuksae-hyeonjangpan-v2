@@ -1,0 +1,50 @@
+
+> teuksae-app-v1@1.0.0 test
+> vitest run --reporter=dot
+
+
+ RUN  v3.2.7 /Users/ethancho/Documents/Codex/2026-10-03/task-5/admin-feedback
+
+·············································································································································································································stderr | src/__tests__/prayer-card-layout.test.ts
+Error: Not implemented: navigation (except hash changes)
+    at module.exports (/Users/ethancho/Documents/Codex/2026-10-03/task-5/admin-feedback/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at navigateFetch (/Users/ethancho/Documents/Codex/2026-10-03/task-5/admin-feedback/node_modules/jsdom/lib/jsdom/living/window/navigation.js:77:3)
+    at exports.navigate (/Users/ethancho/Documents/Codex/2026-10-03/task-5/admin-feedback/node_modules/jsdom/lib/jsdom/living/window/navigation.js:55:3)
+    at Timeout._onTimeout (/Users/ethancho/Documents/Codex/2026-10-03/task-5/admin-feedback/node_modules/jsdom/lib/jsdom/living/nodes/HTMLHyperlinkElementUtils-impl.js:80:7)
+    at listOnTimeout (node:internal/timers:585:17)
+    at processTimers (node:internal/timers:521:7) undefined
+
+stderr | src/__tests__/prayer-card-layout.test.ts
+Error: Not implemented: navigation (except hash changes)
+    at module.exports (/Users/ethancho/Documents/Codex/2026-10-03/task-5/admin-feedback/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at navigateFetch (/Users/ethancho/Documents/Codex/2026-10-03/task-5/admin-feedback/node_modules/jsdom/lib/jsdom/living/window/navigation.js:77:3)
+    at exports.navigate (/Users/ethancho/Documents/Codex/2026-10-03/task-5/admin-feedback/node_modules/jsdom/lib/jsdom/living/window/navigation.js:55:3)
+    at Timeout._onTimeout (/Users/ethancho/Documents/Codex/2026-10-03/task-5/admin-feedback/node_modules/jsdom/lib/jsdom/living/nodes/HTMLHyperlinkElementUtils-impl.js:80:7)
+    at listOnTimeout (node:internal/timers:585:17)
+    at processTimers (node:internal/timers:521:7) undefined
+
+stderr | src/__tests__/prayer-card-layout.test.ts
+Error: Not implemented: navigation (except hash changes)
+    at module.exports (/Users/ethancho/Documents/Codex/2026-10-03/task-5/admin-feedback/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at navigateFetch (/Users/ethancho/Documents/Codex/2026-10-03/task-5/admin-feedback/node_modules/jsdom/lib/jsdom/living/window/navigation.js:77:3)
+    at exports.navigate (/Users/ethancho/Documents/Codex/2026-10-03/task-5/admin-feedback/node_modules/jsdom/lib/jsdom/living/window/navigation.js:55:3)
+    at Timeout._onTimeout (/Users/ethancho/Documents/Codex/2026-10-03/task-5/admin-feedback/node_modules/jsdom/lib/jsdom/living/nodes/HTMLHyperlinkElementUtils-impl.js:80:7)
+    at listOnTimeout (node:internal/timers:585:17)
+    at processTimers (node:internal/timers:521:7) undefined
+
+stderr | src/__tests__/prayer-card-layout.test.ts
+Error: Not implemented: navigation (except hash changes)
+    at module.exports (/Users/ethancho/Documents/Codex/2026-10-03/task-5/admin-feedback/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at navigateFetch (/Users/ethancho/Documents/Codex/2026-10-03/task-5/admin-feedback/node_modules/jsdom/lib/jsdom/living/window/navigation.js:77:3)
+    at exports.navigate (/Users/ethancho/Documents/Codex/2026-10-03/task-5/admin-feedback/node_modules/jsdom/lib/jsdom/living/window/navigation.js:55:3)
+    at Timeout._onTimeout (/Users/ethancho/Documents/Codex/2026-10-03/task-5/admin-feedback/node_modules/jsdom/lib/jsdom/living/nodes/HTMLHyperlinkElementUtils-impl.js:80:7)
+    at listOnTimeout (node:internal/timers:585:17)
+    at processTimers (node:internal/timers:521:7) undefined
+
+···········································································································································
+
+ Test Files  47 passed (47)
+      Tests  344 passed (344)
+   Start at  21:11:56
+   Duration  6.68s (transform 1.27s, setup 2.80s, collect 6.78s, tests 23.56s, environment 16.72s, prepare 2.56s)
+

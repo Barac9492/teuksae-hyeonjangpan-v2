@@ -88,3 +88,27 @@ test('admin list fails closed for oversized pages and malformed database cursors
   const result=await run('',{items:[{id,status:'deleted'},{id:'active',status:'pending'}],nextCursor:null});
   assert.deepEqual(result.body.items,[{id:'active',status:'pending'}]);
 });
+
+test('kind is enforced before pagination and bound to its opaque cursor',async()=>{
+ const bound={...cursor,kind:'photo'};
+ const first=await run('?kind=photo&status=approved',{kind:'photo',items:[],nextCursor:bound,trashSupported:true});
+ assert.equal(first.statusCode,200);assert.equal(first.body.nextCursor,encode(bound));
+ const next=await run('?kind=photo&status=approved&cursor='+encode(bound),{kind:'photo',items:[],nextCursor:null});
+ assert.equal(next.statusCode,200);assert.deepEqual(next.calls[1].p_args,{session:id,status:'approved',kind:'photo',cursor:bound});
+ for(const query of ['?kind=prayer&status=approved&cursor='+encode(bound),'?kind=unknown','?kind=photo&kind=prayer'])assert.equal((await run(query)).statusCode,400);
+});
+test('kind/trash features fail closed until the actual supporting migration exists',async()=>{
+ assert.equal((await run('?kind=photo',{items:[],nextCursor:null})).statusCode,503);
+ assert.equal((await run('?kind=photo',{kind:'prayer',items:[],nextCursor:null})).statusCode,503);
+ assert.equal((await run('?status=trashed',{items:[],nextCursor:null})).statusCode,503);
+ assert.equal((await run('?status=trashed',{items:[],nextCursor:null,trashSupported:true})).statusCode,200);
+ assert.equal((await run('?kind=photo',{kind:'photo',items:Array(21).fill({id}),nextCursor:null})).statusCode,503);
+});
+test('trash and restore use the same origin/session/version boundary and never clean storage',async()=>{
+ for(const decision of ['trashed','restored']){
+  const calls=[],req={url:'/api/admin/community',method:'POST',headers:{origin,cookie:cookie(),'content-type':'application/json'},body:{id,decision,expectedVersion:7}};
+  const res={setHeader(){},end(text){this.body=JSON.parse(text);}};
+  await handleCommunity('admin',req,res,env,async(url,opts)=>{calls.push(url);const b=JSON.parse(opts.body);if(url.endsWith('/ops_get_session'))return {ok:true,json:async()=>session};assert.deepEqual(b.p_args,{id,decision,expectedVersion:7,session:id});return {ok:true,json:async()=>({id,status:decision==='restored'?'pending':'trashed',version:8})};},now);
+  assert.equal(res.statusCode,200);assert.equal(calls.length,2);assert.ok(calls.every(url=>!url.includes('/storage/')));
+ }
+});

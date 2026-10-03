@@ -36,6 +36,7 @@ jobs:
       - name: Verify actual migrations against synthetic local data
         run: |
           node tests/scripts/feedback-db.mjs
+          node tests/scripts/admin-feedback-db.mjs
           npm run test:community-sql
       - name: Verify mobile and desktop interactions
         run: |
@@ -48,3 +49,14 @@ jobs:
             sleep 1
           done
           node tests/scripts/feedback-browser.mjs
+      - name: Verify administrator tabs and moderation
+        run: |
+          test -x "$CHROME_PATH"
+          node tests/scripts/admin-feedback-fixture.mjs > /tmp/church-admin-fixture.log 2>&1 &
+          fixture_pid=$!
+          trap 'kill "$fixture_pid"' EXIT
+          for attempt in {1..30}; do
+            if curl --silent --fail "$BASE_URL" > /dev/null; then break; fi
+            sleep 1
+          done
+          node tests/scripts/admin-feedback-browser.mjs
