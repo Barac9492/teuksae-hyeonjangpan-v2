@@ -3,7 +3,7 @@ import {mkdir,writeFile} from 'node:fs/promises';
 const {chromium}=await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const base=process.env.BASE_URL || 'http://127.0.0.1:4185';assert.equal(new URL(base).hostname,'127.0.0.1');
 const out=new URL('../../evidence/admin-feedback-20261003/',import.meta.url).pathname;await mkdir(out,{recursive:true});
-const browser=await chromium.launch({executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:true});
+const browser=await chromium.launch({executablePath:process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:true});
 const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'});
 await context.route('**/*',route=>new URL(route.request().url()).hostname==='127.0.0.1'?route.continue():route.abort());
 const page=await context.newPage(),errors=[],posts=[];page.on('pageerror',e=>errors.push(e.message));page.on('request',req=>{if(req.method()==='POST'&&req.url().includes('/api/admin/community'))posts.push(req.postDataJSON());});

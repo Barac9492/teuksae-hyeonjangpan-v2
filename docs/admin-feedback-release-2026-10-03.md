@@ -1,5 +1,7 @@
 # Administrator feedback — tested local release candidate
 
+This records the original local candidate. The subsequently approved database application is recorded in [admin-feedback-db-applied-2026-10-03.md](admin-feedback-db-applied-2026-10-03.md); use that record for the current migration state.
+
 ## Outcome and release boundary
 
 Implemented in a fresh standalone clone on `codex/admin-feedback`, based on verified main `89d7404c1c87dc0a6081fc1b69f80c996bb0201d`. The reference checkout was only read/copied; its files and Git state were not modified. No PR was opened or pushed. No deployment, merge, production submission changes, or remote DB writes were performed.
