@@ -163,8 +163,8 @@ describe('admin recovery and older-page access', () => {
       if (init.method === 'POST') { signals.push(init.signal as AbortSignal); return never(); }
       return response({ items: ++reads === 1 ? [adminItem] : [] });
     }));
-    render(<CommunityModeration />); await flush(); fireEvent.click(screen.getByRole('button', { name: '공개 철회 및 삭제' })); await flush(); await tick();
-    expect(signals[0].aborted).toBe(true); expect(screen.getByRole('alert')).toHaveTextContent('처리 결과를 단정할 수 없습니다'); expect(screen.queryByText(approved.text)).not.toBeInTheDocument();
+    render(<CommunityModeration />); await flush(); fireEvent.click(screen.getByText(`내용 보기 · ${adminItem.text.slice(0,35)}`)); await flush(); fireEvent(screen.getByText(`내용 보기 · ${adminItem.text.slice(0,35)}`).closest('details')!, new Event('toggle', {bubbles:true})); await flush(); fireEvent.click(screen.getByRole('checkbox')); fireEvent.click(screen.getByText('영구 삭제', {exact:true})); fireEvent.click(screen.getByRole('button',{name:'선택 영구 삭제'})); fireEvent.click(screen.getByRole('button',{name:'확인 후 영구 삭제'})); await flush(); await tick();
+    expect(signals[0].aborted).toBe(true); expect(screen.getByText(/새로고침 후 다시 검토하세요/)).toBeVisible(); expect(screen.queryByText(approved.text)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '검토 목록 새로고침' })).toBeEnabled();
     fireEvent.click(screen.getByRole('button', { name: '검토 목록 새로고침' })); await flush(); expect(screen.getByText('현재 검토 목록에 게시물이 없습니다.')).toBeVisible();
   });
@@ -182,8 +182,8 @@ describe('admin recovery and older-page access', () => {
       return response({ items: [], nextCursor: 'opaque-next' });
     }));
     render(<CommunityModeration />); await flush(); fireEvent.click(screen.getByRole('button', { name: '다음 페이지' })); await flush();
-    expect(urls.at(-1)).toBe('/api/admin/community?cursor=opaque-next'); expect(screen.getByText(approved.text)).toBeVisible();
-    fireEvent.click(screen.getByRole('button', { name: '공개 철회 및 삭제' })); await flush();
+    expect(urls.at(-1)).toBe('/api/admin/community?cursor=opaque-next'); expect(screen.getByText(`내용 보기 · ${adminItem.text.slice(0,35)}`)).toBeVisible();
+    fireEvent.click(screen.getByText(`내용 보기 · ${adminItem.text.slice(0,35)}`)); await flush(); fireEvent(screen.getByText(`내용 보기 · ${adminItem.text.slice(0,35)}`).closest('details')!, new Event('toggle', {bubbles:true})); await flush(); fireEvent.click(screen.getByRole('checkbox')); fireEvent.click(screen.getByText('영구 삭제', {exact:true})); fireEvent.click(screen.getByRole('button',{name:'선택 영구 삭제'})); fireEvent.click(screen.getByRole('button',{name:'확인 후 영구 삭제'})); await flush();
     expect(posts).toEqual([{ id: approved.id, decision: 'deleted', expectedVersion: 3 }]); expect(urls.at(-1)).toBe('/api/admin/community');
     fireEvent.change(screen.getByRole('combobox', { name: '검토 상태' }), { target: { value: 'approved' } }); await flush();
     expect(urls.at(-1)).toBe('/api/admin/community?status=approved'); expect(screen.queryByRole('button', { name: '다음 페이지' })).not.toBeInTheDocument();

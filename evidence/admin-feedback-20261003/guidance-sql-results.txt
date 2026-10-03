@@ -1,0 +1,1 @@
+PASS local SQL: migration history preservation, no invented capacity, selected-floor guidance, roles, validation, replay, conflict, old caller compatibility, private RPC grants, 35-item tied-timestamp pagination, moderation removal.

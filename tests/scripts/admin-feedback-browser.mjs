@@ -1,0 +1,34 @@
+import assert from 'node:assert/strict';
+import {mkdir,writeFile} from 'node:fs/promises';
+const {chromium}=await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
+const base=process.env.BASE_URL || 'http://127.0.0.1:4185';assert.equal(new URL(base).hostname,'127.0.0.1');
+const out=new URL('../../evidence/admin-feedback-20261003/',import.meta.url).pathname;await mkdir(out,{recursive:true});
+const browser=await chromium.launch({executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:true});
+const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'});
+await context.route('**/*',route=>new URL(route.request().url()).hostname==='127.0.0.1'?route.continue():route.abort());
+const page=await context.newPage(),errors=[],posts=[];page.on('pageerror',e=>errors.push(e.message));page.on('request',req=>{if(req.method()==='POST'&&req.url().includes('/api/admin/community'))posts.push(req.postDataJSON());});
+await page.goto(base+'/admin');await page.getByRole('heading',{name:'현장 확인부터 시작하세요'}).waitFor();
+assert.equal(await page.locator('body').evaluate(e=>e.scrollWidth<=innerWidth),true);
+await page.screenshot({path:out+'mobile-dashboard.png'});
+await page.getByRole('tab',{name:'주차',exact:true}).click();await page.getByLabel('드림센터 현재 주차 안내').selectOption('5');
+await page.getByLabel('드림센터 현재 주차 안내').locator('..').locator('..').getByRole('button',{name:/현황 확인|상태 저장/}).click();await page.getByText(/저장했습니다/).waitFor();
+assert.equal((await (await context.request.get(base+'/api/status')).json()).resources.find(r=>r.id==='parking.dream').guideFloor,5);
+await page.screenshot({path:out+'mobile-parking.png',fullPage:true});
+await page.getByRole('tab',{name:'변경 기록',exact:true}).click();assert.equal(await page.locator('.ta-admin__history p').count(),10);await page.getByRole('button',{name:'다음 기록'}).click();assert.equal(await page.locator('.ta-admin__history p').count(),10);await page.screenshot({path:out+'mobile-history.png'});
+await page.getByRole('tab',{name:'기도카드 승인',exact:true}).click();await page.locator('.community-moderation__item').first().waitFor();assert.equal(await page.locator('.community-moderation__item').count(),20);assert.equal(await page.getByRole('checkbox').count(),0);
+await page.locator('.community-moderation__item summary').nth(0).click();await page.locator('.community-moderation__item summary').nth(1).click();await page.getByRole('checkbox').nth(0).check();await page.getByRole('checkbox').nth(1).check();await page.getByRole('button',{name:'선택 공개 승인',exact:true}).click();assert.equal(posts.length,0);
+await page.screenshot({path:out+'mobile-batch-confirmation.png'});
+await page.getByRole('button',{name:'확인 후 일괄 공개 승인'}).dblclick();await page.getByText('2개 중 2개 완료. 0개는 처리 결과를 확인해주세요.').waitFor();assert.equal(posts.length,2);assert.ok(posts.every(p=>p.decision==='approved'&&p.expectedVersion===0));
+const approvedIds=posts.map(p=>p.id);const publicItems=(await (await context.request.get(base+'/api/community?kind=prayer')).json()).items;assert.ok(publicItems.some(x=>approvedIds.includes(x.id)));
+// Paging and tab changes clear selections. No hidden-page selection is carried over.
+await page.locator('.community-moderation__item summary').first().click();await page.getByRole('checkbox').first().check();await page.getByRole('button',{name:'다음 페이지',exact:true}).click();await page.getByRole('button',{name:'첫 페이지로'}).waitFor();assert.equal(await page.getByRole('checkbox').count(),0);assert.equal(await page.getByRole('button',{name:'선택 공개 승인',exact:true}).isDisabled(),true);
+await page.getByRole('tab',{name:'사진 승인',exact:true}).click();await page.locator('.community-moderation__item summary').first().click();const img=page.getByAltText('공개 검토용 제출 사진');await img.waitFor();await img.evaluate(e=>e.decode());await page.getByRole('checkbox').check();await page.getByRole('button',{name:'선택 휴지통으로 이동'}).click();await page.getByRole('button',{name:'확인 후 휴지통 이동'}).click();await page.getByText('1개 중 1개 완료. 0개는 처리 결과를 확인해주세요.').waitFor();const trashedId=posts.at(-1).id;
+await page.getByRole('tab',{name:'휴지통',exact:true}).click();await page.locator('.community-moderation__item summary').first().click();await page.getByRole('checkbox').check();await page.screenshot({path:out+'mobile-trash.png',fullPage:true});await page.getByRole('button',{name:'선택 복원'}).click();await page.getByRole('button',{name:'확인 후 복원'}).click();await page.getByText('현재 검토 목록에 게시물이 없습니다.').waitFor();
+assert.equal((await (await context.request.get(base+'/api/community?kind=photo')).json()).items.some(x=>x.id===trashedId),false);
+const restored=(await (await context.request.get(base+'/api/admin/community?kind=photo')).json()).items.find(x=>x.id===trashedId);assert.equal(restored.status,'pending');assert.equal(restored.version,2);
+await page.setViewportSize({width:1440,height:1000});await page.getByRole('tab',{name:'사진 승인',exact:true}).click();await page.locator('.community-moderation__item summary').first().click();await page.getByAltText('공개 검토용 제출 사진').evaluate(e=>e.decode());await page.screenshot({path:out+'desktop-photo-review.png',fullPage:true});assert.equal(await page.locator('.community-moderation__grid').evaluate(e=>getComputedStyle(e).gridTemplateColumns.split(' ').length),2);
+await page.getByRole('tab',{name:'현황판',exact:true}).click();await page.screenshot({path:out+'desktop-dashboard.png',fullPage:true});
+await page.getByRole('tab',{name:'안내',exact:true}).click();await page.getByRole('heading',{name:'현장 운영 안내'}).waitFor();await page.getByRole('tab',{name:'안내',exact:true}).focus();await page.keyboard.press('ArrowRight');assert.equal(await page.getByRole('tab',{name:'기도카드 승인',exact:true}).getAttribute('aria-selected'),'true');
+await page.setViewportSize({width:320,height:640});for(const name of ['현황판','주차','안내','기도카드 승인','사진 승인','휴지통','변경 기록','계정 관리']){await page.getByRole('tab',{name,exact:true}).click();assert.equal(await page.locator('body').evaluate(e=>e.scrollWidth<=innerWidth),true,`320px overflow: ${name}`);}
+await page.getByRole('tab',{name:'기도카드 승인',exact:true}).click();await page.screenshot({path:out+'narrow-prayer-review.png'});
+assert.deepEqual(errors,[]);await writeFile(out+'browser-results.json',JSON.stringify({browser:'Separate headless Google Chrome; fresh Playwright context; external traffic blocked',base,viewports:[390,1440,320],checks:['tabs and keyboard','bounded history','parking save/public read','explicit two-item approval and double-click lock','pagination selection reset','photo load','trash/restore to pending','public excludes restored','no horizontal overflow','no browser exceptions'],writes:posts.length,errors},null,2));await browser.close();console.log('PASS mobile/desktop/narrow browser QA; screenshots at '+out);

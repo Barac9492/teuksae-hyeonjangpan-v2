@@ -58,7 +58,7 @@ it('finishes account creation and resets the form when a poll overlaps its POST'
     if (url === '/api/admin/accounts') return reply({ accounts });
     throw new Error('unexpected endpoint');
   });
-  const user = userEvent.setup(); render(<AdminApp />); await screen.findByRole('heading', { name: '팀 계정 관리' });
+  const user = userEvent.setup(); render(<AdminApp />); await user.click(await screen.findByRole('tab', { name: '계정 관리' })); await screen.findByRole('heading', { name: '팀 계정 관리' });
   await user.type(screen.getByLabelText('계정 아이디'), 'NEWTEAM');
   await user.type(screen.getByLabelText('표시 이름'), '주차 지원');
   await user.click(screen.getByRole('button', { name: '계정 저장' }));

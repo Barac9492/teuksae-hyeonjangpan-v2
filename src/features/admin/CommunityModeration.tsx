@@ -4,12 +4,12 @@ import './CommunityModeration.css';
 
 type Item = {
   id: string; kind: 'prayer' | 'photo' | 'reflection'; text: string; createdAt: string;
-  eventDay: string | number | null; status: 'pending' | 'approved' | 'rejected'; version: number; photoUrl?: string;
+  eventDay: string | number | null; status: 'pending' | 'approved' | 'rejected' | 'trashed'; version: number; photoUrl?: string;
 };
-type Decision = 'approved' | 'rejected' | 'deleted';
-type Filter = 'all' | 'pending' | 'approved' | 'rejected';
+type Decision = 'approved' | 'rejected' | 'deleted' | 'trashed' | 'restored';
+type Filter = 'all' | 'pending' | 'approved' | 'rejected' | 'trashed';
 const endpoint = '/api/admin/community';
-const statusLabel = { pending: '검토 대기', approved: '공개 중', rejected: '비공개' };
+const statusLabel = { pending: '검토 대기', approved: '공개 중', rejected: '비공개', trashed: '휴지통' };
 const timestamp = (value: string) => Number.isFinite(Date.parse(value))
   ? new Intl.DateTimeFormat('ko-KR', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Seoul' }).format(new Date(value))
   : '시간 확인 불가';
@@ -23,7 +23,7 @@ function validItem(value: unknown): value is Item {
   const x = value as Record<string, unknown>;
   return typeof x.id === 'string' && ['prayer', 'photo', 'reflection'].includes(String(x.kind)) && typeof x.text === 'string'
     && typeof x.createdAt === 'string' && (x.eventDay === null || ['string', 'number'].includes(typeof x.eventDay))
-    && ['pending', 'approved', 'rejected'].includes(String(x.status)) && Number.isInteger(x.version) && Number(x.version) >= 0
+    && ['pending', 'approved', 'rejected', 'trashed'].includes(String(x.status)) && Number.isInteger(x.version) && Number(x.version) >= 0
     && (x.photoUrl === undefined || typeof x.photoUrl === 'string');
 }
 function reviewItems(body: Record<string, unknown>): Item[] {
@@ -52,8 +52,9 @@ async function request(init?: RequestInit, url = endpoint): Promise<Record<strin
     return body;
   }, { signal: init?.signal ?? undefined });
 }
-function listUrl(filter: Filter, cursor: string | null) {
+function listUrl(filter: Filter, cursor: string | null, kind?: 'prayer' | 'photo') {
   const query = new URLSearchParams();
+  if (kind) query.set('kind', kind);
   if (filter !== 'all') query.set('status', filter);
   if (cursor) query.set('cursor', cursor);
   return query.size ? `${endpoint}?${query}` : endpoint;
@@ -64,99 +65,111 @@ function pageCursor(body: Record<string, unknown>): string | null {
   return body.nextCursor;
 }
 
-export function CommunityModeration() {
+// A selection always refers to the exact version rendered on this page. No select-all.
+export function CommunityModeration({ kind, trash = false }: { kind?: 'prayer' | 'photo'; trash?: boolean }) {
   const [items, setItems] = useState<Item[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
-  const [filter, setFilter] = useState<Filter>('all');
+  const [filter, setFilter] = useState<Filter>(trash ? 'trashed' : 'all');
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [isLaterPage, setIsLaterPage] = useState(false);
-  const [reviewId, setReviewId] = useState<string | null>(null);
-  const [consent, setConsent] = useState(false);
+  const [selected, setSelected] = useState<Record<string, number>>({});
+  const [opened, setOpened] = useState<Record<string, boolean>>({});
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
   const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
-  const active = useRef(false);
-  const lock = useRef(false);
-  const generation = useRef(0);
+  const [confirmation, setConfirmation] = useState<Decision | null>(null);
+  const [trashSupported, setTrashSupported] = useState(false);
+  const [results, setResults] = useState<{ id: string; message: string }[]>([]);
+  const active = useRef(false), lock = useRef(false), generation = useRef(0);
   const operation = useRef<AbortController | null>(null);
-  const load = useCallback(async (nextFilter: Filter = 'all', cursor: string | null = null) => {
+  const resetSelection = () => { setSelected({}); setOpened({}); setLoadedImages({}); setBrokenImages({}); setConfirmation(null); };
+  const load = useCallback(async (nextFilter: Filter, cursor: string | null = null) => {
     if (lock.current) return;
-    lock.current = true;
-    const epoch = ++generation.current;
-    const controller = new AbortController(); operation.current = controller;
-    setFilter(nextFilter); setIsLaterPage(!!cursor); setNextCursor(null);
-    setBusy(true); setError(''); setNotice(''); setReviewId(null); setConsent(false); setItems(null);
-    try {
-      const body = await request({ signal: controller.signal }, listUrl(nextFilter, cursor));
-      const nextItems = reviewItems(body);
-      const next = pageCursor(body);
-      if (active.current && epoch === generation.current) { setItems(nextItems); setNextCursor(next); setBrokenImages({}); setLoadedImages({}); }
-    } catch (cause) {
-      if (active.current && epoch === generation.current) setError(cause instanceof Error ? cause.message : '목록을 불러오지 못했습니다.');
-    } finally {
-      if (epoch === generation.current) { lock.current = false; operation.current = null; if (active.current) setBusy(false); }
-    }
-  }, []);
-  useEffect(() => {
-    const epochRef = generation;
-    active.current = true; void load();
-    return () => { active.current = false; epochRef.current++; operation.current?.abort(); operation.current = null; lock.current = false; };
-  }, [load]);
-  const decide = async (item: Item, decision: Decision) => {
-    if (lock.current || error || (decision === 'approved' && (reviewId !== item.id || !consent || item.kind === 'photo' && (!loadedImages[item.id] || brokenImages[item.id])))) return;
     lock.current = true; const epoch = ++generation.current;
     const controller = new AbortController(); operation.current = controller;
-    setBusy(true); setNotice(''); setReviewId(null); setConsent(false);
+    setFilter(nextFilter); setBusy(true); setError(''); setNotice(''); setItems(null); setNextCursor(null); resetSelection();
     try {
-      await request({ method: 'POST', signal: controller.signal, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: item.id, decision, expectedVersion: item.version }) });
-      if (!active.current || epoch !== generation.current) return;
-      // Never retain purged content after a successful privacy action.
-      setItems(null);
-      const body = await request({ signal: controller.signal }, listUrl(filter, null));
-      const nextItems = reviewItems(body);
-      const next = pageCursor(body);
-      if (active.current && epoch === generation.current) { setItems(nextItems); setNextCursor(next); setIsLaterPage(false); setBrokenImages({}); setLoadedImages({}); setNotice('서버 처리 후 최신 목록을 확인했습니다.'); }
-    } catch (cause) {
+      const body = await request({ signal: controller.signal }, listUrl(nextFilter, cursor, kind));
+      const nextItems = reviewItems(body), next = pageCursor(body);
       if (active.current && epoch === generation.current) {
-        setItems(null); setNextCursor(null);
-        setError(`${cause instanceof Error ? cause.message : '연결 오류가 발생했습니다.'} 처리 결과를 단정할 수 없습니다. 새로고침 후 확인해주세요.`);
+        setItems(nextItems); setNextCursor(next); setIsLaterPage(!!cursor); setTrashSupported(body.trashSupported === true);
       }
-    } finally {
-      if (epoch === generation.current) { lock.current = false; operation.current = null; if (active.current) setBusy(false); }
+    } catch (cause) { if (active.current && epoch === generation.current) setError(cause instanceof Error ? cause.message : '목록을 불러오지 못했습니다.'); }
+    finally { if (epoch === generation.current) { lock.current = false; operation.current = null; if (active.current) setBusy(false); } }
+  }, [kind]);
+  useEffect(() => {
+    active.current = true; void load(trash ? 'trashed' : 'all');
+    const epochRef = generation;
+    return () => { active.current = false; epochRef.current++; operation.current?.abort(); lock.current = false; };
+  }, [load, trash]);
+  const chosen = (items ?? []).filter(item => selected[item.id] === item.version);
+  const canApprove = (item: Item) => item.status === 'pending' && opened[item.id] && (item.kind === 'photo' ? !!photoSource(item.photoUrl) && loadedImages[item.id] && !brokenImages[item.id] : !!item.text.trim());
+  const run = async (decision: Decision) => {
+    if (lock.current || error || confirmation !== decision || !chosen.length || decision === 'approved' && !chosen.every(canApprove)) return;
+    lock.current = true; const epoch = ++generation.current;
+    const controller = new AbortController(); operation.current = controller;
+    setBusy(true); setNotice(''); setConfirmation(null); setResults([]);
+    const outcomes: {id: string; message: string}[] = []; let succeeded = 0;
+    // Existing version-checked single-item contract: no unbounded/hidden batch RPC.
+    for (const item of chosen) {
+      if (!active.current || epoch !== generation.current) break;
+      try {
+        const body = await request({ method: 'POST', signal: controller.signal, headers: {'Content-Type':'application/json'}, body: JSON.stringify({id:item.id, decision, expectedVersion:item.version}) });
+        const expected = decision === 'restored' ? 'pending' : decision;
+        if (body.id !== item.id || body.status !== expected || !Number.isInteger(body.version) || Number(body.version) <= item.version) throw new Error('처리 응답을 확인할 수 없습니다.');
+        succeeded++; outcomes.push({id:item.id, message:'완료'});
+        if (active.current) setItems(old => old?.filter(x => x.id !== item.id) ?? null);
+      } catch (cause) {
+        outcomes.push({id:item.id, message:`${cause instanceof Error ? cause.message : '연결 오류'} 새로고침 후 다시 검토하세요.`});
+        // Stop on uncertain/auth/network failures; a conflict is item-specific.
+        if (!(cause instanceof Error && cause.message.includes('[409]'))) {
+          for (const remaining of chosen.slice(outcomes.length)) outcomes.push({id:remaining.id,message:'미처리 · 앞선 오류로 중단했습니다.'});
+          break;
+        }
+      }
     }
+    if (active.current && epoch === generation.current) {
+      resetSelection(); setItems(null); setNextCursor(null); setResults(outcomes);
+      setNotice(`${chosen.length}개 중 ${succeeded}개 완료. ${chosen.length - succeeded}개는 처리 결과를 확인해주세요.`);
+      try {
+        const body = await request({signal:controller.signal}, listUrl(filter, null, kind));
+        if (active.current && epoch === generation.current) { setItems(reviewItems(body)); setNextCursor(pageCursor(body)); setIsLaterPage(false); }
+      } catch (cause) { if (active.current) setError(cause instanceof Error ? cause.message : '최신 목록을 확인하지 못했습니다.'); }
+    }
+    if (epoch === generation.current) { lock.current = false; operation.current = null; if (active.current) setBusy(false); }
   };
+  const title = trash ? '휴지통' : kind === 'photo' ? '사진 승인' : '기도카드 승인';
   return <section className="community-moderation" aria-labelledby="community-review-heading" aria-busy={busy}>
-    <div className="community-moderation__header"><h2 id="community-review-heading">커뮤니티 공개 검토</h2><button type="button" className="ta-admin__secondary" disabled={busy} onClick={() => void load(filter)}>검토 목록 새로고침</button></div>
-    <label>검토 상태 <select aria-label="검토 상태" value={filter} disabled={busy} onChange={event => void load(event.target.value as Filter)}><option value="all">전체 (검토 대기 먼저)</option><option value="pending">검토 대기</option><option value="approved">공개 중</option><option value="rejected">비공개</option></select></label>
-    <p>삭제된 기록을 제외하고 한 페이지에 최대 100개씩 표시합니다. 다음 페이지에서 오래된 게시물도 확인할 수 있습니다. 공개 승인한 기도·묵상·사진은 로그인 없이 누구나 인터넷에서 볼 수 있으며 복사·저장될 수 있습니다.</p>
-    <p className="community-moderation__warning">사진 속 얼굴, 특히 아동·청소년의 공개 동의와 보호자 동의를 확인하세요. 기도 내용에 이름·연락처·건강 등 민감한 정보가 없는지 확인하세요. 비공개 처리는 이미지와 내용을 제거합니다. 삭제도 되돌릴 수 없으며, 이미 다른 사람이 저장한 사본까지 회수하지는 못합니다.</p>
-    {error && <p role="alert" className="ta-admin__alert">{error}</p>}
-    {notice && <p role="status">{notice}</p>}
+    <div className="community-moderation__header"><h2 id="community-review-heading">{title}</h2><button type="button" className="ta-admin__secondary" disabled={busy} onClick={() => void load(filter)}>검토 목록 새로고침</button></div>
+    {!trash && <label>검토 상태<select aria-label="검토 상태" value={filter} disabled={busy} onChange={e => void load(e.target.value as Filter)}><option value="all">전체 (검토 대기 먼저)</option><option value="pending">검토 대기</option><option value="approved">공개 중</option><option value="rejected">비공개</option></select></label>}
+    <p>{trash ? '휴지통 항목은 공개되지 않습니다. 복원하면 검토 대기로 돌아가며, 다시 승인해야 공개됩니다. 이전 영구 삭제·비공개 처리로 지운 내용은 복원할 수 없습니다.' : '내용 보기를 열고 실제 내용과 동의를 확인한 항목만 직접 선택하세요. 선택은 현재 페이지에만 적용되며 탭·페이지·필터·새로고침 시 해제됩니다.'}</p>
+    {!trash && <details className="community-moderation__warning"><summary>공개·개인정보 검토 안내</summary><p>공개 승인한 기도·묵상·사진은 로그인 없이 누구나 인터넷에서 볼 수 있으며 복사·저장될 수 있습니다. 사진 속 얼굴, 특히 아동·청소년의 공개 동의와 보호자 동의를 확인하세요. 기도 내용에 이름·연락처·건강 등 민감한 정보가 없는지 확인하세요. 기도카드 목록에는 묵상 나눔도 포함됩니다.</p></details>}
+    {!trash && !trashSupported && items && <p role="status">휴지통 기능은 DB 업데이트 후 사용할 수 있습니다.</p>}
+    {error && <p role="alert" className="ta-admin__alert">{error}</p>}{notice && <p role="status">{notice}</p>}
+    {results.length > 0 && <details className="community-moderation__results" open={results.some(r => r.message !== '완료')}><summary>항목별 처리 결과 {results.length}개</summary><ul>{results.map(r => <li key={r.id}>{r.id}: {r.message}</li>)}</ul></details>}
     {busy && <p role="status">검토 목록 처리 중…</p>}
     {items?.length === 0 && <p>현재 검토 목록에 게시물이 없습니다.</p>}
-    {items && <div className="community-moderation__actions">{isLaterPage && <button type="button" className="ta-admin__secondary" disabled={busy} onClick={() => void load(filter)}>첫 페이지로</button>}{nextCursor && <button type="button" className="ta-admin__secondary" disabled={busy} onClick={() => void load(filter, nextCursor)}>다음 페이지</button>}</div>}
-    {items?.map(item => {
-      const source = photoSource(item.photoUrl);
-      const imageUnavailable = item.kind === 'photo' && (!source || brokenImages[item.id]);
+    {!!items?.length && <div className="community-moderation__batch"><strong>현재 페이지 {items.length}개 · 선택 {chosen.length}개</strong><div className="community-moderation__actions">
+      {!trash && <button className="ta-admin__primary" disabled={busy || !chosen.length || !chosen.every(canApprove)} onClick={() => setConfirmation('approved')}>선택 공개 승인</button>}
+      {!trash && <button className="ta-admin__secondary" disabled={busy || !trashSupported || !chosen.length || !chosen.every(x => ['pending','approved'].includes(x.status))} onClick={() => setConfirmation('trashed')}>선택 휴지통으로 이동</button>}
+      {trash && <button className="ta-admin__primary" disabled={busy || !chosen.length} onClick={() => setConfirmation('restored')}>선택 복원</button>}
+      <button className="ta-admin__secondary" disabled={busy || !chosen.length} onClick={() => {setSelected({});setConfirmation(null);}}>선택 해제</button><details><summary>영구 삭제</summary><button className="ta-admin__secondary" disabled={busy || !chosen.length} onClick={() => setConfirmation('deleted')}>선택 영구 삭제</button></details>
+    </div></div>}
+    {confirmation && <div className="community-moderation__confirmation" role="region" aria-label="선택 항목 확인"><p><strong>{chosen.length}개를 {confirmation === 'approved' ? '인터넷에 공개합니다. 개인정보와 얼굴·아동·보호자의 공개 동의를 모두 확인했나요?' : confirmation === 'restored' ? '검토 대기로 복원합니다. 자동 공개되지 않습니다.' : confirmation === 'deleted' ? '영구 삭제합니다. 내용과 사진은 제거되며 복원할 수 없습니다. 이미 저장된 사본은 회수할 수 없습니다.' : '휴지통으로 옮깁니다. 공개를 중단하고 복원용 내용을 보관합니다.'}</strong></p><button className="ta-admin__primary" disabled={busy} onClick={() => void run(confirmation)}>확인 후 {confirmation === 'approved' ? '일괄 공개 승인' : confirmation === 'restored' ? '복원' : confirmation === 'deleted' ? '영구 삭제' : '휴지통 이동'}</button><button className="ta-admin__secondary" disabled={busy} onClick={() => setConfirmation(null)}>취소</button></div>}
+    <div className="community-moderation__grid">{items?.map(item => {
+      const source = photoSource(item.photoUrl), unavailable = item.kind === 'photo' && (!source || brokenImages[item.id]);
       return <article key={item.id} className="community-moderation__item" aria-label={`${item.kind === 'photo' ? '사진' : item.kind === 'reflection' ? '묵상' : '기도'} ${item.id}`}>
         <h3>{item.kind === 'photo' ? '사진' : item.kind === 'reflection' ? '묵상' : '기도'} · {statusLabel[item.status]}</h3>
-        <p><time dateTime={item.createdAt}>{timestamp(item.createdAt)}</time> (한국 시간) · 행사일 {item.eventDay == null ? '미지정' : typeof item.eventDay === 'number' ? `${item.eventDay + 1}일차` : item.eventDay} · 버전 {item.version}</p>
-        {item.kind === 'photo' && source && !brokenImages[item.id] && <img src={source} alt="공개 검토용 제출 사진" loading="lazy" onLoad={() => setLoadedImages(old => ({ ...old, [item.id]: true }))} onError={() => setBrokenImages(old => ({ ...old, [item.id]: true }))} />}
-        {item.kind === 'photo' && !imageUnavailable && !loadedImages[item.id] && <p>사진을 불러온 뒤 공개 승인할 수 있습니다.</p>}
-        {imageUnavailable && <p>이미지를 표시할 수 없습니다. 제거되었거나 접근할 수 없는 사진입니다.</p>}
-        <p className="community-moderation__text">{item.text || '남아 있는 내용이 없습니다.'}</p>
-        <div className="community-moderation__actions">
-          {item.status === 'pending' && <><button type="button" className="ta-admin__primary" disabled={busy || !!imageUnavailable || item.kind === 'photo' && !loadedImages[item.id] || !item.text.trim() && item.kind !== 'photo'} onClick={() => { setReviewId(item.id); setConsent(false); }}>공개 승인 검토</button><button type="button" className="ta-admin__secondary" disabled={busy} onClick={() => void decide(item, 'rejected')}>비공개 처리</button></>}
-          {item.status === 'approved' && <button type="button" className="ta-admin__secondary" disabled={busy} onClick={() => void decide(item, 'deleted')}>공개 철회 및 삭제</button>}
-          {item.status === 'rejected' && <button type="button" className="ta-admin__secondary" disabled={busy} onClick={() => void decide(item, 'deleted')}>비공개 항목 삭제</button>}
-        </div>
-        {reviewId === item.id && <div className="community-moderation__confirmation">
-          <p><strong>이 게시물을 인터넷에 공개할까요?</strong> 위의 실제 사진과 내용을 검토한 뒤 공개해주세요.</p>
-          <label><input type="checkbox" checked={consent} disabled={busy} onChange={event => setConsent(event.target.checked)} />개인정보와 얼굴·아동·보호자의 공개 동의를 확인했습니다.</label>
-          <div className="community-moderation__actions"><button type="button" className="ta-admin__primary" disabled={busy || !consent || !!imageUnavailable || item.kind === 'photo' && !loadedImages[item.id]} onClick={() => void decide(item, 'approved')}>확인 후 공개 승인</button><button type="button" className="ta-admin__secondary" disabled={busy} onClick={() => { setReviewId(null); setConsent(false); }}>공개 검토 취소</button></div>
-        </div>}
+        <p className="community-moderation__meta"><time dateTime={item.createdAt}>{timestamp(item.createdAt)}</time> · 한국 시간 · 버전 {item.version}</p>
+        <details open={!!opened[item.id]} onToggle={e => { const open = e.currentTarget.open; setOpened(old => ({...old,[item.id]:open})); if (!open) { setSelected(old => {const next={...old};delete next[item.id];return next;});setConfirmation(null); } }}><summary>내용 보기 · {item.text.slice(0, 35) || '사진'}</summary>
+          {opened[item.id] && <>{item.kind === 'photo' && source && !brokenImages[item.id] && <img src={source} alt="공개 검토용 제출 사진" onLoad={() => setLoadedImages(old => ({...old,[item.id]:true}))} onError={() => {setBrokenImages(old => ({...old,[item.id]:true}));setSelected(old => {const next={...old};delete next[item.id];return next;});setConfirmation(null);}} />}
+          {unavailable && <p>이미지를 표시할 수 없습니다. 공개 승인할 수 없습니다.</p>}
+          <p className="community-moderation__text">{item.text || '남아 있는 내용이 없습니다.'}</p>
+          <label className="community-moderation__select"><input type="checkbox" aria-label={`${item.id} 선택`} checked={selected[item.id] === item.version} disabled={busy} onChange={e => {setSelected(old => {const next={...old};if(e.target.checked)next[item.id]=item.version;else delete next[item.id];return next;});setConfirmation(null);}} />내용 확인 후 선택</label></>}
+        </details>
       </article>;
-    })}
+    })}</div>
+    {items && <div className="community-moderation__actions community-moderation__pages">{isLaterPage && <button className="ta-admin__secondary" disabled={busy} onClick={() => void load(filter)}>첫 페이지로</button>}{nextCursor && <button className="ta-admin__secondary" disabled={busy} onClick={() => void load(filter, nextCursor)}>다음 페이지</button>}</div>}
   </section>;
 }

@@ -29,6 +29,8 @@ describe('role-aware AdminApp', () => {
     expect(screen.getByLabelText('본관 주차 상태')).toBeVisible();
     expect(screen.queryByRole('heading', { name: '팀 계정 관리' })).not.toBeInTheDocument();
     expect(screen.queryByText('사진 검토')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('송림 출입 상태')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('tab', {name:'현황판'}));
     expect(screen.getByLabelText('송림 출입 상태').querySelectorAll('option')).toHaveLength(6);
   });
 
@@ -41,7 +43,7 @@ describe('role-aware AdminApp', () => {
     expect(screen.getByLabelText('본관 주차 상태')).toHaveValue('full');
     expect(screen.getByLabelText('본관 주차 상태').closest('article')!.querySelectorAll('button')[1]!).toBeDisabled();
     await user.click(screen.getByRole('button', { name: '최신 상태 확인' }));
-    await waitFor(() => expect(fetch).toHaveBeenCalledWith('/api/admin/operations', { credentials: 'same-origin', cache: 'no-store' }));
+    await waitFor(() => expect(fetch).toHaveBeenCalledWith('/api/admin/operations', expect.objectContaining({ credentials: 'same-origin', cache: 'no-store' })));
     expect(screen.getByLabelText('본관 주차 상태').closest('article')!.querySelector('button')!).toBeEnabled();
   });
 
@@ -53,6 +55,7 @@ describe('role-aware AdminApp', () => {
 
   it('shows account management only for superadmin and uses masked new-password fields', async () => {
     queue(response(superSession), response({ ...resources, canManageAccounts: true }), response({ accounts: [{ username: 'parking-team', role: 'parking', displayLabel: '주차팀', active: true, hasPassword: true }] })); render(<AdminApp />);
+    await userEvent.click(await screen.findByRole('tab', {name:'계정 관리'}));
     expect(await screen.findByRole('heading', { name: '팀 계정 관리' })).toBeVisible();
     expect(screen.getByLabelText('새 비밀번호 (선택)')).toHaveAttribute('autocomplete', 'new-password');
     expect(screen.getByText(/비밀번호 설정됨/)).toBeVisible();

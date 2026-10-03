@@ -51,6 +51,8 @@ equal(await rows('select * from community_v2_items'),sentinel,'migration preserv
 const changedDefinitions=await rows(`select oid,proname,pg_get_functiondef(oid) as definition from pg_proc where pronamespace='public'::regnamespace order by oid`);
 equal(changedDefinitions.filter(row=>oldDefinitions.find(old=>old.oid===row.oid)?.definition!==row.definition).map(row=>row.proname).sort(),['community_v2','rehearsal_community_v2'],'only the two community RPCs change');
 
+// Re-run legacy invariants against the replacement live RPC too.
+await db.exec(await readFile(new URL('20261003115248_admin_tabs_recoverable_trash.sql',dir),'utf8'));
 for (const scope of ['','rehearsal_']) {
   const session=sessions[scope].superadmin;
   const admin=args=>call(scope,'adminList',{session,...args});
