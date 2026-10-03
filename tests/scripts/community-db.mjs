@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 import { randomUUID, createHmac } from 'node:crypto';
 import { handleCommunity } from '../../server/community.js';
+import { SESSION_SECONDS } from '../../server/admin-auth.js';
 const {PGlite}=await import(process.env.PGLITE_MODULE || '@electric-sql/pglite');
 const db=new PGlite();
 let checks=0;
@@ -166,7 +167,7 @@ await seed('',{count:130,status:'deleted',prefix:'44444444',at:'2026-09-30T00:00
 await seed('',{count:201,status:'approved'});
 const now=Date.now();
 const env={SUPABASE_URL:'https://synthetic.invalid',SUPABASE_SERVICE_ROLE_KEY:'x'.repeat(40),ADMIN_SESSION_SECRET:'s'.repeat(64)};
-const payload=Buffer.from(JSON.stringify({v:2,sid:sessions[''].superadmin,sub:'QAADMIN',cv:1,iat:Math.floor(now/1000),exp:Math.floor(now/1000)+7200,nonce:'n'.repeat(32)})).toString('base64url');
+const payload=Buffer.from(JSON.stringify({v:2,sid:sessions[''].superadmin,sub:'QAADMIN',cv:1,iat:Math.floor(now/1000),exp:Math.floor(now/1000)+SESSION_SECONDS,nonce:'n'.repeat(32)})).toString('base64url');
 const cookie=`__Host-woori_admin=${payload}.${createHmac('sha256',env.ADMIN_SESSION_SECRET).update(payload).digest('base64url')}`;
 const httpIds=[]; let cursor;
 do {

@@ -1,4 +1,5 @@
 // Isolated loopback QA only: synthetic rows + actual SQL and community HTTP handler.
+import { SESSION_SECONDS } from '../../server/admin-auth.js';
 import {createServer} from 'vite';
 import {readFile,readdir} from 'node:fs/promises';
 import {randomUUID,createHmac} from 'node:crypto';
@@ -18,7 +19,7 @@ for(const kind of ['prayer','photo','reflection'])for(let n=0;n<24;n++)await db.
 const img=new PNG({width:500,height:320});for(let y=0;y<320;y++)for(let x=0;x<500;x++){const i=(y*500+x)*4;img.data[i]=80+y/3;img.data[i+1]=130+x/8;img.data[i+2]=160+y/5;img.data[i+3]=255;}const png=PNG.sync.write(img);
 const port=Number(process.env.PORT||4185),origin=`http://localhost:${port}`;
 const env={NODE_ENV:'test',COMMUNITY_ALLOWED_ORIGIN:origin,SUPABASE_URL:'https://synthetic.invalid',SUPABASE_SERVICE_ROLE_KEY:'x'.repeat(40),ADMIN_SESSION_SECRET:'s'.repeat(64)};
-const now=Date.now(),payload=Buffer.from(JSON.stringify({v:2,sid:session,sub:'LOCALQA',cv:1,iat:Math.floor(now/1000),exp:Math.floor(now/1000)+7200,nonce:'n'.repeat(32)})).toString('base64url');
+const now=Date.now(),payload=Buffer.from(JSON.stringify({v:2,sid:session,sub:'LOCALQA',cv:1,iat:Math.floor(now/1000),exp:Math.floor(now/1000)+SESSION_SECONDS,nonce:'n'.repeat(32)})).toString('base64url');
 const cookie=`__Host-woori_admin=${payload}.${createHmac('sha256',env.ADMIN_SESSION_SECRET).update(payload).digest('base64url')}`;
 const fetcher=async(url,opts)=>{
  if(url.includes('/storage/'))return new Response(opts.method==='DELETE'?'{}':png,{status:200});
@@ -29,7 +30,7 @@ const server=await createServer({server:{host:'127.0.0.1',port,strictPort:true},
  if(!req.url.startsWith('/api/'))return next();const url=new URL(req.url,origin);
  const send=(body,status=200)=>{res.statusCode=status;res.setHeader('Content-Type','application/json');res.setHeader('Cache-Control','no-store');res.end(JSON.stringify(body));};
  try{
- if(url.pathname==='/api/admin/session')return send({authenticated:true,username:'LOCALQA',role,displayName:'로컬 검증',expiresAt:new Date(now+7200000).toISOString(),sessionId:'S-0000000001',capabilities:{liveOperations:true}});
+ if(url.pathname==='/api/admin/session')return send({authenticated:true,username:'LOCALQA',role,displayName:'로컬 검증',expiresAt:new Date(now+SESSION_SECONDS*1000).toISOString(),sessionId:'S-0000000001',capabilities:{liveOperations:true}});
  if(url.pathname==='/api/admin/accounts')return send({accounts:[]});
  if(url.pathname==='/api/admin/operations'){
   if(req.method==='POST'){const chunks=[];for await(const c of req)chunks.push(c);const b=JSON.parse(Buffer.concat(chunks));const result=await rpc('ops_set_resource_state',[session,b.resourceId,b.state,b.expectedVersion,b.requestId,b.occupancyPercent??null,b.guideFloor??null]);return send(result,result.status==='conflict'?409:200);}
