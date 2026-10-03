@@ -3,6 +3,7 @@
 export const OPENING_NOTICE = '송림 본당 및 드림센터 개방 시간: 새벽 3시 50분 전후';
 export const HOLIDAY_PARKING = '송림 종일 주차 가능 · 자율 출차 불가 · 선입선출. 중간 출차가 필요하면 드림센터를 이용해주세요.';
 export const WEEKDAY_PARKING = '학교 수업을 위해 송림학교 운동장 차량은 06:45까지 출차해주세요.';
+export const DREAM_PARKING_NOTICE = '드림센터는 예배 중간 출차가 필요한 분께 공식 안내된 주차장입니다. 현재 주차 가능 여부와 안내 층은 현장 안내를 확인해주세요.';
 
 /** Actual October date, using Korea time; null outside the six service days. */
 export function noticeServiceDay(now: number): number | null {
@@ -21,7 +22,7 @@ export function songrimParkingNotice(day: number | null): string {
 
 export function calendarNotice(day: number, place: string): string {
   const parking = place.includes('드림센터')
-    ? '중간 출차가 필요하면 드림센터를 이용해주세요. 주차 가능 여부는 현장 안내를 확인해주세요.'
+    ? DREAM_PARKING_NOTICE
     : songrimParkingNotice(day);
   return ['하나님 마음에 합한 사람 (사도행전 13:22) · 이찬수 담임목사', OPENING_NOTICE, '04:20 온라인 생중계 · 04:30 준비기도 · 04:40 예배 시작', parking].join('\\n');
 }

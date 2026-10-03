@@ -107,12 +107,15 @@ export function InstallCard() {
     const epoch = ++promptEpoch.current;
     const event = deferredPrompt;
     try {
-      const choice = await Promise.race([
-        (async () => { await event.prompt(); return await event.userChoice; })(),
+      await Promise.race([
+        event.prompt(),
         new Promise<never>((_, reject) => {
           promptTimer.current = setTimeout(() => reject(new Error('install-timeout')), PROMPT_TIMEOUT_MS);
         }),
       ]);
+      if (promptTimer.current) clearTimeout(promptTimer.current);
+      promptTimer.current = null;
+      const choice = await event.userChoice;
       if (epoch !== promptEpoch.current) return;
       if (choice.outcome === 'dismissed') setNotice('설치는 취소되었어요. 다시 설치하려면 브라우저 메뉴를 이용하거나 페이지를 새로고침해주세요.');
       // An accepted choice is not confirmation of installation. appinstalled is the source of truth.

@@ -37,7 +37,10 @@ it('places each date-specific rule in its own downloaded calendar event', () => 
     if ([1, 2, 3].includes(index)) expect(event).toMatch(/06:45/);
     if (index === 5) expect(event).not.toMatch(/06:45|종일 주차/);
   }
-  expect(buildCalendar(70, '서현 드림센터')).not.toMatch(/06:45/);
+  const dreamCalendar = buildCalendar(70, '서현 드림센터');
+  expect(dreamCalendar).not.toMatch(/06:45/);
+  expect(dreamCalendar).toMatch(/드림센터는 예배 중간 출차가 필요한 분께 공식 안내된 주차장/);
+  expect(dreamCalendar).not.toMatch(/필요하면 드림센터를 이용해주세요/);
 });
 it('shows the final times, holiday exception and changed Friday service without guessed links', () => {
   const view = render(<OfficialNotice />);
@@ -68,6 +71,7 @@ it('keeps official guidance separate from unavailable live parking data', () => 
 });
 it('does not carry Songrim school or holiday restrictions into Dream Center', () => {
   render(<ParkingNotice venue="dream" day={9} />);
-  expect(screen.getByRole('complementary')).toHaveTextContent('중간 출차');
+  expect(screen.getByRole('complementary')).toHaveTextContent('드림센터는 예배 중간 출차가 필요한 분께 공식 안내된 주차장입니다.');
+  expect(screen.getByRole('complementary')).not.toHaveTextContent('필요하면 드림센터를 이용해주세요');
   expect(screen.getByRole('complementary')).not.toHaveTextContent('자율 출차 불가');
 });

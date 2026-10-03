@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
 import { handleCommunity } from '../community.js';
+import { SESSION_SECONDS } from '../admin-auth.js';
 
 const env = {SUPABASE_URL:'https://test.supabase.co',SUPABASE_SERVICE_ROLE_KEY:'x'.repeat(40),ADMIN_SESSION_SECRET:'s'.repeat(64)};
 const origin = 'https://teuksae-hyeonjangpan-v2.vercel.app';
@@ -11,7 +12,7 @@ const session = {username:'ADMIN',credentialVersion:3,role:'superadmin'};
 const cursor = {v:1,status:'approved',priority:1,createdAt:'2026-10-01T01:02:03.123456+00:00',id};
 const encode = value => Buffer.from(JSON.stringify(value)).toString('base64url');
 function cookie() {
-  const payload = encode({v:2,sid:id,sub:'ADMIN',cv:3,iat:Math.floor(now/1000),exp:Math.floor(now/1000)+7200,nonce:'n'.repeat(32)});
+  const payload = encode({v:2,sid:id,sub:'ADMIN',cv:3,iat:Math.floor(now/1000),exp:Math.floor(now/1000)+SESSION_SECONDS,nonce:'n'.repeat(32)});
   return `__Host-woori_admin=${payload}.${createHmac('sha256',env.ADMIN_SESSION_SECRET).update(payload).digest('base64url')}`;
 }
 async function run(query='', data={items:[],nextCursor:null}, auth=session, signed=true) {

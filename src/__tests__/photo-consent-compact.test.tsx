@@ -48,14 +48,20 @@ it('invalidates photo consent after memo, date and payload edits, even returning
   const view = render(<Community kind="photo" text="A" payloadKey="one" file={image} eventDay={0} />);
   await screen.findByText('오늘 사진 참여 0건');
   const agree = () => fireEvent.click(screen.getByRole('checkbox'));
+  expect(screen.queryByText('사진·메모·날짜가 바뀌어 공개 동의를 다시 선택해주세요.')).not.toBeInTheDocument();
   agree(); view.rerender(<Community kind="photo" text="B" payloadKey="one" file={image} eventDay={0} />);
   expect(screen.getByRole('checkbox')).not.toBeChecked();
-  agree(); view.rerender(<Community kind="photo" text="B" payloadKey="one" file={image} eventDay={1} />);
+  expect(screen.getByRole('status')).toHaveTextContent('사진·메모·날짜가 바뀌어 공개 동의를 다시 선택해주세요.');
+  expect(screen.getByRole('button', { name: '사진 공개하기' })).toBeDisabled();
+  agree();
+  expect(screen.queryByText('사진·메모·날짜가 바뀌어 공개 동의를 다시 선택해주세요.')).not.toBeInTheDocument();
+  view.rerender(<Community kind="photo" text="B" payloadKey="one" file={image} eventDay={1} />);
   expect(screen.getByRole('checkbox')).not.toBeChecked();
   agree(); view.rerender(<Community kind="photo" text="B" payloadKey="two" file={image} eventDay={1} />);
   expect(screen.getByRole('checkbox')).not.toBeChecked();
   view.rerender(<Community kind="photo" text="A" payloadKey="one" file={image} eventDay={0} />);
   expect(screen.getByRole('checkbox')).not.toBeChecked();
+  expect(screen.getByText('사진·메모·날짜가 바뀌어 공개 동의를 다시 선택해주세요.')).toBeVisible();
   expect(writes).toHaveLength(0);
 });
 it('keeps posting disabled without a prepared file even with consent', async () => {

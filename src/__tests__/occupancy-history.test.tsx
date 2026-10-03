@@ -11,13 +11,13 @@ function mock(percent: unknown, updatedAt=new Date().toISOString(), state='busy'
   vi.spyOn(globalThis,'fetch').mockResolvedValue(new Response(JSON.stringify({enabled:true,resources:[{id:'parking.songrim',category:'parking',state,version:2,updatedAt,occupancyPercent:percent,lastFullAt:'2026-10-04T19:00:00Z'}]})));
 }
 it('displays an explicit operator estimate for Songrim without exposing raw history metadata, and never a hidden Calvary banner',async()=>{
- mock(70);render(<Harness/>);expect(await screen.findByText('70%')).toHaveClass('tc-status-value--warn');expect(screen.getByText('송림주차장')).toBeVisible();expect(screen.queryByText(/갈보리/)).not.toBeInTheDocument();expect(screen.queryByText(/최근 만차·만석 기록/)).not.toBeInTheDocument();
+ mock(70);render(<Harness/>);expect(await screen.findByText('70% · 혼잡')).toHaveClass('tc-status-value--warn');expect(screen.getByText('송림주차장')).toBeVisible();expect(screen.getByText(/최근 10분 안에 현장팀이 확인한 항목만 현재 현황으로 표시합니다/)).toBeInTheDocument();expect(screen.queryByText(/각 항목은 마지막 확인 시각 기준입니다/)).not.toBeInTheDocument();expect(screen.queryByText(/갈보리/)).not.toBeInTheDocument();expect(screen.queryByText(/최근 만차·만석 기록/)).not.toBeInTheDocument();
 });
 it('uses green at 0%',async()=>{
- mock(0,new Date().toISOString(),'available');render(<Harness/>);expect(await screen.findByText('0%')).toHaveClass('tc-status-value--good');
+ mock(0,new Date().toISOString(),'available');render(<Harness/>);expect(await screen.findByText('0% · 이용 가능')).toHaveClass('tc-status-value--good');
 });
 it('uses red at 100%',async()=>{
- mock(100,new Date().toISOString(),'full');render(<Harness/>);expect(await screen.findByText('100%')).toHaveClass('tc-status-value--stop');
+ mock(100,new Date().toISOString(),'full');render(<Harness/>);expect(await screen.findByText('100% · 만차')).toHaveClass('tc-status-value--stop');
 });
 it('never displays stale percentages and falls back to a checking state, without exposing history copy or a Calvary row',async()=>{
  mock(70,new Date(Date.now()-11*60000).toISOString());render(<Harness/>);expect(await screen.findAllByText('확인 필요')).toHaveLength(1);expect(screen.queryByText(/70%/)).not.toBeInTheDocument();expect(screen.queryByText(/최근 만차·만석 기록/)).not.toBeInTheDocument();expect(screen.queryByText(/갈보리/)).not.toBeInTheDocument();
@@ -45,13 +45,13 @@ function mockPrevious(firstFullAt: string | null, closedAt: string | null, date=
 it('correctly falls back to a checking state (stale updatedAt) when valid prior full/closing history is present',async()=>{
  mockPrevious('2026-10-04T19:20:00Z','2026-10-04T20:10:00Z');render(<Harness/>);
  expect(await screen.findAllByText('확인 필요')).toHaveLength(1);
- expect(screen.queryByText('70%')).not.toBeInTheDocument();
+ expect(screen.queryByText(/70%/)).not.toBeInTheDocument();
  expect(screen.queryByText(/주차 기록/)).not.toBeInTheDocument();
 });
 it('correctly falls back to a checking state (stale updatedAt) when prior full/closing history is missing',async()=>{
  mockPrevious(null,null);render(<Harness/>);
  expect(await screen.findAllByText('확인 필요')).toHaveLength(1);
- expect(screen.queryByText('70%')).not.toBeInTheDocument();
+ expect(screen.queryByText(/70%/)).not.toBeInTheDocument();
  expect(screen.queryByText(/기록 없음/)).not.toBeInTheDocument();
 });
 it('does not surface prior-day history text from another Korea day either, and never shows a Calvary row',async()=>{

@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { createHmac } from 'node:crypto';
 import { PNG } from 'pngjs';
 import { handleCommunity, sanitizePng } from '../community.js';
+import { SESSION_SECONDS } from '../admin-auth.js';
 const env={SUPABASE_URL:'https://test.supabase.co',SUPABASE_SERVICE_ROLE_KEY:'x'.repeat(40),ADMIN_SESSION_SECRET:'s'.repeat(64)};
 const origin='https://teuksae-hyeonjangpan-v2.vercel.app';
 const id='11111111-1111-4111-8111-111111111111';
@@ -11,7 +12,7 @@ const id='11111111-1111-4111-8111-111111111111';
 const now=Date.parse('2026-10-05T12:00:00+09:00');
 const submit={requestId:id,kind:'prayer',text:'기도',eventDay:null,consent:true,deleteToken:'a'.repeat(43)};
 function response(data,status=200){return {ok:status<300,status,json:async()=>data};}
-function adminCookie() { const payload=Buffer.from(JSON.stringify({v:2,sid:id,sub:'ADMIN',cv:3,iat:Math.floor(now/1000),exp:Math.floor(now/1000)+7200,nonce:'n'.repeat(32)})).toString('base64url');return `__Host-woori_admin=${payload}.${createHmac('sha256',env.ADMIN_SESSION_SECRET).update(payload).digest('base64url')}`; }
+function adminCookie() { const payload=Buffer.from(JSON.stringify({v:2,sid:id,sub:'ADMIN',cv:3,iat:Math.floor(now/1000),exp:Math.floor(now/1000)+SESSION_SECONDS,nonce:'n'.repeat(32)})).toString('base64url');return `__Host-woori_admin=${payload}.${createHmac('sha256',env.ADMIN_SESSION_SECRET).update(payload).digest('base64url')}`; }
 async function run(route='public',method='GET',body,fetcher=async(_url,opts)=>{if(JSON.parse(opts.body).p_action==='preflight')return response({status:'ok'});throw Error('unexpected fetch');},headers={}) { const { kind='prayer', ...requestHeaders }=headers; const req={url:route==='admin'?'/api/admin/community':route==='photo'?`/api/community/photo?id=${id}`:`/api/community?kind=${kind}`,method,headers:{origin,'content-type':'application/json',...requestHeaders},body};const res={headers:{},setHeader(k,v){this.headers[k]=v;},end(v){this.body=v;}};await handleCommunity(route,req,res,env,fetcher,now);return res; }
 test('origin does not trust Host or v1 ADMIN origin',async()=>{for(const hostile of ['https://evil.test','https://teuksae-hyeonjangpan.vercel.app',undefined]){const r=await run('public','POST',submit,undefined,{origin:hostile,host:'evil.test'});assert.equal(r.statusCode,403);}});
 test('moderation and pending-photo access require valid session',async()=>{assert.equal((await run('admin')).statusCode,401); const r=await run('photo','GET',undefined,async(url,opts)=>{assert.equal(JSON.parse(opts.body).p_args.session,null);return response({status:'missing'});});assert.equal(r.statusCode,404);});

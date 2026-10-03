@@ -164,7 +164,24 @@ export async function renderFramedPhoto(src: string, stampText: string, memo = '
   ctx.textAlign = 'right';
   ctx.globalAlpha = 0.85; ctx.fillStyle = '#e59b53'; ctx.font = `600 34px ui-monospace, Menlo, monospace`;
   const day = stampText.match(/\d+(?=일)/)?.[0];
-  if (day) ctx.fillText(`'26 10 ${day.padStart(2, '0')}`, width - pad - 24, pad + box - 28);
+  if (day) {
+    const label = `'26 10 ${day.padStart(2, '0')}`;
+    const metrics = ctx.measureText(label);
+    const stampWidth = metrics.width;
+    const stampAscent = metrics.actualBoundingBoxAscent || 34;
+    const stampDescent = metrics.actualBoundingBoxDescent || 0;
+    const xPad = 24; const yPad = 28;
+    const fitsImage = dw >= stampWidth + xPad * 2 && dh >= stampAscent + stampDescent + yPad * 2;
+    if (fitsImage) {
+      const desiredX = dx + dw - xPad;
+      const desiredY = dy + dh - yPad - stampDescent;
+      const x = Math.max(dx + xPad + stampWidth, Math.min(dx + dw - xPad, desiredX));
+      const y = Math.max(dy + yPad + stampAscent, Math.min(dy + dh - yPad - stampDescent, desiredY));
+      ctx.fillText(label, x, y);
+    } else {
+      ctx.fillText(label, width - pad - xPad, pad + box - yPad - stampDescent);
+    }
+  }
   ctx.globalAlpha = 1;
   grain(ctx, width, height);
   return toBlob(canvas);
