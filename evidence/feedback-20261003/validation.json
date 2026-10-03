@@ -1,0 +1,27 @@
+{
+  "baseCommit": "c0ec91ee475f0a6d5282f09e419b2e2c677c182c",
+  "branch": "codex/final-notice-recovery-20261003",
+  "checks": {
+    "lint": "PASS: eslint --max-warnings=0",
+    "build": "PASS: tsc app noEmit and Vite production build",
+    "frontendTests": {
+      "files": 46,
+      "passed": 340,
+      "failed": 0
+    },
+    "serverTests": {
+      "passed": 78,
+      "failed": 0
+    },
+    "serviceWorkerSyntax": "PASS: node --check public/sw.js",
+    "diffWhitespace": "PASS: git diff --check",
+    "localPostgreSQL": "PASS: feedback-db.mjs with PGlite 0.5.8",
+    "browser": "PASS: 14 checks; browser-results.json",
+    "existingCommunitySQL": "PASS: 233 PostgreSQL/HTTP checks, TZ=UTC",
+    "finalNotice": "PASS: 12 date-boundary, holiday precedence, calendar, planner and status separation tests"
+  },
+  "productionChanges": true,
+  "publication": "User approved production DB/app rollout and PR/merge; release results recorded separately",
+  "remaining": "Publish verified branch, require CI success, merge/deploy and perform read-only production checks.",
+  "databaseRelease": "Manual official SQL editor application verified 2026-10-03 09:24 UTC; exact hash and history caveat in docs/manual-db-release-2026-10-03.md"
+}

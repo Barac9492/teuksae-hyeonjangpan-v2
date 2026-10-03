@@ -237,6 +237,9 @@ body { background: #fbfbfa; }
 .tc-quiet { background: var(--paper-2); padding: 14px 16px; border-radius: 14px; margin: 14px 0; }
 .tc-quiet strong { font-size: 13px; font-weight: 700; color: var(--text); }
 .tc-quiet p { font-size: 12px; color: var(--ink-soft); margin-top: 4px !important; line-height: 1.65; }
+.tc-official-notice { margin: 20px 24px; }
+.tc-official-notice summary { cursor: pointer; font-size: 13px; font-weight: 600; line-height: 1.6; }
+.tc-official-notice p { margin-top: 10px !important; }
 .tc-line-action { display: flex; justify-content: space-between; align-items: center; min-height: 50px; width: 100%; font-size: 13px; font-weight: 500; text-align: left; border-bottom: 1px solid var(--line) !important; padding: 10px 2px !important; color: var(--ink) !important; }
 .tc-line-action span { transition: transform .2s var(--ease); }
 .tc-line-action:hover span { transform: translateX(3px); }
@@ -552,3 +555,28 @@ body { background: #fbfbfa; }
 .tc-david-game small { display: block; margin-top: 5px; font-size: 11px; line-height: 1.7; color: #806c56; }
 .tc-wake summary .tc-wake__notice { margin-top: 5px; color: var(--ink); font-size: 11px; line-height: 1.5; }
 .tc-wake__warning { margin: 0 0 12px; padding: 12px; border-radius: 8px; background: var(--sunrise-soft); color: var(--ink); font-size: 12px; line-height: 1.7; }
+
+/* Feedback: useful home shortcuts before the long status and planner sections. */
+.tc-home-shortcuts { margin: 8px 24px 20px; display: grid; gap: 10px; }
+.tc-home-shortcuts > div { display: flex; gap: 8px; }
+.tc-home-shortcuts button { min-height: 44px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; font-size: 13px; }
+.tc-home-shortcuts button span { margin-right: 8px; }
+.tc-home-shortcuts > a { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 16px; background: #f7efe2; border: 1px solid var(--line); border-radius: 12px; color: #704322; text-decoration: none; }
+.tc-home-shortcuts small { display: block; font-size: 11px; margin-bottom: 6px; }
+.tc-home-shortcuts strong { font-size: 14px; line-height: 1.5; }
+.tc-prayer-timer { margin-top: 28px; padding: 22px 18px; border: 1px solid var(--line); border-radius: 20px; background: #f6f0e7; text-align: center; }
+.tc-prayer-timer h2 { font-size: 22px; }
+.tc-prayer-timer p { font-size: 13px; line-height: 1.8; margin: 12px 0; }
+.tc-prayer-timer label { display: flex; align-items: center; justify-content: center; gap: 16px; font-size: 14px; }
+.tc-prayer-timer select { min-height: 44px; padding: 8px 16px; background: white; border: 1px solid var(--line); border-radius: 8px; }
+.tc-prayer-timer__time { display: grid; gap: 8px; margin: 22px 0; }
+.tc-prayer-timer__time strong { font-variant-numeric: tabular-nums; font-size: 52px; font-weight: 400; }
+.tc-prayer-timer small { font-size: 12px; line-height: 1.8; display: block; }
+.tc-timer-actions { display: flex; gap: 10px; margin: 16px 0; }
+.tc-timer-actions button { flex: 1; margin: 0; }
+@media (min-width: 901px) {
+  .tc-companion { gap: 40px; padding: 24px; }
+  .tc-desktop-note { width: 260px; flex-shrink: 0; }
+  .tc-app { width: min(760px, calc(100vw - 350px)); }
+  .tc-community-wall { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

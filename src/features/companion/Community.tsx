@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { communityRequest, finishSubmission, finishSubmissionForReceipt, photoBase64, readReceipts, safePhotoUrl, saveReceipt, submissionAttempt, validateFeed } from './communityClient';
-import type { CommunityFeed, CommunityKind, Receipt } from './communityClient';
+import { foregroundPolling } from './polling';
+import type { FeedCursor, CommunityFeed, CommunityKind, Receipt } from './communityClient';
 import './community.css';
 const storageWarning = '삭제 기록을 이 기기에 저장하지 못했어요. 이 화면에서는 확인·삭제할 수 있지만 새로고침하거나 닫으면 삭제 권한을 잃을 수 있어요. 먼저 내 제출 기록에서 확인하거나 삭제해주세요.';
 const statusLabels: Record<string, string> = { pending: '검수 대기', approved: '공개 중', rejected: '반려', deleted: '삭제됨' };
@@ -10,6 +11,10 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
 }) {
   const [feed, setFeed] = useState<CommunityFeed | null>(null);
   const [feedError, setFeedError] = useState('');
+  const [cursors, setCursors] = useState<(FeedCursor | null)[]>([null]);
+  const [page, setPage] = useState(0);
+  const cursor = cursors[page];
+  const pollingRef = useRef<ReturnType<typeof foregroundPolling> | null>(null);
   const consentDetailsId = useId();
   const [consentKey, setConsentKey] = useState<string | null>(null);
   const [publicChoice, setPublicChoice] = useState(defaultPublic);
@@ -41,7 +46,7 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
     feedRequest.current = controller;
     const epoch = ++feedGeneration.current;
     try {
-      const next = validateFeed(await communityRequest(undefined, kind, controller.signal));
+      const next = validateFeed(await communityRequest(undefined, kind, { signal: controller.signal, cursor }));
       if (active.current && epoch === feedGeneration.current) { setFeed(next); setFeedError(''); }
     } catch (error) {
       if (active.current && epoch === feedGeneration.current) {
@@ -50,7 +55,7 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
         setFeedError(error instanceof Error ? error.message : '정보를 불러오지 못했어요.');
       }
     } finally { if (epoch === feedGeneration.current) feedRequest.current = null; }
-  }, [kind]);
+  }, [kind, cursor]);
   const invalidateFeed = () => {
     feedGeneration.current++;
     feedRequest.current?.abort(); feedRequest.current = null;
@@ -58,23 +63,29 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
   };
   useEffect(() => {
     const feedEpoch = feedGeneration, actionEpoch = actionGeneration;
-    active.current = true; setFeed(null); setFeedError(''); setBusy(false);
-    void refresh();
-    const timer = window.setInterval(() => { if (document.visibilityState !== 'hidden') void refresh(); }, 30000);
-    const onVisible = () => {
-      // A hidden tab must not display an unverified pre-navigation snapshot on return.
-      feedGeneration.current++; feedRequest.current?.abort(); feedRequest.current = null;
-      setFeed(null); setFeedError('');
-      if (document.visibilityState !== 'hidden') void refresh(true);
-    };
-    document.addEventListener('visibilitychange', onVisible);
+    active.current = true;
     return () => {
       active.current = false; feedEpoch.current++; actionEpoch.current++;
       feedRequest.current?.abort(); feedRequest.current = null;
       actionRequest.current?.abort(); actionRequest.current = null; locked.current = false;
-      clearInterval(timer); document.removeEventListener('visibilitychange', onVisible);
     };
+  }, []);
+  useEffect(() => {
+    const invalidate = () => {
+      feedGeneration.current++; feedRequest.current?.abort(); feedRequest.current = null;
+      setFeed(null);
+    };
+    const polling = foregroundPolling(async signal => {
+      const cancel = () => { feedGeneration.current++; feedRequest.current?.abort(); feedRequest.current = null; };
+      signal.addEventListener('abort', cancel, { once: true });
+      try { await refresh(); } finally { signal.removeEventListener('abort', cancel); }
+    }, 30000, () => { invalidate(); setFeedError('오프라인입니다. 연결되면 자동으로 다시 확인합니다.'); }, true, true);
+    pollingRef.current = polling;
+    const onHidden = () => { if (document.visibilityState === 'hidden') invalidate(); };
+    document.addEventListener('visibilitychange', onHidden);
+    return () => { polling.stop(); pollingRef.current = null; document.removeEventListener('visibilitychange', onHidden); };
   }, [refresh]);
+  const turnPage = (next: number) => { invalidateFeed(); setFeedError(''); setPage(next); };
   const remember = (receipt: Receipt, replaceId?: string) => {
     if (!saveReceipt(receipt, replaceId)) setStorageFailed(true);
     setRecords(readReceipts());
@@ -98,7 +109,7 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
       // server rolled back. A retry uses the same request ID and deletion token.
       remember({ id: a.requestId, kind, token: a.token });
       setStatuses(s => ({ ...s, [a.requestId]: '접수 확인 중 · 응답이 없으면 같은 내용으로 재시도해주세요' }));
-      const result = await communityRequest({ requestId: a.requestId, kind, text: text.trim(), eventDay, consent: true, deleteToken: a.token, ...(imageBase64 ? { imageBase64 } : {}) }, undefined, controller.signal);
+      const result = await communityRequest({ requestId: a.requestId, kind, text: text.trim(), eventDay, consent: true, deleteToken: a.token, ...(imageBase64 ? { imageBase64 } : {}) }, undefined, { signal: controller.signal });
       if (!isCurrent()) return;
       if (typeof result.id !== 'string' || typeof result.status !== 'string' || !Object.hasOwn(statusLabels, result.status)) throw new Error('접수 응답을 확인하지 못했어요. 같은 내용으로 다시 시도하면 중복 접수를 방지합니다.');
       remember({ id: result.id, kind, token: a.token }, a.requestId);
@@ -126,7 +137,7 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
     const isCurrent = () => active.current && epoch === actionGeneration.current;
     if (action === 'delete') invalidateFeed();
     try {
-      const result = await communityRequest({ action, id: record.id, deleteToken: record.token }, undefined, controller.signal);
+      const result = await communityRequest({ action, id: record.id, deleteToken: record.token }, undefined, { signal: controller.signal });
       if (!isCurrent()) return;
       const status = typeof result.status === 'string' && Object.hasOwn(statusLabels, result.status) ? statusLabels[result.status] : action === 'delete' && result.deleted === true ? '삭제됨' : undefined;
       if (!status) throw new Error('처리 결과를 확인하지 못했어요. 다시 확인해주세요.');
@@ -184,7 +195,14 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
     {kind !== 'photo' && composer}
     {storageFailed && <p role="alert">{storageWarning}</p>}
     {message && <p role="status">{message}</p>}
+    <p className="tc-footnote">최신순으로 한 페이지에 12건씩 표시합니다. 30초마다 현재 페이지를 자동 확인하며, 화면 복귀·연결 복구 시 바로 확인합니다.</p>
     {feed && !feedError && (visibleItems.length ? <ul className="tc-community-wall">{visibleItems.map(item => <li key={item.id}>{kind === 'photo' && safePhotoUrl(item.photoUrl) && <a href={safePhotoUrl(item.photoUrl)!} target="_blank" rel="noopener noreferrer"><img src={safePhotoUrl(item.photoUrl)!} alt="공개 동의 후 승인된 새벽 사진" loading="lazy" /></a>}{kind === 'reflection' && item.eventDay !== null && <strong>10월 {item.eventDay + 5}일 묵상</strong>}<p>{item.text}</p></li>)}</ul> : <p className="tc-community-empty">아직 승인되어 공개된 {kind === 'photo' ? '사진이' : kind === 'reflection' ? '묵상이' : '기도제목이'} 없어요. 접수한 내용은 검수 후 보입니다.</p>)}
+    <nav className="tc-community-pages" aria-label="공개 나눔 페이지">
+      <button type="button" className="tc-secondary" disabled={page === 0} onClick={() => turnPage(page - 1)}>이전 페이지</button>
+      <span>{page + 1}페이지</span>
+      <button type="button" className="tc-secondary" disabled={!feed?.nextCursor || !!feedError} onClick={() => { if (!feed?.nextCursor) return; setCursors(old => [...old.slice(0, page + 1), feed.nextCursor!]); turnPage(page + 1); }}>다음 페이지</button>
+      {page > 0 && <button type="button" className="tc-line-action" onClick={() => { setCursors([null]); turnPage(0); }}>최신 나눔으로</button>}
+    </nav>
     <details className="tc-community-receipts"><summary>내 제출 기록 ({records.filter(r => r.kind === kind).length})</summary><p>이 브라우저에 남은 삭제 권한으로 조회합니다. 저장소를 지우면 삭제 권한을 잃을 수 있어요.</p>
       {records.filter(r => r.kind === kind).map((r, index) => <div key={r.id}><strong>제출 {index + 1}</strong><span> · {statuses[r.id] ?? '상태를 확인해주세요'}</span><button type="button" disabled={busy} onClick={() => void receiptAction(r, 'status')}>상태 확인</button><button type="button" disabled={busy || statuses[r.id] === '삭제됨'} onClick={() => void receiptAction(r, 'delete')}>제출 철회·삭제</button></div>)}
     </details>

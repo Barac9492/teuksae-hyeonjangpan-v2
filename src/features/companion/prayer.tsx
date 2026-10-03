@@ -1,56 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { PageHeading } from './ui';
 import { Community } from './Community';
+import { PrayerTimer } from './PrayerTimer';
 
 type PrayerView = 'write' | 'read';
-
-const QUIET_SECONDS = 60;
-const quietPrompts = ['천천히 숨을 들이쉬어요', '내쉬면서 어깨의 힘을 풀어요', '지금 마음에 떠오르는 이름을 올려드려요', '말없이 그 곁에 머물러요'];
-
-/** One quiet minute: a circle that slowly fills like the sky before sunrise. */
-function QuietMinute() {
-  const [running, setRunning] = useState(false);
-  const [elapsed, setElapsed] = useState(0);
-  const startRef = useRef(0);
-  useEffect(() => {
-    if (!running) return undefined;
-    startRef.current = Date.now() - elapsed * 1000;
-    const timer = window.setInterval(() => {
-      const next = Math.min(QUIET_SECONDS, (Date.now() - startRef.current) / 1000);
-      setElapsed(next);
-      if (next >= QUIET_SECONDS) setRunning(false);
-    }, 250);
-    return () => window.clearInterval(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [running]);
-  const done = elapsed >= QUIET_SECONDS;
-  const progress = elapsed / QUIET_SECONDS;
-  const prompt = done ? '아멘' : running || elapsed > 0 ? quietPrompts[Math.min(quietPrompts.length - 1, Math.floor(progress * quietPrompts.length))] : '1분 동안, 함께 고요히';
-  const circumference = 2 * Math.PI * 70;
-  return (
-    <div className="tc-quiet-minute" data-running={running || undefined} style={{ '--dawn': progress } as React.CSSProperties}>
-      <div className="tc-quiet-minute__sky" aria-hidden="true" />
-      <svg viewBox="0 0 160 160" aria-hidden="true">
-        <circle cx="80" cy="80" r="70" className="tc-quiet-minute__track" />
-        <circle cx="80" cy="80" r="70" className="tc-quiet-minute__bar" strokeDasharray={circumference} strokeDashoffset={circumference * (1 - progress)} />
-      </svg>
-      <div className="tc-quiet-minute__center">
-        <strong aria-live="polite">{prompt}</strong>
-        <span>{done ? '1분을 함께했어요' : `${Math.ceil(QUIET_SECONDS - elapsed)}초`}</span>
-      </div>
-      <button
-        type="button"
-        className="tc-secondary"
-        onClick={() => {
-          if (done) { setElapsed(0); setRunning(true); return; }
-          setRunning((current) => !current);
-        }}
-      >
-        {done ? '한 번 더' : running ? '잠시 멈춤' : elapsed > 0 ? '이어서' : '고요히 시작하기'}
-      </button>
-    </div>
-  );
-}
 
 export function PrayerPanel({ onPreview }: { onPreview: (text: string) => void }) {
   const [view, setView] = useState<PrayerView>('read');
@@ -64,6 +17,7 @@ export function PrayerPanel({ onPreview }: { onPreview: (text: string) => void }
           <button type="button" aria-pressed={view === 'read'} onClick={() => setView('read')}>함께 기도하기</button>
           <button type="button" aria-pressed={view === 'write'} onClick={() => setView('write')}>기도제목 올리기</button>
         </div>
+        <div hidden={view !== 'read'}><PrayerTimer /></div>
         {view === 'write' ? (
           <form onSubmit={(event) => { event.preventDefault(); if (text.trim()) onPreview(text.trim()); }}>
             <label className="tc-field-label" htmlFor="tc-prayer">어떤 마음으로 기도하고 있나요?</label>
@@ -78,7 +32,6 @@ export function PrayerPanel({ onPreview }: { onPreview: (text: string) => void }
         <Community kind="prayer" text={text} payloadKey={text} showComposer={view === 'write'} defaultPublic />
         {view === 'read' && <>
           <button type="button" className="tc-primary" onClick={() => { setView('write'); window.setTimeout(() => document.getElementById('tc-prayer')?.focus(), 0); }}>기도제목 올리기 <span aria-hidden="true">→</span></button>
-          <QuietMinute />
         </>}
       </div>
     </section>

@@ -11,7 +11,7 @@ function mock(percent: unknown, updatedAt=new Date().toISOString(), state='busy'
   vi.spyOn(globalThis,'fetch').mockResolvedValue(new Response(JSON.stringify({enabled:true,resources:[{id:'parking.songrim',category:'parking',state,version:2,updatedAt,occupancyPercent:percent,lastFullAt:'2026-10-04T19:00:00Z'}]})));
 }
 it('displays an explicit operator estimate for Songrim without exposing raw history metadata, and never a hidden Calvary banner',async()=>{
- mock(70);render(<Harness/>);expect(await screen.findByText('70%')).toHaveClass('tc-status-value--warn');expect(screen.getByText('송림본당 주차')).toBeVisible();expect(screen.queryByText(/갈보리/)).not.toBeInTheDocument();expect(screen.queryByText(/최근 만차·만석 기록/)).not.toBeInTheDocument();
+ mock(70);render(<Harness/>);expect(await screen.findByText('70%')).toHaveClass('tc-status-value--warn');expect(screen.getByText('송림주차장')).toBeVisible();expect(screen.queryByText(/갈보리/)).not.toBeInTheDocument();expect(screen.queryByText(/최근 만차·만석 기록/)).not.toBeInTheDocument();
 });
 it('uses green at 0%',async()=>{
  mock(0,new Date().toISOString(),'available');render(<Harness/>);expect(await screen.findByText('0%')).toHaveClass('tc-status-value--good');
@@ -23,7 +23,7 @@ it('never displays stale percentages and falls back to a checking state, without
  mock(70,new Date(Date.now()-11*60000).toISOString());render(<Harness/>);expect(await screen.findAllByText('확인 필요')).toHaveLength(1);expect(screen.queryByText(/70%/)).not.toBeInTheDocument();expect(screen.queryByText(/최근 만차·만석 기록/)).not.toBeInTheDocument();expect(screen.queryByText(/갈보리/)).not.toBeInTheDocument();
 });
 it('fails closed on invalid percentages',async()=>{
- mock(101);render(<Harness/>);expect(await screen.findByText('송림본당 주차')).toBeVisible();expect(screen.queryByText(/101%/)).not.toBeInTheDocument();expect(screen.queryByText('혼잡')).not.toBeInTheDocument();
+ mock(101);render(<Harness/>);expect(await screen.findByText('송림주차장')).toBeVisible();expect(screen.queryByText(/101%/)).not.toBeInTheDocument();expect(screen.queryByText('혼잡')).not.toBeInTheDocument();
 });
 it('shows an unknown estimate neutrally even when an old state says busy',async()=>{
  mock(null,new Date().toISOString(),'busy');render(<Harness/>);expect(await screen.findByText('사용률 확인 전')).toBeVisible();expect(screen.queryByText('혼잡')).not.toBeInTheDocument();
@@ -33,7 +33,7 @@ it('keeps an explicit closed label when there is no percentage',async()=>{
 });
 
 it.each([[65,'busy'],[40,'full'],[0,'closed']])('fails closed on malformed step/state %s %s',async(percent,state)=>{
- mock(percent,new Date().toISOString(),String(state));render(<Harness/>);expect(await screen.findByText('송림본당 주차')).toBeVisible();expect(screen.queryByText(String(percent)+'%')).not.toBeInTheDocument();
+ mock(percent,new Date().toISOString(),String(state));render(<Harness/>);expect(await screen.findByText('송림주차장')).toBeVisible();expect(screen.queryByText(String(percent)+'%')).not.toBeInTheDocument();
 });
 
 function mockPrevious(firstFullAt: string | null, closedAt: string | null, date='2026-10-05') {
@@ -56,7 +56,7 @@ it('correctly falls back to a checking state (stale updatedAt) when prior full/c
 });
 it('does not surface prior-day history text from another Korea day either, and never shows a Calvary row',async()=>{
  mockPrevious('2026-10-05T19:20:00Z',null);render(<Harness/>);
- expect(await screen.findByText('송림본당 주차')).toBeVisible();
+ expect(await screen.findByText('송림주차장')).toBeVisible();
  expect(screen.queryByText(/갈보리/)).not.toBeInTheDocument();
  expect(screen.queryByText(/10\/05 주차 기록/)).not.toBeInTheDocument();
 });

@@ -151,7 +151,14 @@ export async function handleCommunity(route, req, res, env = process.env, fetche
       if (!UUID.test(b.id || '') || !['approved','rejected','deleted'].includes(b.decision) || !Number.isSafeInteger(b.expectedVersion) || b.expectedVersion < 0) throw fail(400,'검토 요청을 확인해주세요.');
       return reply(res,200,await cleanup(checked(await call('moderate',{...b,session}))));
     }
-    if (req.method === 'GET') { const kind = url.searchParams.get('kind'); if (!['prayer','photo','reflection'].includes(kind)) throw fail(400,'종류를 확인해주세요.'); return reply(res,200,publicView(await call('list',{kind}))); }
+    if (req.method === 'GET') {
+      const kind = url.searchParams.get('kind');
+      if (!['prayer','photo','reflection'].includes(kind)) throw fail(400,'종류를 확인해주세요.');
+      if (url.searchParams.get('page') !== '1') return reply(res,200,publicView(await call('list',{kind})));
+      const beforeAt = url.searchParams.get('beforeAt'), beforeId = url.searchParams.get('beforeId');
+      if ((beforeAt === null) !== (beforeId === null) || (beforeAt !== null && (!/^\d{4}-\d{2}-\d{2}T[0-9:.]+(?:Z|[+-]\d{2}:\d{2})$/.test(beforeAt) || !Number.isFinite(Date.parse(beforeAt)) || !UUID.test(beforeId)))) throw fail(400,'페이지를 확인해주세요.');
+      return reply(res,200,publicView(await rpc('community_public_page',{p_kind:kind,p_before_at:beforeAt,p_before_id:beforeId})));
+    }
     const b = await body(req);
     if (b.action) { if (!['delete','status'].includes(b.action) || !UUID.test(b.id || '') || !TOKEN.test(b.deleteToken || '')) throw fail(400,'요청을 확인해주세요.'); return reply(res,200,publicView(await cleanup(checked(await call(b.action,{id:b.id,tokenHash:hash(b.deleteToken)}))))); }
     // Vercel's platform-controlled header, never arbitrary X-Forwarded-For. Missing IP shares a conservative bucket.

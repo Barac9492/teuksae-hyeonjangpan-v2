@@ -66,7 +66,7 @@ export function CompanionApp() {
   const now = useClock();
   const [liveDay, setLiveDay] = useState(() => liveEventDay());
   useEffect(() => { if (!isPreview) setLiveDay(liveEventDay(new Date(now))); }, [isPreview, now]);
-  const [tab, setTab] = useState<TabId>('worship');
+  const [tab, setTab] = useState<TabId>(() => new URLSearchParams(window.location.search).get('tab') === 'parking' ? 'parking' : 'worship');
   const [venue, setVenue] = useState<Venue>('songrim');
   const [stage, setStage] = useState<Stage>(2);
   const [stale, setStale] = useState(false);
@@ -162,7 +162,7 @@ export function CompanionApp() {
           </div>
           <div hidden={tab !== 'parking'}>
             {isPreview
-              ? <PreviewParkingPanel venue={venue} setVenue={setVenue} stage={stage} stale={stale} allFull={parkingFull[venue]} goToWorship={() => selectTab('worship')} art={<ParkingArt />} />
+              ? <PreviewParkingPanel venue={venue} setVenue={setVenue} stage={stage} stale={stale} allFull={parkingFull[venue]} goToWorship={() => selectTab('worship')} art={<ParkingArt />} day={eventDay + 5} />
               : <LiveParkingPanel venue={venue} setVenue={setVenue} operations={operations} art={<ParkingArt />} />}
           </div>
           <div hidden={tab !== 'prayer'}><PrayerPanel onPreview={(text) => { setCardState(''); setModal({ type: 'prayer', text }); }} /></div>

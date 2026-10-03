@@ -3,7 +3,8 @@ import { runtimeStorageKey } from '../rehearsal/runtime';
 export type CommunityKind = 'prayer' | 'photo' | 'reflection';
 export type Receipt = { id: string; kind: CommunityKind; token: string };
 export type CommunityItem = { id: string; kind: CommunityKind; text: string; createdAt: string; eventDay: number | null; photoUrl?: string };
-export type CommunityFeed = { enabled: true; items: CommunityItem[]; photoCountToday: number; today: string };
+export type FeedCursor = { createdAt: string; id: string };
+export type CommunityFeed = { enabled: true; items: CommunityItem[]; photoCountToday: number; today: string; nextCursor?: FeedCursor | null };
 export const RECEIPTS_KEY = 'woori-community-receipts-v1';
 // Content and images never enter browser storage. In-memory receipts survive panel switches.
 let receipts: Receipt[] = [];
@@ -49,9 +50,11 @@ export function finishSubmissionForReceipt(id: string) {
   }
   return keys;
 }
-export async function communityRequest(body?: object, kind?: CommunityKind, signal?: AbortSignal): Promise<Record<string, unknown>> {
+export async function communityRequest(body?: object, kind?: CommunityKind, options?: { signal?: AbortSignal; cursor?: FeedCursor | null }): Promise<Record<string, unknown>> {
+  const params = new URLSearchParams({kind: kind ?? 'prayer', page: '1'});
+  if (options?.cursor) { params.set('beforeAt', options.cursor.createdAt); params.set('beforeId', options.cursor.id); }
   return requestWithDeadline(async requestSignal => {
-    const response = await fetch(body ? '/api/community' : `/api/community?kind=${kind}`, {
+    const response = await fetch(body ? '/api/community' : `/api/community?${params}`, {
       method: body ? 'POST' : 'GET', cache: 'no-store', credentials: 'same-origin', signal: requestSignal,
       ...(body ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}),
     });
@@ -60,11 +63,12 @@ export async function communityRequest(body?: object, kind?: CommunityKind, sign
     const result: unknown = await response.json();
     if (!result || typeof result !== 'object' || ('enabled' in result && result.enabled === false)) throw new Error('지금은 공개 나눔을 이용할 수 없어요.');
     return result as Record<string, unknown>;
-  }, { signal });
+  }, { signal: options?.signal });
 }
 export function validateFeed(value: Record<string, unknown>): CommunityFeed {
-  if (value.enabled !== true || !Array.isArray(value.items) || !Number.isInteger(value.photoCountToday) || Number(value.photoCountToday) < 0 || typeof value.today !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value.today)) throw new Error('공개 나눔 정보를 확인하지 못했어요.');
+  if (value.enabled !== true || !Array.isArray(value.items) || value.items.length > 12 || !Number.isInteger(value.photoCountToday) || Number(value.photoCountToday) < 0 || typeof value.today !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value.today)) throw new Error('공개 나눔 정보를 확인하지 못했어요.');
   if (value.items.some(item => !item || typeof item.id !== 'string' || typeof item.text !== 'string' || !['photo', 'prayer', 'reflection'].includes(item.kind))) throw new Error('공개 나눔 정보를 확인하지 못했어요.');
+  if (value.nextCursor != null && (typeof value.nextCursor !== 'object' || !('createdAt' in value.nextCursor) || typeof value.nextCursor.createdAt !== 'string' || !Number.isFinite(Date.parse(value.nextCursor.createdAt)) || !('id' in value.nextCursor) || typeof value.nextCursor.id !== 'string')) throw new Error('다음 페이지 정보를 확인하지 못했어요.');
   return value as CommunityFeed;
 }
 export function safePhotoUrl(url?: string): string | null {

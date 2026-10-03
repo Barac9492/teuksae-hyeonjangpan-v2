@@ -5,7 +5,7 @@ afterEach(cleanup);
 const operations = (time: string) => ({ enabled: true, offline: false, confirmed: true, lastSync: null, now: Date.parse(time), resources: [
   { id: 'space.songrim.access', label: '학교 출입', category: 'space' as const, state: 'hall_open' as const, version: 1, updatedAt: '2026-10-04T14:59:00Z' },
   ...['space.songrim.hall', 'space.songrim.gym'].map(id => ({ id, label: id, category: 'space' as const, state: 'checking' as const, version: 0, updatedAt: null })),
-  ...['parking.songrim', 'parking.calvary'].map(id => ({ id, label: id, category: 'parking' as const, state: 'full' as const, version: 1, updatedAt: '2026-10-04T14:59:00Z', occupancyPercent: 100, previousDay: {date: '2026-09-27', firstFullAt: '2026-09-26T19:00:00Z', closedAt: null} })),
+  ...['parking.songrim'].map(id => ({ id, label: id, category: 'parking' as const, state: 'full' as const, version: 1, updatedAt: '2026-10-04T14:59:00Z', occupancyPercent: 100, previousDay: {date: '2026-09-27', firstFullAt: '2026-09-26T19:00:00Z', closedAt: null} })),
 ] });
 it('shows ordinary dated operations before the event without a separate inspection mode', () => {
  const ops = operations('2026-10-04T23:59:59+09:00');

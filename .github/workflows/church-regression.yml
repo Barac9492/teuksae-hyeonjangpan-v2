@@ -1,0 +1,50 @@
+name: Church feedback regression
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env:
+      TZ: UTC
+      CHROME_PATH: /usr/bin/google-chrome
+      PGLITE_MODULE: /tmp/church-ci-tools/node_modules/@electric-sql/pglite/dist/index.js
+      PLAYWRIGHT_MODULE: /tmp/church-ci-tools/node_modules/@playwright/test/index.mjs
+      BASE_URL: http://127.0.0.1:4327
+      PORT: '4327'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts
+      - name: Validate application and server
+        run: |
+          npm run lint
+          npm test
+          npm run test:server
+          npm run build
+          node --check public/sw.js
+      - name: Install isolated SQL and browser test tools
+        run: npm install --prefix /tmp/church-ci-tools --no-save --ignore-scripts @electric-sql/pglite@0.5.8 @playwright/test@1.58.2
+      - name: Verify actual migrations against synthetic local data
+        run: |
+          node tests/scripts/feedback-db.mjs
+          npm run test:community-sql
+      - name: Verify mobile and desktop interactions
+        run: |
+          test -x "$CHROME_PATH"
+          node tests/scripts/feedback-fixture.mjs > /tmp/church-fixture.log 2>&1 &
+          fixture_pid=$!
+          trap 'kill "$fixture_pid"' EXIT
+          for attempt in {1..30}; do
+            if curl --silent --fail "$BASE_URL" > /dev/null; then break; fi
+            sleep 1
+          done
+          node tests/scripts/feedback-browser.mjs
