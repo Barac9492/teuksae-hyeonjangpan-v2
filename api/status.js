@@ -42,6 +42,7 @@ export function filterEventResources(resources, now = Date.now()) {
       lastFullAt: validTimestamp(resource.lastFullAt, now) ? resource.lastFullAt : null,
     };
     if (Object.prototype.hasOwnProperty.call(resource, 'occupancyPercent')) filtered.occupancyPercent = current ? resource.occupancyPercent : null;
+    if (Object.prototype.hasOwnProperty.call(resource, 'guideFloor')) filtered.guideFloor = current ? resource.guideFloor : null;
     const previousDay = eventParkingDay(resource.previousDay, now);
     if (previousDay) filtered.previousDay = previousDay;
     else delete filtered.previousDay;

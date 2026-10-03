@@ -64,7 +64,8 @@ describe('CompanionApp', () => {
     expect(screen.getByText('7층')).toBeVisible();
     expect(screen.getByText('11층')).toBeVisible();
     await chooseTab(user, '주차');
-    for (const floor of ['B1', 'B2', 'B3', 'B4', 'B5']) expect(screen.getByText(floor)).toBeVisible();
+    expect(screen.getByText('드림센터 주차장')).toBeVisible();
+    expect(screen.getByText('B2층으로 안내 중')).toBeVisible();
   });
 
   it('fails closed for stale status and can preview all parking full without a live claim', async () => {
@@ -181,17 +182,17 @@ describe('CompanionApp', () => {
   });
 });
 
-it('places an optional David game after live guidance and opens it separately without embedding', () => {
+it('places an optional David game prominently before live guidance and opens it separately without embedding', () => {
   render(<CompanionApp />);
   const worship = screen.getByRole('tabpanel', { name: '예배' });
-  const card = within(worship).getByRole('complementary', { name: '목동에서 왕이 되기까지' });
-  expect(within(card).getByText('특새를 기다리며')).toBeVisible();
+  const card = worship.querySelector('.tc-home-shortcuts') as HTMLElement;
+  expect(within(card).getByText('예배 전후, 잠깐의 여유에')).toBeVisible();
   const link = within(card).getByRole('link', { name: '다윗 게임 열기 (새 탭)' });
   expect(link).toHaveAttribute('href', 'https://the-shepherd-king.vercel.app/');
   expect(link).toHaveAttribute('target', '_blank');
   expect(link).toHaveAttribute('rel', 'noopener noreferrer');
   expect(worship.querySelector('iframe')).toBeNull();
-  expect(within(worship).getByRole('heading', { name: '지금 예배 공간은' }).compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(within(worship).getByRole('heading', { name: '지금 예배 공간은' }).compareDocumentPosition(card) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
 });
 
 it('warns even while collapsed that wake planning does not set or ring an alarm', async () => {

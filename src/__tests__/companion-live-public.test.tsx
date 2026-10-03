@@ -56,13 +56,13 @@ describe('public companion live operations', () => {
     expect(screen.queryByText('개방 · 여유')).not.toBeInTheDocument();
   });
 
-  it('fails closed when a staff update is stale and shows independent Dream floors and parking levels', async () => {
+  it('fails closed when a staff update is stale and shows independent Dream worship floors and one aggregate parking lot', async () => {
     const stale = new Date(Date.now() - 11 * 60_000).toISOString();
     vi.stubGlobal('fetch', routeFetch(() => reply([
       { id: 'space.dream.f3', label: '3층', category: 'space', state: 'available', version: 1, updatedAt: stale },
       { id: 'space.dream.f7', label: '7층', category: 'space', state: 'busy', version: 1, updatedAt: fresh },
       { id: 'space.dream.f11', label: '11층', category: 'space', state: 'full', version: 1, updatedAt: fresh },
-      { id: 'parking.dream.b1', label: 'B1', category: 'parking', state: 'full', version: 1, updatedAt: fresh },
+      { id: 'parking.dream', label: '드림센터 주차장', guideFloor: null, category: 'parking', state: 'full', version: 1, updatedAt: fresh },
       { id: 'parking.dream.b2', label: 'B2', category: 'parking', state: 'available', version: 1, updatedAt: fresh },
     ])));
     const user = userEvent.setup();
@@ -73,9 +73,9 @@ describe('public companion live operations', () => {
     expect(within(screen.getByRole('tabpanel', { name: '예배' })).queryByText('이용 가능')).not.toBeInTheDocument();
     expect(screen.getByText('혼잡')).toBeVisible();
     await user.click(screen.getByRole('tab', { name: '주차' }));
-    expect(screen.getByText('B1')).toBeVisible();
-    expect(screen.getByText('B5')).toBeVisible();
-    expect(within(screen.getByRole('tabpanel', { name: '주차' })).getByText('만차')).toBeVisible();
+    expect(screen.getByText('드림센터 주차장')).toBeVisible();
+    expect(screen.queryByText('B5')).not.toBeInTheDocument();
+    expect(within(screen.getByRole('tabpanel', { name: '주차' })).getByText('전체 만차')).toBeVisible();
   });
 
   it.each(['2026-10-04T14:59:59Z', '2026-10-06T00:00:00Z', '2026-10-05T18:00:00Z'])('does not claim a confirmed live banner for invalid freshness %s', async (updatedAt) => {

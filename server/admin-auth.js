@@ -106,7 +106,14 @@ function validOccupancyState(state, occupancyPercent) {
     || (state === 'busy' && occupancyPercent >= 70 && occupancyPercent <= 90)
     || (state === 'full' && occupancyPercent === 100);
 }
-function validOperation(body) { return validOccupancy(body.occupancyPercent) && validOccupancyState(body.state, body.occupancyPercent) && (body.resourceId !== 'space.songrim.access' || body.occupancyPercent == null) && typeof body.resourceId === 'string' && ALL_STATES.has(body.state) && Number.isInteger(body.expectedVersion) && body.expectedVersion >= 0 && typeof body.requestId === 'string' && UUID.test(body.requestId) && (body.resourceId === 'space.songrim.access' ? ACCESS_STATES.has(body.state) : !ACCESS_STATES.has(body.state) || body.state === 'checking' || body.state === 'closed'); }
+function validGuidance(body) {
+  if (body.resourceId !== 'parking.dream') return body.guideFloor == null;
+  if (body.occupancyPercent != null) return false;
+  return body.state === 'available'
+    ? Number.isInteger(body.guideFloor) && body.guideFloor >= 1 && body.guideFloor <= 5
+    : ['checking','closed','full'].includes(body.state) && body.guideFloor === null;
+}
+function validOperation(body) { return validGuidance(body) && validOccupancy(body.occupancyPercent) && validOccupancyState(body.state, body.occupancyPercent) && (body.resourceId !== 'space.songrim.access' || body.occupancyPercent == null) && typeof body.resourceId === 'string' && ALL_STATES.has(body.state) && Number.isInteger(body.expectedVersion) && body.expectedVersion >= 0 && typeof body.requestId === 'string' && UUID.test(body.requestId) && (body.resourceId === 'space.songrim.access' ? ACCESS_STATES.has(body.state) : !ACCESS_STATES.has(body.state) || body.state === 'checking' || body.state === 'closed'); }
 function validAccount(body) { return typeof body.username === 'string' && USERNAME.test(body.username.trim()) && typeof body.displayLabel === 'string' && body.displayLabel.trim().length >= 1 && body.displayLabel.trim().length <= 30 && TEAM_ROLES.has(body.role) && typeof body.active === 'boolean' && (body.password === undefined || (typeof body.password === 'string' && body.password.length >= 4 && body.password.length <= 256)); }
 async function protectedSession(req, res, cfg, fetcher, now) {
   const token = readSession(req, cfg, now);
@@ -180,11 +187,11 @@ async function operations(req, res, cfg, session, fetcher) {
     const args = { p_session_id: session.tokenId, p_resource_id: body.resourceId, p_state: body.state, p_expected_version: body.expectedVersion, p_request_id: body.requestId };
     let data;
     try {
-      data = await rpc(cfg, 'ops_set_resource_state', { ...args, p_occupancy_percent: body.occupancyPercent ?? null }, fetcher);
+      data = await rpc(cfg, 'ops_set_resource_state', { ...args, p_occupancy_percent: body.occupancyPercent ?? null, ...(body.resourceId === 'parking.dream' ? { p_guide_floor: body.guideFloor } : {}) }, fetcher);
     } catch (error) {
       // Missing RPC signature is a definite non-execution. Never retry ambiguous
       // network/server failures or silently drop a requested operator estimate.
-      if (error?.code !== 'PGRST202' || error?.status !== 404 || body.occupancyPercent != null) throw error;
+      if (error?.code !== 'PGRST202' || error?.status !== 404 || body.occupancyPercent != null || body.resourceId === 'parking.dream') throw error;
       data = await rpc(cfg, 'ops_set_resource_state', args, fetcher);
     }
     if (data?.status === 'conflict') return reply(res, 409, { error: '다른 변경이 먼저 반영되었습니다.', resource: data.resource });

@@ -4,13 +4,13 @@ import { LiveParkingPanel, LiveWorshipStatus } from '../features/companion/LiveO
 import type { ComponentProps } from 'react';
 type Ops = ComponentProps<typeof LiveWorshipStatus>['operations'];
 const now = Date.parse('2026-09-29T16:00:00+09:00');
-const ids = ['parking.songrim','parking.calvary','parking.dream.b1','parking.dream.b2','parking.dream.b3','parking.dream.b4','parking.dream.b5','space.songrim.access','space.songrim.hall','space.songrim.gym','space.dream.f11','space.dream.f7','space.dream.f3'];
+const ids = ['parking.songrim','parking.dream','space.songrim.access','space.songrim.hall','space.songrim.gym','space.dream.f11','space.dream.f7','space.dream.f3'];
 function ops(freshId: string, time = now - 60_000): Ops {
  return { now, enabled: true, offline: false, confirmed: true, lastSync: now, resources: ids.map(id => ({id,label:id,category:id.startsWith('parking')?'parking':'space',state:'available',version:1,occupancyPercent:40,updatedAt:new Date(id===freshId?time:now-3_600_000).toISOString()})) };
 }
 afterEach(cleanup);
 it('does not borrow fresh parking from another venue, and recomputes on venue switch',()=>{
- const operations=ops('parking.dream.b1');
+ const operations=ops('parking.dream');
  const view=render(<LiveParkingPanel venue="songrim" setVenue={()=>{}} operations={operations}/>);
  expect(screen.queryByText('현장팀 확인 현황')).not.toBeInTheDocument();
  expect(screen.getByText('현장팀 확인 전')).toBeVisible();
@@ -18,7 +18,7 @@ it('does not borrow fresh parking from another venue, and recomputes on venue sw
  expect(screen.getByText('현장팀 확인 현황')).toBeVisible();
 });
 it('does not borrow parking freshness for worship at the same venue',()=>{
- render(<LiveWorshipStatus venue="dream" operations={ops('parking.dream.b1')}/>);
+ render(<LiveWorshipStatus venue="dream" operations={ops('parking.dream')}/>);
  expect(screen.queryByText('현장팀 확인 현황')).not.toBeInTheDocument();
 });
 it('does not borrow worship freshness for parking at the same venue',()=>{

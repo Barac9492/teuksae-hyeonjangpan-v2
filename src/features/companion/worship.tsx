@@ -150,7 +150,7 @@ export function WakePlanner({ venue }: { venue: Venue }) {
         <Slider label="씻고 준비하기" value={ready} min={10} max={60} onChange={setReady} />
         <Slider label="이동 시간" value={travel} min={5} max={60} onChange={setTravel} />
         <Slider label="도착 후 여유" value={buffer} min={5} max={40} onChange={setBuffer} />
-        <p className="tc-wake__basis">04:40 예배 시작 기준이에요. 학교 입장은 03:00부터입니다. 본당·체육관의 실제 개방 여부는 현장 안내를 확인해주세요.</p>
+        <p className="tc-wake__basis">04:40 예배 시작 기준이에요. 본당입장 : 03시 50분 부터. 실제 입장 상황은 현장 안내를 확인해주세요.</p>
         <button
           className="tc-secondary"
           type="button"
@@ -189,26 +189,24 @@ export function WorshipPanel({ crownImage, venue, setVenue, now, previewDay, sta
 }) {
   return (
     <section id="tc-panel-worship" className="tc-panel" role="tabpanel" aria-labelledby="tc-tab-worship">
-      <InstallCard />
       <WorshipHero crownImage={crownImage} />
+      <div className="tc-home-shortcuts" aria-label="빠른 안내">
+        <div>{actions}</div>
+        <a href="https://the-shepherd-king.vercel.app/" target="_blank" rel="noopener noreferrer" aria-label="다윗 게임 열기 (새 탭)"><span><small>예배 전후, 잠깐의 여유에</small><strong>다윗 게임 · 목동에서 왕이 되기까지</strong></span><span aria-hidden="true">↗</span></a>
+      </div>
+      <InstallCard />
       <DawnJourney now={now} previewDay={previewDay} />
       <div className="tc-section">
         <h2 className="tc-section-title">지금 예배 공간은</h2>
         <VenueSwitch venue={venue} onChange={setVenue} label="예배 장소" />
-        {venue === 'songrim' && <><p className="tc-panel-note">학교 입장 03:00부터 · 본당·체육관 입장 시각은 별도 현장 안내</p><StageTrail stage={stage} /></>}
+        {venue === 'songrim' && <><p className="tc-panel-note">본당입장 : 03시 50분 부터</p><StageTrail stage={stage} /></>}
         {children}
-        <div className="tc-mini-actions">{actions}</div>
+
         {after}
       </div>
       <div className="tc-section">
         <WakePlanner venue={venue} />
-        <aside className="tc-david-game" aria-labelledby="tc-david-game-title">
-          <span className="tc-david-game__eyebrow">특새를 기다리며</span>
-          <h2 id="tc-david-game-title">목동에서 왕이 되기까지</h2>
-          <p>잠깐의 여유에, 다윗의 이야기를 게임으로 만나보세요.</p>
-          <a href="https://the-shepherd-king.vercel.app/" target="_blank" rel="noopener noreferrer" className="tc-david-game__link" aria-label="다윗 게임 열기 (새 탭)">다윗 게임 열기 <span aria-hidden="true">↗</span></a>
-          <small>새 탭에서 열려요</small>
-        </aside>
+
         <VerseCard />
       </div>
     </section>

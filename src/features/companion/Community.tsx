@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { communityRequest, deleteToken, photoBase64, readReceipts, safePhotoUrl, saveReceipt, validateFeed } from './communityClient';
-import type { CommunityFeed, CommunityKind, Receipt } from './communityClient';
+import { foregroundPolling } from './polling';
+import type { FeedCursor, CommunityFeed, CommunityKind, Receipt } from './communityClient';
 import './community.css';
 const storageWarning = '삭제 기록을 이 기기에 저장하지 못했어요. 이 화면에서는 확인·삭제할 수 있지만 새로고침하거나 닫으면 삭제 권한을 잃을 수 있어요. 먼저 내 제출 기록에서 확인하거나 삭제해주세요.';
 const statusLabels: Record<string, string> = { pending: '검수 대기', approved: '공개 중', rejected: '반려', deleted: '삭제됨' };
@@ -10,6 +11,10 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
 }) {
   const [feed, setFeed] = useState<CommunityFeed | null>(null);
   const [feedError, setFeedError] = useState('');
+  const [cursors, setCursors] = useState<(FeedCursor | null)[]>([null]);
+  const [page, setPage] = useState(0);
+  const cursor = cursors[page];
+  const pollingRef = useRef<ReturnType<typeof foregroundPolling> | null>(null);
   const consentDetailsId = useId();
   const [consentKey, setConsentKey] = useState<string | null>(null);
   const [publicChoice, setPublicChoice] = useState(defaultPublic);
@@ -26,17 +31,19 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
   const canShare = publicByDefault ? publicChoice && submittedKey !== key : consentKey === key;
   const currentKey = useRef(key); currentKey.current = key;
   useEffect(() => { setConsentKey(null); attempt.current = null; }, [key]);
-  const refresh = useCallback(async () => {
-    try { const next = validateFeed(await communityRequest(undefined, kind)); setFeed(next); setFeedError(''); }
-    catch (error) { setFeedError(error instanceof Error ? error.message : '정보를 불러오지 못했어요.'); }
-  }, [kind]);
+  const refresh = useCallback(async () => { await pollingRef.current?.refresh(); }, []);
   useEffect(() => {
-    void refresh();
-    const timer = window.setInterval(() => { if (document.visibilityState !== 'hidden') void refresh(); }, 30000);
-    const onVisible = () => { if (document.visibilityState !== 'hidden') void refresh(); };
-    document.addEventListener('visibilitychange', onVisible);
-    return () => { clearInterval(timer); document.removeEventListener('visibilitychange', onVisible); };
-  }, [refresh]);
+    const polling = foregroundPolling(async signal => {
+      try {
+        const next = validateFeed(await communityRequest(undefined, kind, { signal, cursor }));
+        if (signal.aborted) return;
+        setFeed(next); setFeedError('');
+      } catch (error) { if (!signal.aborted || signal.reason?.message === 'timeout') setFeedError(error instanceof Error ? error.message : '정보를 불러오지 못했어요.'); }
+    }, 30000, () => setFeedError('오프라인입니다. 연결되면 자동으로 다시 확인합니다.'));
+    pollingRef.current = polling;
+    return () => { polling.stop(); pollingRef.current = null; };
+  }, [kind, cursor]);
+  const turnPage = (next: number) => { setFeed(null); setFeedError(''); setPage(next); };
   const remember = (receipt: Receipt, replaceId?: string) => {
     if (!saveReceipt(receipt, replaceId)) setStorageFailed(true);
     setRecords(readReceipts());
@@ -95,7 +102,14 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
     </div>}
     {storageFailed && <p role="alert">{storageWarning}</p>}
     {message && <p role="status">{message}</p>}
-    {feed && !feedError && (visibleItems.length ? <ul className="tc-community-wall">{visibleItems.map(item => <li key={item.id}>{kind === 'photo' && safePhotoUrl(item.photoUrl) && <a href={safePhotoUrl(item.photoUrl)!} target="_blank" rel="noopener noreferrer"><img src={safePhotoUrl(item.photoUrl)!} alt="공개 동의 후 승인된 새벽 사진" loading="lazy" /></a>}{kind === 'reflection' && item.eventDay !== null && <strong>10월 {item.eventDay + 5}일 묵상</strong>}<p>{item.text}</p><small>검수 후 공개</small></li>)}</ul> : <p className="tc-community-empty">아직 승인되어 공개된 {kind === 'photo' ? '사진이' : kind === 'reflection' ? '묵상이' : '기도제목이'} 없어요. 접수한 내용은 검수 후 보입니다.</p>)}
+    <p className="tc-footnote">최신순으로 한 페이지에 12건씩 표시합니다. 30초마다 현재 페이지를 자동 확인하며, 화면 복귀·연결 복구 시 바로 확인합니다.</p>
+    {feed && (visibleItems.length ? <ul className="tc-community-wall">{visibleItems.map(item => <li key={item.id}>{kind === 'photo' && safePhotoUrl(item.photoUrl) && <a href={safePhotoUrl(item.photoUrl)!} target="_blank" rel="noopener noreferrer"><img src={safePhotoUrl(item.photoUrl)!} alt="공개 동의 후 승인된 새벽 사진" loading="lazy" /></a>}{kind === 'reflection' && item.eventDay !== null && <strong>10월 {item.eventDay + 5}일 묵상</strong>}<p>{item.text}</p><small>검수 후 공개</small></li>)}</ul> : <p className="tc-community-empty">아직 승인되어 공개된 {kind === 'photo' ? '사진이' : kind === 'reflection' ? '묵상이' : '기도제목이'} 없어요. 접수한 내용은 검수 후 보입니다.</p>)}
+    <nav className="tc-community-pages" aria-label="공개 나눔 페이지">
+      <button type="button" className="tc-secondary" disabled={page === 0} onClick={() => turnPage(page - 1)}>이전 페이지</button>
+      <span>{page + 1}페이지</span>
+      <button type="button" className="tc-secondary" disabled={!feed?.nextCursor || !!feedError} onClick={() => { if (!feed?.nextCursor) return; setCursors(old => [...old.slice(0, page + 1), feed.nextCursor!]); turnPage(page + 1); }}>다음 페이지</button>
+      {page > 0 && <button type="button" className="tc-line-action" onClick={() => { setCursors([null]); turnPage(0); }}>최신 나눔으로</button>}
+    </nav>
     <details className="tc-community-receipts"><summary>내 제출 기록 ({records.filter(r => r.kind === kind).length})</summary><p>이 브라우저에 남은 삭제 권한으로 조회합니다. 저장소를 지우면 삭제 권한을 잃을 수 있어요.</p>
       {records.filter(r => r.kind === kind).map((r, index) => <div key={r.id}><strong>제출 {index + 1}</strong><span> · {statuses[r.id] ?? '상태를 확인해주세요'}</span><button type="button" disabled={busy} onClick={() => void receiptAction(r, 'status')}>상태 확인</button><button type="button" disabled={busy || statuses[r.id] === '삭제됨'} onClick={() => void receiptAction(r, 'delete')}>제출 철회·삭제</button></div>)}
     </details>

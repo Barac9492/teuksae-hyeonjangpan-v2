@@ -1,0 +1,24 @@
+{
+  "baseCommit": "e77a32c",
+  "branch": "codex/church-feedback-1-9-20261003",
+  "checks": {
+    "lint": "PASS: eslint --max-warnings=0",
+    "build": "PASS: tsc app noEmit and Vite production build",
+    "frontendTests": {
+      "files": 31,
+      "passed": 233,
+      "failed": 0
+    },
+    "serverTests": {
+      "passed": 72,
+      "failed": 0
+    },
+    "serviceWorkerSyntax": "PASS: node --check public/sw.js",
+    "diffWhitespace": "PASS: git diff --check",
+    "localPostgreSQL": "PASS: feedback-db.mjs with PGlite 0.5.8",
+    "browser": "PASS: 14 checks; browser-results.json"
+  },
+  "productionChanges": false,
+  "publication": "No push, PR, deployment, remote SQL, or game-source edits",
+  "remaining": "Approval for the local guidance/pagination migration and deployment; remote schema/dependency preflight still required"
+}

@@ -66,7 +66,7 @@ export function CompanionApp() {
   const now = useClock();
   const [liveDay, setLiveDay] = useState(() => liveEventDay());
   useEffect(() => { if (!isPreview) setLiveDay(liveEventDay(new Date(now))); }, [isPreview, now]);
-  const [tab, setTab] = useState<TabId>('worship');
+  const [tab, setTab] = useState<TabId>(() => new URLSearchParams(window.location.search).get('tab') === 'parking' ? 'parking' : 'worship');
   const [venue, setVenue] = useState<Venue>('songrim');
   const [stage, setStage] = useState<Stage>(2);
   const [stale, setStale] = useState(false);
