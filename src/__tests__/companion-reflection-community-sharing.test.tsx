@@ -63,13 +63,13 @@ describe('community sharing is open before the calendar launch date, with consen
     expect(screen.getByText('오늘 사진 참여 3건')).toBeVisible();
     expect(screen.getByText('사전 점검 사진')).toBeVisible();
     expect(screen.queryByText(/10월 5일부터/)).not.toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: '앱에 들어온 모든 분께 공개하기' })).toBeVisible();
-    fireEvent.click(screen.getByRole('checkbox', { name: '모두에게 공개하는 데 동의합니다.' }));
-    expect(screen.getByRole('button', { name: '공개 접수하기 · 검수 후 게시' })).not.toBeDisabled();
+    expect(screen.queryByRole('heading', { name: '앱에 들어온 모든 분께 공개하기' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('checkbox', { name: '함께 나누기 · 공개' }));
+    expect(screen.getByRole('button', { name: '사진 공개하기' })).not.toBeDisabled();
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('shows the live feed at launch and keeps full disclosure in accessible details', async () => {
+  it('shows the live feed at launch and keeps photo disclosure in its accessible description', async () => {
     vi.setSystemTime(new Date('2026-10-04T15:00:00.000Z'));
     vi.stubGlobal('fetch', vi.fn(async () => response({
       enabled: true,
@@ -83,13 +83,11 @@ describe('community sharing is open before the calendar launch date, with consen
 
     expect(screen.getByText('오늘 사진 참여 3건')).toBeVisible();
     expect(screen.getByText('첫날 사진')).toBeVisible();
-    expect(screen.getByRole('checkbox', { name: '모두에게 공개하는 데 동의합니다.' })).not.toBeChecked();
-    const details = screen.getByText('공개 범위와 삭제 한계 자세히 보기').closest('details');
-    expect(details).not.toHaveAttribute('open');
-    fireEvent.click(screen.getByText('공개 범위와 삭제 한계 자세히 보기'));
-    expect(details).toHaveAttribute('open');
-    expect(screen.getByText(/캡처·외부 저장 사본은 삭제 후에도 남을 수 있습니다/)).toBeVisible();
-    expect(screen.getByText(/미성년자는 보호자 동의를 확인했습니다/)).toBeVisible();
+    const checkbox = screen.getByRole('checkbox', { name: '함께 나누기 · 공개' });
+    expect(checkbox).not.toBeChecked();
+    expect(screen.queryByText('공개 범위와 삭제 한계 자세히 보기')).not.toBeInTheDocument();
+    expect(checkbox).toHaveAccessibleDescription(/캡처·외부 저장 사본은 삭제 후에도 남을 수 있습니다/);
+    expect(checkbox).toHaveAccessibleDescription(/미성년자는 보호자 동의를 확인했습니다/);
   });
 });
 
@@ -120,8 +118,9 @@ describe('local memo and unconfirmed schedule copy', () => {
   it('gives organizer-confirmation guidance without inventing snack or service times', () => {
     const view = render(<SharingPanel {...baseProps} view="snacks" />);
     expect(screen.getByText(/정확한 학교 밖 위치와 시작·마감 시각은 주최팀 확인 전입니다/)).toBeVisible();
-    expect(screen.getByText(/1청년부 3팀 피켓 안내를 따라주세요/)).toBeVisible();
     expect(screen.getByText(/확인 전에는 임의의 장소나 시각을 안내하지 않습니다/)).toBeVisible();
+    // youth-team/picket reveal copy is hidden from public views (see sharing.tsx footnote).
+    expect(screen.queryByText(/1청년부|피켓/)).not.toBeInTheDocument();
 
     view.rerender(<SharingPanel {...baseProps} view="breakfast" />);
     expect(screen.getByText(/예배 종료 시각은 주최 측 공식 확인 전이라 안내하지 않습니다/)).toBeVisible();

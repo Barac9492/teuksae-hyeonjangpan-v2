@@ -1,5 +1,12 @@
 .tc-photo-field { display: grid; gap: 8px; margin: 18px 0; font-size: 13px; color: var(--ink); }
-.tc-photo-field input, .tc-photo-field select { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 4px; background: #fff; color: var(--ink); font: inherit; }
+.tc-photo-field input, .tc-photo-day-trigger { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 4px; background: #fff; color: var(--ink); font: inherit; }
+.tc-photo-day-trigger { display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: left; cursor: pointer; }
+.tc-photo-day-trigger:focus-visible, .tc-photo-day-options button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.tc-photo-day-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.tc-photo-day-options[hidden] { display: none; }
+.tc-photo-day-options button { min-width: 0; min-height: 44px; padding: 8px 4px; border: 1px solid var(--line); border-radius: 4px; background: #fff; color: var(--ink); font: inherit; cursor: pointer; }
+.tc-photo-day-options button[aria-pressed='true'] { border-color: var(--ink); background: #f2e5db; }
+@media (max-width: 480px) { .tc-photo-day-options { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .tc-photo-memo { margin-top: 10px; font: italic 20px/1.6 'Nanum Pen Script', 'Apple SD Gothic Neo', cursive; overflow-wrap: anywhere; color: var(--ink); }
 .tc-photo-days { margin-top: 30px; padding-top: 24px; border-top: 1px solid var(--line); }
 .tc-photo-days h2 { font-size: 18px; font-weight: 400; }
@@ -8,3 +15,28 @@
 .tc-photo-days li { padding: 12px 2px; text-align: center; border: 1px dashed var(--line); border-radius: 50%; font-size: 12px; }
 .tc-photo-days li span { display: block; font-size: 10px; margin-top: 4px; }
 .tc-photo-days li[data-stamped='true'] { border: 1px solid var(--ink); background: #f2e5db; color: var(--ink); }
+
+/* Scoped override (not shared companion.css): preserve the full source photo instead of
+   cropping it to fill the square frame. Letterbox bars show the paper background so
+   landscape, panorama, and portrait sources are never cropped left/right or top/bottom. */
+.tc-photo-preview .tc-polaroid__image { background: var(--paper, #fbfbfa); }
+.tc-photo-preview .tc-polaroid__image img { object-fit: contain; background: var(--paper, #fbfbfa); }
+
+/* The real file input covers the visible control. A direct tap works even where
+   activating a display:none input through a label does not open the picker. */
+.tc-upload { position: relative; overflow: hidden; }
+.tc-upload input[type='file'] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.tc-upload:focus-within { outline: 2px solid var(--ink); outline-offset: 3px; }
+
+/* Secondary photo tools are available without competing with the publish action. */
+.tc-photo-extras { margin: 20px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.tc-photo-extras > summary { display: flex; align-items: center; min-height: 48px; cursor: pointer; font-size: 13px; color: var(--ink); }
+.tc-photo-extras > summary:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.tc-photo-extras[open] { padding-bottom: 20px; }
+.tc-photo-extras .tc-photo-days { margin-top: 18px; padding-top: 18px; }
+
+/* Keep the publish action visible after selection on a short phone viewport. The image
+   still uses contain, so neither portraits nor landscapes are cropped. */
+@media (max-width: 480px) {
+  .tc-photo-preview .tc-polaroid__image { height: 140px; aspect-ratio: auto; }
+}

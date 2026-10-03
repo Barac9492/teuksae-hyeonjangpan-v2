@@ -1,0 +1,41 @@
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { PrayerPanel } from '../features/companion/prayer';
+import { REFLECTION_DRAFTS_KEY } from '../features/companion/Reflection';
+const drafts = JSON.stringify({ '5': '보존할 이전 묵상 초안' });
+let requests: ReturnType<typeof vi.fn>;
+beforeEach(() => {
+  localStorage.clear(); localStorage.setItem(REFLECTION_DRAFTS_KEY, drafts);
+  requests = vi.fn(async () => ({ ok: true, json: async () => ({ enabled: true, items: [], photoCountToday: 0, today: '2026-10-01' }) }));
+  vi.stubGlobal('fetch', requests);
+});
+afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
+it('offers exactly two prayer modes and preserves archived drafts without loading reflection', async () => {
+  render(<PrayerPanel onPreview={vi.fn()} />);
+  const menu = screen.getByRole('group', { name: '기도 메뉴' });
+  expect(within(menu).getAllByRole('button')).toHaveLength(2);
+  expect(within(menu).getByRole('button', { name: '함께 기도하기' })).toBeVisible();
+  expect(within(menu).getByRole('button', { name: '기도제목 올리기' })).toBeVisible();
+  expect(screen.queryByRole('button', { name: '특새 묵상' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('region', { name: '특새 묵상 나눔', hidden: true })).not.toBeInTheDocument();
+  expect(screen.queryByLabelText('나의 묵상')).not.toBeInTheDocument();
+  await waitFor(() => expect(screen.queryByText('공개 나눔 정보를 불러오는 중이에요.')).not.toBeInTheDocument());
+  expect(localStorage.getItem(REFLECTION_DRAFTS_KEY)).toBe(drafts);
+  expect(requests.mock.calls.some(([url]) => String(url).includes('kind=reflection'))).toBe(false);
+});
+it('keeps prayer input, local preview and compact opt-out flow intact', async () => {
+  const preview = vi.fn(); render(<PrayerPanel onPreview={preview} />);
+  fireEvent.click(within(screen.getByRole('group', { name: '기도 메뉴' })).getByRole('button', { name: '기도제목 올리기' }));
+  const input = screen.getByLabelText('어떤 마음으로 기도하고 있나요?');
+  expect(input).toHaveAttribute('maxLength', '600');
+  fireEvent.change(input, { target: { value: '기도 입력 유지 확인' } });
+  const publish = screen.getByRole('button', { name: '기도제목 공개로 올리기' });
+  await waitFor(() => expect(publish).toBeEnabled());
+  expect(screen.getByRole('checkbox', { name: '함께 나누기 · 공개' })).toBeChecked();
+  fireEvent.click(screen.getByRole('button', { name: /입력 내용 미리보기/ }));
+  expect(preview).toHaveBeenCalledWith('기도 입력 유지 확인');
+  fireEvent.click(screen.getByRole('checkbox', { name: '함께 나누기 · 공개' }));
+  expect(publish).toBeDisabled();
+  expect(requests.mock.calls.some(([, options]) => options?.method === 'POST')).toBe(false);
+  expect(localStorage.getItem(REFLECTION_DRAFTS_KEY)).toBe(drafts);
+});

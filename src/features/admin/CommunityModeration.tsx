@@ -1,3 +1,4 @@
+import { requestWithDeadline } from '../../lib/requestDeadline';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import './CommunityModeration.css';
 
@@ -6,6 +7,7 @@ type Item = {
   eventDay: string | number | null; status: 'pending' | 'approved' | 'rejected'; version: number; photoUrl?: string;
 };
 type Decision = 'approved' | 'rejected' | 'deleted';
+type Filter = 'all' | 'pending' | 'approved' | 'rejected';
 const endpoint = '/api/admin/community';
 const statusLabel = { pending: '검토 대기', approved: '공개 중', rejected: '비공개' };
 const timestamp = (value: string) => Number.isFinite(Date.parse(value))
@@ -31,22 +33,35 @@ function reviewItems(body: Record<string, unknown>): Item[] {
   if (!visible.every(validItem)) throw new Error('검토 목록의 서버 응답 형식이 올바르지 않습니다.');
   return visible;
 }
-async function request(init?: RequestInit): Promise<Record<string, unknown>> {
-  const response = await fetch(endpoint, { credentials: 'same-origin', cache: 'no-store', ...init });
-  let body: Record<string, unknown> | null = null;
-  try { const json: unknown = await response.json(); if (json && typeof json === 'object' && !Array.isArray(json)) body = json as Record<string, unknown>; } catch { /* Non-JSON endpoints must not look empty. */ }
-  if (!response.ok) {
-    const descriptions: Record<number, string> = {
-      401: '세션이 만료되었습니다. 다시 로그인해주세요.',
-      403: '커뮤니티 검토는 최고 관리자만 사용할 수 있습니다.',
-      409: '다른 관리자가 먼저 변경했습니다. 목록을 새로고침하고 내용을 다시 검토해주세요.',
-      404: '커뮤니티 검토 API를 찾을 수 없습니다. 서버 배포 상태를 확인해주세요.',
-    };
-    const detail = typeof body?.error === 'string' ? ` (${body.error})` : '';
-    throw new Error(`${descriptions[response.status] ?? '서버가 요청을 처리하지 못했습니다.'} [${response.status}]${detail}`);
-  }
-  if (!body) throw new Error('서버 응답을 확인할 수 없습니다. 목록을 새로고침해주세요.');
-  return body;
+async function request(init?: RequestInit, url = endpoint): Promise<Record<string, unknown>> {
+  return requestWithDeadline(async signal => {
+    const response = await fetch(url, { credentials: 'same-origin', cache: 'no-store', ...init, signal });
+    let body: Record<string, unknown> | null = null;
+    try { const json: unknown = await response.json(); if (json && typeof json === 'object' && !Array.isArray(json)) body = json as Record<string, unknown>; } catch { /* Non-JSON endpoints must not look empty. */ }
+    if (!response.ok) {
+      const descriptions: Record<number, string> = {
+        401: '세션이 만료되었습니다. 다시 로그인해주세요.',
+        403: '커뮤니티 검토는 최고 관리자만 사용할 수 있습니다.',
+        409: '다른 관리자가 먼저 변경했습니다. 목록을 새로고침하고 내용을 다시 검토해주세요.',
+        404: '커뮤니티 검토 API를 찾을 수 없습니다. 서버 배포 상태를 확인해주세요.',
+      };
+      const detail = typeof body?.error === 'string' ? ` (${body.error})` : '';
+      throw new Error(`${descriptions[response.status] ?? '서버가 요청을 처리하지 못했습니다.'} [${response.status}]${detail}`);
+    }
+    if (!body) throw new Error('서버 응답을 확인할 수 없습니다. 목록을 새로고침해주세요.');
+    return body;
+  }, { signal: init?.signal ?? undefined });
+}
+function listUrl(filter: Filter, cursor: string | null) {
+  const query = new URLSearchParams();
+  if (filter !== 'all') query.set('status', filter);
+  if (cursor) query.set('cursor', cursor);
+  return query.size ? `${endpoint}?${query}` : endpoint;
+}
+function pageCursor(body: Record<string, unknown>): string | null {
+  if (body.nextCursor === undefined || body.nextCursor === null) return null;
+  if (typeof body.nextCursor !== 'string' || !body.nextCursor) throw new Error('검토 목록의 페이지 응답이 올바르지 않습니다.');
+  return body.nextCursor;
 }
 
 export function CommunityModeration() {
@@ -54,6 +69,9 @@ export function CommunityModeration() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [filter, setFilter] = useState<Filter>('all');
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [isLaterPage, setIsLaterPage] = useState(false);
   const [reviewId, setReviewId] = useState<string | null>(null);
   const [consent, setConsent] = useState(false);
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
@@ -61,55 +79,63 @@ export function CommunityModeration() {
   const active = useRef(false);
   const lock = useRef(false);
   const generation = useRef(0);
-  const load = useCallback(async () => {
+  const operation = useRef<AbortController | null>(null);
+  const load = useCallback(async (nextFilter: Filter = 'all', cursor: string | null = null) => {
     if (lock.current) return;
     lock.current = true;
-    const epoch = generation.current;
+    const epoch = ++generation.current;
+    const controller = new AbortController(); operation.current = controller;
+    setFilter(nextFilter); setIsLaterPage(!!cursor); setNextCursor(null);
     setBusy(true); setError(''); setNotice(''); setReviewId(null); setConsent(false); setItems(null);
     try {
-      const body = await request();
+      const body = await request({ signal: controller.signal }, listUrl(nextFilter, cursor));
       const nextItems = reviewItems(body);
-      if (active.current && epoch === generation.current) { setItems(nextItems); setBrokenImages({}); setLoadedImages({}); }
+      const next = pageCursor(body);
+      if (active.current && epoch === generation.current) { setItems(nextItems); setNextCursor(next); setBrokenImages({}); setLoadedImages({}); }
     } catch (cause) {
       if (active.current && epoch === generation.current) setError(cause instanceof Error ? cause.message : '목록을 불러오지 못했습니다.');
     } finally {
-      if (epoch === generation.current) { lock.current = false; if (active.current) setBusy(false); }
+      if (epoch === generation.current) { lock.current = false; operation.current = null; if (active.current) setBusy(false); }
     }
   }, []);
   useEffect(() => {
     const epochRef = generation;
     active.current = true; void load();
-    return () => { active.current = false; epochRef.current++; lock.current = false; };
+    return () => { active.current = false; epochRef.current++; operation.current?.abort(); operation.current = null; lock.current = false; };
   }, [load]);
   const decide = async (item: Item, decision: Decision) => {
     if (lock.current || error || (decision === 'approved' && (reviewId !== item.id || !consent || item.kind === 'photo' && (!loadedImages[item.id] || brokenImages[item.id])))) return;
-    lock.current = true; const epoch = generation.current;
+    lock.current = true; const epoch = ++generation.current;
+    const controller = new AbortController(); operation.current = controller;
     setBusy(true); setNotice(''); setReviewId(null); setConsent(false);
     try {
-      await request({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: item.id, decision, expectedVersion: item.version }) });
+      await request({ method: 'POST', signal: controller.signal, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: item.id, decision, expectedVersion: item.version }) });
       if (!active.current || epoch !== generation.current) return;
       // Never retain purged content after a successful privacy action.
       setItems(null);
-      const body = await request();
+      const body = await request({ signal: controller.signal }, listUrl(filter, null));
       const nextItems = reviewItems(body);
-      if (active.current && epoch === generation.current) { setItems(nextItems); setBrokenImages({}); setLoadedImages({}); setNotice('서버 처리 후 최신 목록을 확인했습니다.'); }
+      const next = pageCursor(body);
+      if (active.current && epoch === generation.current) { setItems(nextItems); setNextCursor(next); setIsLaterPage(false); setBrokenImages({}); setLoadedImages({}); setNotice('서버 처리 후 최신 목록을 확인했습니다.'); }
     } catch (cause) {
       if (active.current && epoch === generation.current) {
-        setItems(null);
+        setItems(null); setNextCursor(null);
         setError(`${cause instanceof Error ? cause.message : '연결 오류가 발생했습니다.'} 처리 결과를 단정할 수 없습니다. 새로고침 후 확인해주세요.`);
       }
     } finally {
-      if (epoch === generation.current) { lock.current = false; if (active.current) setBusy(false); }
+      if (epoch === generation.current) { lock.current = false; operation.current = null; if (active.current) setBusy(false); }
     }
   };
   return <section className="community-moderation" aria-labelledby="community-review-heading" aria-busy={busy}>
-    <div className="community-moderation__header"><h2 id="community-review-heading">커뮤니티 공개 검토</h2><button type="button" className="ta-admin__secondary" disabled={busy} onClick={() => void load()}>검토 목록 새로고침</button></div>
-    <p>검토 대기 및 최근 게시물 최대 100개입니다. 공개 승인한 기도·묵상·사진은 로그인 없이 누구나 인터넷에서 볼 수 있으며 복사·저장될 수 있습니다.</p>
+    <div className="community-moderation__header"><h2 id="community-review-heading">커뮤니티 공개 검토</h2><button type="button" className="ta-admin__secondary" disabled={busy} onClick={() => void load(filter)}>검토 목록 새로고침</button></div>
+    <label>검토 상태 <select aria-label="검토 상태" value={filter} disabled={busy} onChange={event => void load(event.target.value as Filter)}><option value="all">전체 (검토 대기 먼저)</option><option value="pending">검토 대기</option><option value="approved">공개 중</option><option value="rejected">비공개</option></select></label>
+    <p>삭제된 기록을 제외하고 한 페이지에 최대 100개씩 표시합니다. 다음 페이지에서 오래된 게시물도 확인할 수 있습니다. 공개 승인한 기도·묵상·사진은 로그인 없이 누구나 인터넷에서 볼 수 있으며 복사·저장될 수 있습니다.</p>
     <p className="community-moderation__warning">사진 속 얼굴, 특히 아동·청소년의 공개 동의와 보호자 동의를 확인하세요. 기도 내용에 이름·연락처·건강 등 민감한 정보가 없는지 확인하세요. 비공개 처리는 이미지와 내용을 제거합니다. 삭제도 되돌릴 수 없으며, 이미 다른 사람이 저장한 사본까지 회수하지는 못합니다.</p>
     {error && <p role="alert" className="ta-admin__alert">{error}</p>}
     {notice && <p role="status">{notice}</p>}
     {busy && <p role="status">검토 목록 처리 중…</p>}
     {items?.length === 0 && <p>현재 검토 목록에 게시물이 없습니다.</p>}
+    {items && <div className="community-moderation__actions">{isLaterPage && <button type="button" className="ta-admin__secondary" disabled={busy} onClick={() => void load(filter)}>첫 페이지로</button>}{nextCursor && <button type="button" className="ta-admin__secondary" disabled={busy} onClick={() => void load(filter, nextCursor)}>다음 페이지</button>}</div>}
     {items?.map(item => {
       const source = photoSource(item.photoUrl);
       const imageUnavailable = item.kind === 'photo' && (!source || brokenImages[item.id]);

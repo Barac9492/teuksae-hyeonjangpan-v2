@@ -18,7 +18,7 @@ import type { Venue } from './ui';
 import { WorshipPanel } from './worship';
 
 const eventDates = [
-  ['10월 5일(월)', '첫날 / 1청년부 3팀'],
+  ['10월 5일(월)', '첫날'],
   ['10월 6일(화)', '자율 나눔'],
   ['10월 7일(수)', '자율 나눔'],
   ['10월 8일(목)', '자율 나눔'],
@@ -124,9 +124,10 @@ export function CompanionApp() {
   </>;
   const worshipAfter = <>
     <p className="tc-panel-note">{isPreview ? '현황은 모두 디자인 검토용 예시입니다. 운영 시스템과 연결되지 않았고 실제 현장 상태를 뜻하지 않습니다.' : '현장팀이 확인한 공개 안내만 표시합니다.'}</p>
+    <p className="tc-panel-note">실제와 조금 차이가 있을 수 있습니다.</p>
     {isPreview && venue === 'songrim' && stage === 0 && !stale && (
       <button className="tc-snack-teaser" type="button" onClick={goToSnack}>
-        <span><small>학교 밖 대기 장소 · 오병이어 챌린지 안내</small><strong>{eventDay === 0 ? '10월 5일, 1청년부 3팀이 준비합니다' : '10월 6일부터, 원하는 분들이 자율적으로 나눠요'}</strong></span>
+        <span><small>학교 밖 대기 장소 · 오병이어 챌린지 안내</small><strong>{eventDay === 0 ? '10월 5일부터 함께해요' : '10월 6일부터, 원하는 분들이 자율적으로 나눠요'}</strong></span>
         <span aria-hidden="true">→</span>
       </button>
     )}

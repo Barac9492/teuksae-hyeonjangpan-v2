@@ -31,7 +31,7 @@ function DayChips({ eventDay }: { eventDay: number | null }) {
       {SERVICE_DAYS.map((day, index) => (
         <li key={day} data-today={eventDay === index || undefined} data-first={index === 0 || undefined}>
           <b>{day}</b><small>{WEEKDAYS[index]}</small>
-          <span>{index === 0 ? '청년부' : '자율'}</span>
+          <span>{index === 0 ? '?' : '자율'}</span>
         </li>
       ))}
     </ol>
@@ -108,13 +108,16 @@ export function SharingPanel({ eventDay, stories, onAddStory, onDeleteStory, onH
         {view === 'snacks' ? (
           <>
             <div className="tc-snack-place"><strong>송림본당만</strong><span>학교 개방 전 · 학교 밖 대기 장소</span></div>
-            <h2 className="tc-serif-title">작은 바구니에 마음을 모아요.</h2>
-            <div className="tc-quiet"><strong>교회에서 준비하는 간식과는 별개의 자율 나눔이에요.</strong><p>월·금·토 교회 간식 배부와 구분되는 1청년부 3팀의 오병이어 챌린지입니다. 바구니에서 사탕 하나 가져가셔도, 짧은 응원의 쪽지를 보태셔도 좋아요. 준비하지 않아도 누구나 함께할 수 있어요.</p></div>
+            <section className="tc-gym-setup" aria-labelledby="tc-gym-setup-title">
+              <h2 id="tc-gym-setup-title">함께 준비해요</h2>
+              <p>체육관 세팅은 오전 3시 30분부터 시작합니다. 먼저 도착하신 성도님들의 자발적인 참여를 부탁드립니다.</p>
+            </section>
+            <h2 className="tc-serif-title">작은 간식으로 마음을 나눠요.</h2>
             <DayChips eventDay={eventDay} />
             {eventDay === null ? (
-              <div className="tc-day-copy"><span className="tc-tiny">특새 기간 현장 안내</span><p>1청년부 3팀이 사탕과 작은 간식을 모으고 있어요. 당일에는 피켓과 바구니를 찾아주세요.</p></div>
+              <div className="tc-day-copy"><span className="tc-tiny">특새 기간</span><p>간식을 준비하지 않으셔도 편하게 함께해 주세요.</p></div>
             ) : eventDay === 0 ? (
-              <div className="tc-day-copy"><span className="tc-tiny">10월 5일(월) · 첫날</span><p><strong>1청년부 3팀이 간식을 준비합니다.</strong><br />간식을 준비하지 않으셔도 편하게 함께해 주세요.</p></div>
+              <div className="tc-day-copy"><span className="tc-tiny">10월 5일(월) · 첫날</span><p>간식을 준비하지 않으셔도 편하게 함께해 주세요.</p></div>
             ) : (
               <div className="tc-day-copy"><span className="tc-tiny">10월 {SERVICE_DAYS[eventDay]}일({WEEKDAYS[eventDay]}) · 자율 나눔</span><p>나눔을 원하시는 분은 <strong>포장된 티백·사탕·캔디·과자·비스킷</strong>을 가져오셔도 좋아요.<br />준비하지 않으셔도 편하게 함께해 주세요.</p></div>
             )}
@@ -127,10 +130,11 @@ export function SharingPanel({ eventDay, stories, onAddStory, onDeleteStory, onH
                   <Item icon={Icon.candy} label="낱개 포장 사탕·캔디" />
                   <Item icon={Icon.cookie} label="개별 포장 과자" />
                   <Item icon={Icon.biscuit} label="개별 포장 비스킷" />
+                  <Item icon={Icon.tea} label="유통기한이 표기된 것" />
                 </ul>
               </div>
               <div>
-                <h3><span className="tc-mark tc-mark--no" aria-hidden="true">✕</span>이번에는 어려워요</h3>
+                <h3><span className="tc-mark tc-mark--no" aria-hidden="true">✕</span>이런 간식은 안돼요.</h3>
                 <ul>
                   <Item no icon={Icon.pot} label="직접 만든 음식" />
                   <Item no icon={Icon.open} label="뜯은 포장" />
@@ -150,7 +154,7 @@ export function SharingPanel({ eventDay, stories, onAddStory, onDeleteStory, onH
               <p>개인 보온병에 따뜻한 물을 준비해 오시거나,<br /><b>체육관이 열린 뒤 내부 온수 정수기</b>를 이용하실 수 있어요.</p>
               <small>학교 출입문만 열렸을 때는 이용할 수 없습니다. 학교 밖에서는 뜨거운 물을 나눠드리지 않습니다.</small>
             </div>
-            <p className="tc-footnote"><strong>정확한 학교 밖 위치와 시작·마감 시각은 주최팀 확인 전입니다.</strong> 현장에서는 1청년부 3팀 피켓 안내를 따라주세요. 확인 전에는 임의의 장소나 시각을 안내하지 않습니다.</p>
+            <p className="tc-footnote"><strong>정확한 학교 밖 위치와 시작·마감 시각은 주최팀 확인 전입니다.</strong> 확인 전에는 임의의 장소나 시각을 안내하지 않습니다.</p>
             <StorySection stories={stories} onAdd={onAddStory} onDelete={onDeleteStory} onHide={onHideStory} onMore={onMoreStories} />
             <button className="tc-line-action" type="button" onClick={() => setView('breakfast')}>예배 후 아침 식당도 살펴보기 <span aria-hidden="true">→</span></button>
           </>

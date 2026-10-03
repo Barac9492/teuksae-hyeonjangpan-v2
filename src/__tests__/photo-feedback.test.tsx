@@ -6,7 +6,7 @@ import { downloadBlob } from '../features/companion/dawn';
 vi.mock('../features/companion/canvas', async (original) => ({ ...await original<typeof import('../features/companion/canvas')>(), renderFramedPhoto: vi.fn() }));
 vi.mock('../features/companion/dawn', async (original) => ({ ...await original<typeof import('../features/companion/dawn')>(), downloadBlob: vi.fn() }));
 const key = 'woori-photo-days-2026-v1';
-const upload = () => fireEvent.change(screen.getByLabelText('내 사진으로 미리보기'), { target: { files: [new File(['pixels'], 'private-name.jpg', { type: 'image/jpeg' })] } });
+const upload = () => fireEvent.change(screen.getByLabelText('사진 올리기'), { target: { files: [new File(['pixels'], 'private-name.jpg', { type: 'image/jpeg' })] } });
 beforeEach(() => {
   localStorage.clear(); vi.clearAllMocks();
   vi.mocked(renderFramedPhoto).mockResolvedValue(new Blob(['png'], { type: 'image/png' }));
@@ -18,7 +18,7 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 describe('local photo feedback', () => {
   it('never stamps without a photo or silently defaults outside the event to October 5', () => {
     render(<PhotosPanel eventDay={null} />);
-    expect(screen.getByLabelText(/사진에 남길 행사 날짜/)).toHaveValue('');
+    expect(screen.getByRole('button', { name: /사진에 남길 행사 날짜.*날짜를 선택해주세요/ })).toHaveAttribute('aria-expanded', 'false');
     const button = screen.getByRole('button', { name: '선택한 날짜에 도장 남기기' });
     expect(button).toBeDisabled(); fireEvent.click(button);
     expect(localStorage.getItem(key)).toBeNull();
@@ -27,7 +27,8 @@ describe('local photo feedback', () => {
     render(<PhotosPanel eventDay={null} />); upload();
     await waitFor(() => expect(screen.getByRole('button', { name: '사진 다운로드' })).toBeEnabled());
     expect(screen.getByRole('button', { name: '선택한 날짜에 도장 남기기' })).toBeDisabled();
-    fireEvent.change(screen.getByLabelText(/사진에 남길 행사 날짜/), { target: { value: '2' } });
+    fireEvent.click(screen.getByRole('button', { name: /사진에 남길 행사 날짜/ }));
+    fireEvent.click(screen.getByRole('button', { name: '10월 7일 (수)' }));
     fireEvent.change(screen.getByLabelText(/사진 아래 한 줄/), { target: { value: '함께 걸었던 새벽' } });
     await waitFor(() => expect(renderFramedPhoto).toHaveBeenLastCalledWith('blob:local-photo', '10월 7일(수) 새벽', '함께 걸었던 새벽'));
     await waitFor(() => expect(screen.getByRole('button', { name: '선택한 날짜에 도장 남기기' })).toBeEnabled());
@@ -49,7 +50,7 @@ describe('local photo feedback', () => {
   });
   it('validates file type and size before preparing image', () => {
     render(<PhotosPanel eventDay={0} />);
-    fireEvent.change(screen.getByLabelText('내 사진으로 미리보기'), { target: { files: [new File(['x'], 'bad.svg', { type: 'image/svg+xml' })] } });
+    fireEvent.change(screen.getByLabelText('사진 올리기'), { target: { files: [new File(['x'], 'bad.svg', { type: 'image/svg+xml' })] } });
     expect(renderFramedPhoto).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: '선택한 날짜에 도장 남기기' })).toBeDisabled();
   });
@@ -60,8 +61,8 @@ describe('local photo feedback', () => {
     render(<PhotosPanel eventDay={1} />); upload();
     const button = await screen.findByRole('button', { name: '사진 다운로드' });
     expect(screen.queryByRole('button', { name: '사진 공유하기' })).not.toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: '앱에 들어온 모든 분께 공개하기' })).toBeVisible();
-    expect(screen.getByRole('checkbox', { name: /모두에게 공개하는 데 동의합니다/ })).not.toBeChecked();
+    expect(screen.queryByRole('heading', { name: '앱에 들어온 모든 분께 공개하기' })).not.toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: '함께 나누기 · 공개' })).not.toBeChecked();
     fireEvent.click(button);
     expect(downloadBlob).toHaveBeenCalledOnce();
     expect(share).not.toHaveBeenCalled();

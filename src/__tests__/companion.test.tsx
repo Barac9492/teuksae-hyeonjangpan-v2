@@ -97,11 +97,34 @@ describe('CompanionApp', () => {
     expect(screen.getByText(/학교 밖에서는 뜨거운 물을 나눠드리지 않습니다/)).toBeVisible();
   });
 
+  it('shows the accessible gym setup notice immediately in default sharing, before snack content', async () => {
+    window.history.replaceState({}, '', '/');
+    const user = userEvent.setup();
+    render(<CompanionApp />);
+    await chooseTab(user, '나눔');
+    expect(screen.getByRole('button', { name: '오병이어 챌린지' })).toHaveAttribute('aria-pressed', 'true');
+    const notice = screen.getByRole('region', { name: '함께 준비해요' });
+    expect(notice).toBeVisible();
+    expect(within(notice).getByRole('heading', { name: '함께 준비해요', level: 2 })).toBeVisible();
+    expect(within(notice).getByText('체육관 세팅은 오전 3시 30분부터 시작합니다. 먼저 도착하신 성도님들의 자발적인 참여를 부탁드립니다.')).toBeVisible();
+    expect(screen.getByText('송림본당만').compareDocumentPosition(notice) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(notice.compareDocumentPosition(screen.getByRole('heading', { name: '작은 간식으로 마음을 나눠요.' })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: '아침 식사' }));
+    expect(screen.queryByRole('region', { name: '함께 준비해요' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '오병이어 챌린지' }));
+    await chooseTab(user, '예배');
+    await chooseTab(user, '나눔');
+    expect(screen.getAllByRole('region', { name: '함께 준비해요' })).toHaveLength(1);
+    expect(screen.getByRole('region', { name: '함께 준비해요' })).toBeVisible();
+  });
+
   it('shows first-day preparation and subsequent voluntary packaged snacks without an attendance obligation', async () => {
     const user = userEvent.setup();
     render(<CompanionApp />);
     await chooseTab(user, '나눔');
-    expect(screen.getByText('1청년부 3팀이 간식을 준비합니다.')).toBeVisible();
+    expect(screen.getByText('간식을 준비하지 않으셔도 편하게 함께해 주세요.')).toBeVisible();
+    expect(screen.queryByText(/1청년부|피켓|바구니/)).not.toBeInTheDocument();
     const dialog = await openSettings(user);
     expect(within(dialog).getByText(/실제 날짜나 현장 상태와 무관하게/)).toBeVisible();
     await user.selectOptions(within(dialog).getByLabelText('미리 볼 예배일'), '1');
@@ -148,7 +171,7 @@ describe('CompanionApp', () => {
     expect(screen.queryByText(/이 기도제목을 내가 선택한 사람에게/)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '함께 기도하기' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.queryByLabelText('어떤 마음으로 기도하고 있나요?')).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: '기도제목 올리기' }));
+    await user.click(within(screen.getByRole('group', { name: '기도 메뉴' })).getByRole('button', { name: '기도제목 올리기' }));
     expect(screen.getByRole('checkbox', { name: /함께 나누기 · 공개/ })).toBeChecked();
     await user.type(screen.getByLabelText('어떤 마음으로 기도하고 있나요?'), '가족을 위해 기도합니다.');
     await user.click(screen.getByRole('button', { name: /입력 내용 미리보기/ }));
@@ -169,7 +192,7 @@ describe('CompanionApp', () => {
     Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: revokeObjectURL });
     const view = render(<CompanionApp />);
     await chooseTab(user, '사진');
-    const input = screen.getByLabelText(/내 사진으로 미리보기/);
+    const input = screen.getByLabelText('사진 올리기');
     fireEvent.change(input, { target: { files: [new File(['bad'], 'bad.gif', { type: 'image/gif' })] } });
     expect(screen.getByRole('status')).toHaveTextContent('JPG·PNG·WebP 형식의 8MB 이하');
     expect(createObjectURL).not.toHaveBeenCalled();

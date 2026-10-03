@@ -1,5 +1,5 @@
 /** Foreground polling: one request at a time, abort on hide/offline/unmount. */
-export function foregroundPolling(load: (signal: AbortSignal) => Promise<void>, interval: number, onOffline?: () => void, immediate = true) {
+export function foregroundPolling(load: (signal: AbortSignal) => Promise<void>, interval: number, onOffline?: () => void, immediate = true, supersedeOnVisible = false) {
   let stopped = false;
   let active: AbortController | null = null;
   const refresh = async () => {
@@ -7,11 +7,17 @@ export function foregroundPolling(load: (signal: AbortSignal) => Promise<void>, 
     if (!navigator.onLine) { onOffline?.(); return; }
     const request = new AbortController(); active = request;
     const timeout = window.setTimeout(() => request.abort(new Error('timeout')), 8000);
-    try { await load(request.signal); }
-    finally { window.clearTimeout(timeout); if (active === request) active = null; }
+    let cancel = () => {};
+    const interrupted = new Promise<never>((_, reject) => {
+      cancel = () => { window.clearTimeout(timeout); reject(request.signal.reason); };
+      request.signal.addEventListener('abort', cancel, { once: true });
+    });
+    try { await Promise.race([load(request.signal), interrupted]); }
+    catch { if (!stopped && active === request && request.signal.reason?.message === 'timeout') onOffline?.(); }
+    finally { window.clearTimeout(timeout); request.signal.removeEventListener('abort', cancel); if (active === request) active = null; }
   };
   const cancel = () => { active?.abort(); active = null; };
-  const visible = () => { if (document.visibilityState === 'hidden') cancel(); else void refresh(); };
+  const visible = () => { if (document.visibilityState === 'hidden' || supersedeOnVisible) cancel(); if (document.visibilityState !== 'hidden') void refresh(); };
   const offline = () => { cancel(); onOffline?.(); };
   const resume = () => { void refresh(); };
   if (immediate) void refresh();

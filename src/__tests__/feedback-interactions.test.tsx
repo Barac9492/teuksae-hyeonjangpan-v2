@@ -51,7 +51,7 @@ it('times out stalled polling and allows a later retry', async () => {
  const polling=foregroundPolling(load,20000);await vi.advanceTimersByTimeAsync(8000);expect(load.mock.calls[0][0].reason.message).toBe('timeout');
  await vi.advanceTimersByTimeAsync(12000);expect(load).toHaveBeenCalledTimes(2);polling.stop();
 });
-it('loads bounded pages, keeps selected page on refresh, retains composer and old cards on error', async () => {
+it('loads bounded pages, keeps selected page on refresh, retains composer and page but hides unverified cards on error', async () => {
  const first={createdAt:'2026-10-03T00:00:00Z',id:'00000000-0000-4000-8000-000000000012'};
  const requests:string[]=[];let fail=false;
  vi.spyOn(globalThis,'fetch').mockImplementation(async url=> {requests.push(String(url));if(fail)throw new Error('offline');const second=String(url).includes('beforeId=');return response({enabled:true,today:'2026-10-03',photoCountToday:0,nextCursor:second?null:first,items:Array.from({length:second?1:12},(_,i)=>({id:`${second?'older':'new'}-${i}`,kind:'prayer',text:`${second?'older':'new'} ${i}`,createdAt:first.createdAt,eventDay:null}))});});
@@ -60,7 +60,7 @@ it('loads bounded pages, keeps selected page on refresh, retains composer and ol
  await user.click(screen.getByRole('button',{name:'다음 페이지'}));await screen.findByText('older 0');expect(document.querySelectorAll('.tc-community-wall li')).toHaveLength(1);
  expect(requests.at(-1)).toContain('beforeId=');expect(screen.getByRole('checkbox',{name:'함께 나누기 · 공개'})).toBeChecked();
  act(()=>window.dispatchEvent(new Event('online')));await waitFor(()=>expect(requests).toHaveLength(3));expect(requests.at(-1)).toContain('beforeId=');
- fail=true;act(()=>window.dispatchEvent(new Event('online')));await screen.findByRole('alert');expect(screen.getByText('older 0')).toBeVisible();
+ fail=true;act(()=>window.dispatchEvent(new Event('online')));await screen.findByRole('alert');expect(screen.queryByText('older 0')).not.toBeInTheDocument();expect(screen.getByText('2페이지')).toBeVisible();expect(screen.getByRole('checkbox',{name:'함께 나누기 · 공개'})).toBeChecked();
  await user.click(screen.getByRole('button',{name:'이전 페이지'}));fail=false;
  act(()=>window.dispatchEvent(new Event('online')));await screen.findByText('new 11');
 });

@@ -56,6 +56,7 @@ export function PreviewParkingPanel({ venue, setVenue, stage, stale, allFull, go
         {venue === 'songrim' && <div className="tc-quiet"><strong>학교 출입과 예배당 입장은 달라요.</strong><p>학교 문이 열려 차량이 들어가도 본당·체육관은 아직 닫혀 있을 수 있습니다.</p></div>}
         <button className="tc-line-action" type="button" onClick={goToWorship}>예배 공간 개방 상태 보기 <span aria-hidden="true">→</span></button>
         <p className="tc-panel-note">현황은 시안입니다. 오래된 상태는 안전하게 ‘확인 중’으로 전환합니다.</p>
+        <p className="tc-panel-note">실제와 조금 차이가 있을 수 있습니다.</p>
         <p className="tc-safety"><span aria-hidden="true">🚗</span> 운전 중 화면을 조작하지 마세요. 동승자가 확인하거나 안전하게 정차한 뒤 이용해주세요.</p>
       </div>
     </section>

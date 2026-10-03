@@ -1,4 +1,4 @@
--- DRAFT: apply only after approval. No historical rows are removed or reinterpreted.
+-- Approved rollout: apply before the server/frontend release. No historical rows are removed or reinterpreted.
 begin;
 alter table public.ops_resources add column guide_floor integer check(guide_floor between 1 and 5);
 alter table public.ops_resources add constraint ops_dream_guidance check (

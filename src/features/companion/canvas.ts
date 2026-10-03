@@ -58,13 +58,56 @@ async function fontsReady() {
   try { await document.fonts?.ready; } catch { /* system font fallback */ }
 }
 
+/** Real ascender/descender extent for a font size, falling back to safe proportions
+ *  when the canvas implementation (e.g. a test mock) doesn't report bounding-box metrics. */
+function glyphMetrics(ctx: CanvasRenderingContext2D, fontPx: number) {
+  const sample = ctx.measureText('가나다Agjpqy');
+  const ascent = sample.actualBoundingBoxAscent || fontPx * 0.85;
+  const descent = sample.actualBoundingBoxDescent || fontPx * 0.35;
+  return { ascent, descent };
+}
+
 export async function savePrayerCard(text: string, crownSrc: string): Promise<void> {
   await fontsReady();
-  const width = 1080; const height = 1350;
+  const width = 1080; const minHeight = 1350;
   const canvas = document.createElement('canvas');
-  canvas.width = width; canvas.height = height;
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
+
+  // Body region: wrap the full prayer (all input up to 600 chars, never truncated)
+  // and measure its real height so later regions never overlap it.
+  const bodyFontPx = 46;
+  ctx.font = `300 ${bodyFontPx}px ${FONT}`;
+  const lines = wrap(ctx, text, 800);
+  const lineHeight = 78;
+  const bodyMetrics = glyphMetrics(ctx, bodyFontPx);
+  const bodyTop = 430 + Math.max(0, (8 - lines.length) * lineHeight) / 2;
+  const bodyBottom = bodyTop + Math.max(0, lines.length - 1) * lineHeight + bodyMetrics.descent;
+
+  // Art region: crown image, contain-fit within a max box so an extreme or
+  // missing image can never overlap the body above or the footer below.
+  const crownWidth = 760; const maxCrownHeight = 620;
+  let crown: HTMLImageElement | null = null;
+  let drawWidth = 0; let drawHeight = 0;
+  try {
+    const loaded = await loadImage(crownSrc);
+    if (loaded.width > 0 && loaded.height > 0) {
+      crown = loaded;
+      drawWidth = crownWidth; drawHeight = (loaded.height / loaded.width) * crownWidth;
+      if (drawHeight > maxCrownHeight) { drawWidth *= maxCrownHeight / drawHeight; drawHeight = maxCrownHeight; }
+    }
+  } catch { /* card still works without the crown */ }
+  const artTop = bodyBottom + 70;
+  const artBottom = artTop + drawHeight;
+
+  // Footer region: theme + reference, always below the art with its own
+  // ascender/descender margin, never sharing a baseline with the crown.
+  const footerFontPx = 24;
+  const footerMetrics = glyphMetrics(ctx, footerFontPx);
+  const footerTop = artBottom + (crown ? 70 : 50);
+  const height = Math.max(minHeight, Math.ceil(footerTop + footerMetrics.descent + 40));
+
+  canvas.width = width; canvas.height = height;
   ctx.fillStyle = PAPER; ctx.fillRect(0, 0, width, height);
   ctx.textAlign = 'center'; ctx.fillStyle = INK;
   ctx.font = `300 34px ${FONT}`;
@@ -73,20 +116,15 @@ export async function savePrayerCard(text: string, crownSrc: string): Promise<vo
   ctx.fillText('가을특별새벽부흥회', width / 2, 210);
   ctx.fillStyle = MUTED; ctx.font = `300 26px ${FONT}`;
   ctx.fillText('나의 기도', width / 2, 330);
-  ctx.fillStyle = INK; ctx.font = `300 46px ${FONT}`;
-  const lines = wrap(ctx, text, 800).slice(0, 12);
-  const lineHeight = 78;
-  const top = 430 + Math.max(0, (8 - lines.length) * lineHeight) / 2;
-  lines.forEach((line, index) => ctx.fillText(line, width / 2, top + index * lineHeight));
-  try {
-    const crown = await loadImage(crownSrc);
-    const crownWidth = 760; const crownHeight = (crown.height / crown.width) * crownWidth;
+  ctx.fillStyle = INK; ctx.font = `300 ${bodyFontPx}px ${FONT}`;
+  lines.forEach((line, index) => ctx.fillText(line, width / 2, bodyTop + index * lineHeight));
+  if (crown) {
     ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = 0.9;
-    ctx.drawImage(crown, (width - crownWidth) / 2, height - crownHeight - 40, crownWidth, crownHeight);
+    ctx.drawImage(crown, (width - drawWidth) / 2, artTop, drawWidth, drawHeight);
     ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
-  } catch { /* card still works without the crown */ }
-  ctx.fillStyle = MUTED; ctx.font = `300 24px ${FONT}`;
-  ctx.fillText('하나님 마음에 합한 사람 · 사도행전 13:22', width / 2, height - 30);
+  }
+  ctx.fillStyle = MUTED; ctx.font = `300 ${footerFontPx}px ${FONT}`;
+  ctx.fillText('하나님 마음에 합한 사람 · 사도행전 13:22', width / 2, footerTop);
   grain(ctx, width, height);
   downloadBlob(await toBlob(canvas), 'my-dawn-prayer.png');
 }
@@ -107,9 +145,13 @@ export async function renderFramedPhoto(src: string, stampText: string, memo = '
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas unavailable');
   ctx.fillStyle = PAPER; ctx.fillRect(0, 0, width, height);
-  const scale = Math.max(box / photo.width, box / photo.height);
-  const sw = box / scale; const sh = box / scale;
-  ctx.drawImage(photo, (photo.width - sw) / 2, (photo.height - sh) / 2, sw, sh, pad, pad, box, box);
+  // Contain-fit the full source image (no left/right or top/bottom crop) inside the
+  // existing square frame; any leftover space letterboxes to the paper background
+  // already painted above, for landscape, panorama, and portrait sources alike.
+  const scale = Math.min(box / photo.width, box / photo.height);
+  const dw = photo.width * scale; const dh = photo.height * scale;
+  const dx = pad + (box - dw) / 2; const dy = pad + (box - dh) / 2;
+  ctx.drawImage(photo, 0, 0, photo.width, photo.height, dx, dy, dw, dh);
   ctx.textAlign = 'left'; ctx.fillStyle = INK;
   ctx.font = `200 58px ${FONT}`;
   ctx.fillText('하나님 마음에 합한 사람', pad, pad + box + 110);

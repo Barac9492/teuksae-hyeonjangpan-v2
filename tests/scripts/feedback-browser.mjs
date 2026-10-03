@@ -54,7 +54,7 @@ await prayer.locator('.tc-community-wall li').first().waitFor();
 const second=await prayer.locator('.tc-community-wall li').allTextContents();assert.equal(second.length,12);assert.ok(second.every(x=>!first.includes(x)));
 const scroll=await page.locator('.tc-app > main').evaluate(e=>e.scrollTop);await page.clock.runFor(30100);await prayer.getByText('2페이지',{exact:true}).waitFor();assert.equal(await page.locator('.tc-app > main').evaluate(e=>e.scrollTop),scroll);
 await prayer.getByRole('button',{name:'다음 페이지'}).click();await prayer.getByText('3페이지',{exact:true}).waitFor();await prayer.locator('.tc-community-wall li').nth(10).waitFor();assert.equal(await prayer.locator('.tc-community-wall li').count(),11);assert.equal(await prayer.getByRole('button',{name:'다음 페이지'}).isDisabled(),true);
-await page.getByRole('button',{name:'기도제목 올리기',exact:true}).click();await page.getByLabel('어떤 마음으로 기도하고 있나요?').fill('로컬 작성 중 — 제출하지 않습니다');
+await page.locator('.tc-subtabs').getByRole('button',{name:'기도제목 올리기',exact:true}).click();await page.getByLabel('어떤 마음으로 기도하고 있나요?').fill('로컬 작성 중 — 제출하지 않습니다');
 await page.clock.runFor(30100);assert.equal(await page.getByLabel('어떤 마음으로 기도하고 있나요?').inputValue(),'로컬 작성 중 — 제출하지 않습니다');
 await context.setOffline(true);await page.getByText('오프라인 · 최신 현황을 확인할 수 없습니다.').waitFor();assert.equal(await page.getByLabel('어떤 마음으로 기도하고 있나요?').inputValue(),'로컬 작성 중 — 제출하지 않습니다');await context.setOffline(false);
 await page.waitForFunction(()=>!document.querySelector('.tc-live-banner[data-offline]'));
