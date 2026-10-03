@@ -6,6 +6,8 @@ import { FloorStack } from './worship';
 import type { FloorItem } from './worship';
 import { PageHeading, StatusRow, VenueSwitch } from './ui';
 import type { ValueTone, Venue } from './ui';
+import { ParkingNotice } from './EventNotice';
+import { noticeServiceDay } from './officialNotice';
 
 export type LiveResourceState = 'checking' | 'closed' | 'available' | 'busy' | 'full' | 'school_open' | 'gym_open' | 'hall_open' | 'hall_closed';
 type Category = 'parking' | 'space';
@@ -172,6 +174,7 @@ export function LiveParkingPanel({ venue, setVenue, operations, art }: { venue: 
       <PageHeading eyebrow="도착하기 전에" title="주차 안내" art={art}>예배 장소별 주차 안내를 확인하세요.</PageHeading>
       <div className="tc-section tc-section--topless">
         <VenueSwitch venue={venue} onChange={setVenue} label="주차 장소" />
+        <ParkingNotice venue={venue} day={noticeServiceDay(operations.now)} />
         <p className="tc-panel-note">현장 주차팀이 저장한 안내입니다. 화면이 열려 있으면 20초마다 자동 확인하며, 앱으로 돌아오거나 연결이 복구되면 바로 확인합니다. 마지막 현장 확인이 10분을 넘으면 확인 필요로 표시합니다.</p>
         {venue === 'dream' && <p className="tc-panel-note">드림센터 전체를 하나의 주차장으로 안내합니다. 표시된 층은 주차팀이 현재 안내하는 층입니다. 층이 차면 담당자가 안내 층을 변경합니다. 실제 이동은 현장 안내를 따라주세요.</p>}
         <LiveNotice guidance={venue === 'dream'} enabled={operations.enabled} offline={operations.offline} confirmed={hasFreshDisplayedResource(ids, operations)} />

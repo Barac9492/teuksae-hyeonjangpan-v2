@@ -1,12 +1,12 @@
 {
   "baseCommit": "c0ec91ee475f0a6d5282f09e419b2e2c677c182c",
-  "branch": "codex/church-feedback-1-9-20261003",
+  "branch": "codex/final-notice-recovery-20261003",
   "checks": {
     "lint": "PASS: eslint --max-warnings=0",
     "build": "PASS: tsc app noEmit and Vite production build",
     "frontendTests": {
-      "files": 45,
-      "passed": 328,
+      "files": 46,
+      "passed": 340,
       "failed": 0
     },
     "serverTests": {
@@ -17,9 +17,10 @@
     "diffWhitespace": "PASS: git diff --check",
     "localPostgreSQL": "PASS: feedback-db.mjs with PGlite 0.5.8",
     "browser": "PASS: 14 checks; browser-results.json",
-    "existingCommunitySQL": "PASS: 233 PostgreSQL/HTTP checks, TZ=UTC"
+    "existingCommunitySQL": "PASS: 233 PostgreSQL/HTTP checks, TZ=UTC",
+    "finalNotice": "PASS: 12 date-boundary, holiday precedence, calendar, planner and status separation tests"
   },
   "productionChanges": false,
   "publication": "User approved production DB/app rollout and PR/merge; release results recorded separately",
-  "remaining": "Apply tested migration, publish/merge exact verified commit, verify production"
+  "remaining": "Migration tool returned Invalid or expired requestState; read-only 08:04 UTC check confirms not applied. Await coordinated single writer before remote mutation."
 }

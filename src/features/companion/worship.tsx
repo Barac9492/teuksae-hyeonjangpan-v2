@@ -5,6 +5,8 @@ import { SERVICE_DAYS, WEEKDAYS, buildCalendar, countdownParts, dawnPhase, downl
 import { Spaced, Sun, VenueSwitch } from './ui';
 import { VERSE, trailLabels, venueNames } from './constants';
 import type { ValueTone, Venue } from './ui';
+import { OfficialNotice, ParkingNotice } from './EventNotice';
+import { OPENING_NOTICE, noticeServiceDay } from './officialNotice';
 
 export function WorshipHero({ crownImage }: { crownImage: string }) {
   return (
@@ -123,7 +125,7 @@ function Slider({ label, value, min, max, onChange }: { label: string; value: nu
 }
 
 /** "What time should I get up?" A tiny, local-only calculator. */
-export function WakePlanner({ venue }: { venue: Venue }) {
+export function WakePlanner({ venue, day = null }: { venue: Venue; day?: number | null }) {
   const [ready, setReady] = useState(30);
   const [travel, setTravel] = useState(20);
   const [buffer, setBuffer] = useState(20);
@@ -150,7 +152,9 @@ export function WakePlanner({ venue }: { venue: Venue }) {
         <Slider label="씻고 준비하기" value={ready} min={10} max={60} onChange={setReady} />
         <Slider label="이동 시간" value={travel} min={5} max={60} onChange={setTravel} />
         <Slider label="도착 후 여유" value={buffer} min={5} max={40} onChange={setBuffer} />
-        <p className="tc-wake__basis">04:40 예배 시작 기준이에요. 본당입장 : 03시 50분 부터. 실제 입장 상황은 현장 안내를 확인해주세요.</p>
+        <p className="tc-wake__basis">04:40 예배 시작 기준이에요. {OPENING_NOTICE}. 실제 입장 상황은 현장 안내를 확인해주세요.</p>
+        <p className="tc-wake__basis">계산한 도착 시간은 {wakeTimeText(buffer)}입니다. 04:30 준비기도에 참여하려면 ‘도착 후 여유’를 10분 이상으로 잡아주세요.</p>
+        <ParkingNotice venue={venue} day={day} />
         <button
           className="tc-secondary"
           type="button"
@@ -196,16 +200,18 @@ export function WorshipPanel({ crownImage, venue, setVenue, now, previewDay, sta
       </div>
       <InstallCard />
       <DawnJourney now={now} previewDay={previewDay} />
+      <OfficialNotice />
       <div className="tc-section">
         <h2 className="tc-section-title">지금 예배 공간은</h2>
         <VenueSwitch venue={venue} onChange={setVenue} label="예배 장소" />
-        {venue === 'songrim' && <><p className="tc-panel-note">본당입장 : 03시 50분 부터</p><StageTrail stage={stage} /></>}
+        <p className="tc-panel-note">{OPENING_NOTICE}</p>
+        {venue === 'songrim' && <StageTrail stage={stage} />}
         {children}
 
         {after}
       </div>
       <div className="tc-section">
-        <WakePlanner venue={venue} />
+        <WakePlanner venue={venue} day={previewDay === null ? noticeServiceDay(now) : SERVICE_DAYS[previewDay] ?? null} />
 
         <VerseCard />
       </div>

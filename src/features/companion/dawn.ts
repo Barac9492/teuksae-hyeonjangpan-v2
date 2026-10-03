@@ -1,4 +1,5 @@
 /** Time helpers for the six dawn services (2026-10-05 ~ 10-10, 04:40 KST). */
+import { calendarNotice } from './officialNotice';
 
 export const SERVICE_DAYS = [5, 6, 7, 8, 9, 10] as const;
 export const WEEKDAYS = ['월', '화', '수', '목', '금', '토'] as const;
@@ -63,7 +64,7 @@ export function buildCalendar(minutesBefore: number, place: string, created = Da
       `DTSTART:${stamp(start)}`,
       'SUMMARY:가을특별새벽부흥회 · 04:40 예배 시작',
       `LOCATION:${place}`,
-      'DESCRIPTION:하나님 마음에 합한 사람 (사도행전 13:22)\\n04:40은 예배 시작 시각입니다. 학교·예배 공간 개방 시각은 현장 안내를 확인해주세요.',
+      `DESCRIPTION:${calendarNotice(day, place)}`,
       'BEGIN:VALARM',
       'ACTION:DISPLAY',
       'DESCRIPTION:일어날 시간이에요 · 특별새벽부흥회',

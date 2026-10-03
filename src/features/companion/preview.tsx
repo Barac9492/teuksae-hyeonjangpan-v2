@@ -3,6 +3,8 @@ import type { ReactNode } from 'react';
 import { PageHeading, StatusLead, StatusRow, VenueSwitch } from './ui';
 import type { Venue } from './ui';
 import { FloorStack } from './worship';
+import { OPENING_NOTICE } from './officialNotice';
+import { ParkingNotice } from './EventNotice';
 
 export type Stage = 0 | 1 | 2 | 3 | 4;
 
@@ -22,7 +24,7 @@ export function PreviewWorshipStatus({ venue, stage, stale }: { venue: Venue; st
     return <><StatusLead tone="neutral" label="정보 갱신이 필요한 상황 · 디자인 예시" title="현장 확인을 기다리고 있어요">이전 상태는 표시하지 않습니다. 입장과 주차는 현장 안내요원에게 확인해주세요.</StatusLead><StatusRow name="학교 출입" value="확인 중" /><StatusRow name="본당·체육관" value="확인 중" /></>;
   }
   const leads = [
-    ['입장 전', '본당입장 : 03시 50분 부터', 'neutral'],
+    ['입장 전', OPENING_NOTICE, 'neutral'],
     ['학교 안에서 대기해요', '본당과 체육관은 아직 열리지 않았어요. 보행 동선으로 이동해주세요.', 'neutral'],
     ['체육관에 먼저 들어갈 수 있어요', '본당을 기다리지 않고 체육관에서 예배를 준비할 수 있어요.', 'good'],
     ['본당 입장이 시작됐어요', '본당 1·2층으로 함께 안내하고 있어요. 입장 가능 여부는 현장에서 확인해주세요.', 'good'],
@@ -39,7 +41,7 @@ export function PreviewWorshipStatus({ venue, stage, stale }: { venue: Venue; st
   </>;
 }
 
-export function PreviewParkingPanel({ venue, setVenue, stage, stale, allFull, goToWorship, art }: { venue: Venue; setVenue: (venue: Venue) => void; stage: Stage; stale: boolean; allFull: boolean; goToWorship: () => void; art?: ReactNode }) {
+export function PreviewParkingPanel({ venue, setVenue, stage, stale, allFull, goToWorship, art, day = null }: { venue: Venue; setVenue: (venue: Venue) => void; stage: Stage; stale: boolean; allFull: boolean; goToWorship: () => void; art?: ReactNode; day?: number | null }) {
   const closed = venue === 'songrim' && stage === 0;
   let body: ReactNode;
   if (stale) body = <StatusLead tone="neutral" label="갱신 필요 · 디자인 예시" title="주차 현황을 확인 중이에요">오래된 정보로 진입을 안내하지 않습니다. 현장 주차요원의 안내를 따라주세요.</StatusLead>;
@@ -52,6 +54,7 @@ export function PreviewParkingPanel({ venue, setVenue, stage, stale, allFull, go
       <PageHeading eyebrow="도착하기 전에" title="주차 안내" art={art}>진입 가능 여부와 주차 공간을 확인해요.</PageHeading>
       <div className="tc-section tc-section--topless">
         <VenueSwitch venue={venue} onChange={setVenue} label="주차 장소" />
+        <ParkingNotice venue={venue} day={day} />
         {body}
         {venue === 'songrim' && <div className="tc-quiet"><strong>학교 출입과 예배당 입장은 달라요.</strong><p>학교 문이 열려 차량이 들어가도 본당·체육관은 아직 닫혀 있을 수 있습니다.</p></div>}
         <button className="tc-line-action" type="button" onClick={goToWorship}>예배 공간 개방 상태 보기 <span aria-hidden="true">→</span></button>

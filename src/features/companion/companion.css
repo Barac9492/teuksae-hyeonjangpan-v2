@@ -237,6 +237,9 @@ body { background: #fbfbfa; }
 .tc-quiet { background: var(--paper-2); padding: 14px 16px; border-radius: 14px; margin: 14px 0; }
 .tc-quiet strong { font-size: 13px; font-weight: 700; color: var(--text); }
 .tc-quiet p { font-size: 12px; color: var(--ink-soft); margin-top: 4px !important; line-height: 1.65; }
+.tc-official-notice { margin: 20px 24px; }
+.tc-official-notice summary { cursor: pointer; font-size: 13px; font-weight: 600; line-height: 1.6; }
+.tc-official-notice p { margin-top: 10px !important; }
 .tc-line-action { display: flex; justify-content: space-between; align-items: center; min-height: 50px; width: 100%; font-size: 13px; font-weight: 500; text-align: left; border-bottom: 1px solid var(--line) !important; padding: 10px 2px !important; color: var(--ink) !important; }
 .tc-line-action span { transition: transform .2s var(--ease); }
 .tc-line-action:hover span { transform: translateX(3px); }

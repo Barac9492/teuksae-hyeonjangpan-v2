@@ -162,7 +162,7 @@ export function CompanionApp() {
           </div>
           <div hidden={tab !== 'parking'}>
             {isPreview
-              ? <PreviewParkingPanel venue={venue} setVenue={setVenue} stage={stage} stale={stale} allFull={parkingFull[venue]} goToWorship={() => selectTab('worship')} art={<ParkingArt />} />
+              ? <PreviewParkingPanel venue={venue} setVenue={setVenue} stage={stage} stale={stale} allFull={parkingFull[venue]} goToWorship={() => selectTab('worship')} art={<ParkingArt />} day={eventDay + 5} />
               : <LiveParkingPanel venue={venue} setVenue={setVenue} operations={operations} art={<ParkingArt />} />}
           </div>
           <div hidden={tab !== 'prayer'}><PrayerPanel onPreview={(text) => { setCardState(''); setModal({ type: 'prayer', text }); }} /></div>

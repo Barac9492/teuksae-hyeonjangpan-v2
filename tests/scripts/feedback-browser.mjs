@@ -1,26 +1,28 @@
 // Run against feedback-fixture.mjs, with a separate headless Chrome process/profile.
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
+const base = process.env.BASE_URL || 'http://127.0.0.1:4179';
+assert.equal(new URL(base).hostname, '127.0.0.1', 'Only isolated loopback fixtures are allowed');
 const { chromium }=await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
-const browser=await chromium.launch({executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:true});
+const browser=await chromium.launch({executablePath:process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:true});
 const out=new URL('../../evidence/feedback-20261003/',import.meta.url).pathname;await mkdir(out,{recursive:true});
 console.log('browser launched');
 const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'});
 context.setDefaultTimeout(10000);
 // Reject accidental external API calls. All content, writes and images are fixtures.
 await context.route('**/*',route=>new URL(route.request().url()).hostname==='127.0.0.1'?route.continue():route.abort());
-const admin=await context.newPage();await admin.goto('http://127.0.0.1:4179/admin');
+const admin=await context.newPage();await admin.goto(base + '/admin');
 await admin.getByLabel('드림센터 현재 주차 안내').waitFor();
 await admin.getByLabel('드림센터 현재 주차 안내').selectOption('2');
 await admin.locator('article').filter({has:admin.getByRole('heading',{name:'드림센터 주차장',exact:true})}).getByRole('button',{name:/현황 확인|상태 저장/}).click();
 await admin.getByText(/저장했습니다/).waitFor();
 const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
-await page.clock.install();await page.goto('http://127.0.0.1:4179/');await page.getByRole('link',{name:'다윗 게임 열기 (새 탭)'}).waitFor();
+await page.clock.install();await page.goto(base + '/');await page.getByRole('link',{name:'다윗 게임 열기 (새 탭)'}).waitFor();
 const game=await page.getByRole('link',{name:'다윗 게임 열기 (새 탭)'}).boundingBox();
 assert.ok(game.y+game.height<770,'Game entry visible on initial 390x844 home');
 assert.equal(await page.locator('body').evaluate(e=>e.scrollWidth<=innerWidth),true);
 await page.screenshot({path:out+'mobile-home.png'});
-assert.ok(await page.getByText('본당입장 : 03시 50분 부터',{exact:true}).count());
+assert.ok(await page.getByText('송림 본당 및 드림센터 개방 시간: 새벽 3시 50분 전후',{exact:true}).count());
 assert.equal(await page.getByText(/학교 입장 03:00/).count(),0);
 await page.getByRole('tab',{name:'주차',exact:true}).click();await page.getByRole('button',{name:'서현 · 드림센터'}).click();
 await page.getByText('B2층으로 안내 중',{exact:true}).waitFor();

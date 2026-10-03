@@ -16,7 +16,7 @@ await rpc('ops_set_resource_state',[session,'parking.songrim','busy',0,randomUUI
 await rpc('ops_set_resource_state',[session,'parking.dream','available',0,randomUUID(),null,2]);
 for (const kind of ['prayer','photo','reflection']) for(let n=0;n<35;n++) await db.query("insert into community_v2_items(id,kind,text,status,ready,token_hash,payload_hash,created_at) values($1,$2,$3,'approved',true,$4,$5,now()-($6 ||' minutes')::interval)",[randomUUID(),kind,`로컬 검증용 ${kind} ${n+1} · 실제 제출 내용이 아닙니다.`,'a'.repeat(64),'b'.repeat(64),n]);
 const img=new PNG({width:300,height:400});for(let y=0;y<400;y++)for(let x=0;x<300;x++){const i=(y*300+x)*4;img.data[i]=100+y/3;img.data[i+1]=115+y/4;img.data[i+2]=150+y/5;img.data[i+3]=255;}const png=PNG.sync.write(img);
-const server=await createServer({server:{host:'127.0.0.1',port:4179,strictPort:true},plugins:[{name:'local-fixtures-only',configureServer(s){s.middlewares.use(async(req,res,next)=>{
+const server=await createServer({server:{host:'127.0.0.1',port:Number(process.env.PORT || 4179),strictPort:true},plugins:[{name:'local-fixtures-only',configureServer(s){s.middlewares.use(async(req,res,next)=>{
  if(!req.url.startsWith('/api/'))return next();
  const url=new URL(req.url,'http://127.0.0.1:4179');
  const send=(body,status=200)=>{res.statusCode=status;res.setHeader('Content-Type','application/json');res.setHeader('Cache-Control','no-store');res.end(JSON.stringify(body));};
@@ -32,4 +32,4 @@ const server=await createServer({server:{host:'127.0.0.1',port:4179,strictPort:t
  return send({error:'Local fixture has no submission endpoint'},405);
  }catch{send({error:'Local fixture failure'},500);}
  });}}]});
-await server.listen();console.log('Synthetic QA fixture server: http://127.0.0.1:4179');
+await server.listen();console.log('Synthetic QA fixture server:', server.resolvedUrls.local[0]);
