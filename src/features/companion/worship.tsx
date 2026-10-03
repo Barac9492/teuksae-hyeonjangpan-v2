@@ -18,7 +18,7 @@ export function WorshipHero({ crownImage }: { crownImage: string }) {
         <p className="tc-hero__when">10월 <b>5</b>일(월)~<b>10</b>일(토) 새벽 <b>4:40</b></p>
       </div>
       <div className="tc-hero__crown">
-        <img src={crownImage} alt="왕관을 조심스럽게 받쳐 든 두 손" />
+        <img src={crownImage} alt="왕관을 조심스럽게 받쳐 든 두 손" width="1150" height="445" fetchPriority="high" />
       </div>
     </div>
   );
@@ -210,6 +210,7 @@ export function WorshipPanel({ crownImage, venue, setVenue, now, previewDay, sta
 
         {after}
       </div>
+      <InstallCard />
       <div className="tc-section">
         <WakePlanner venue={venue} day={previewDay === null ? noticeServiceDay(now) : SERVICE_DAYS[previewDay] ?? null} />
 

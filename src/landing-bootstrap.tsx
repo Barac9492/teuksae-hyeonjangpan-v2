@@ -3,6 +3,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { CompanionApp } from './features/companion';
 import './features/companion/companion.css';
+import './features/companion/poster-theme.css';
 
 export function bootstrap(): void {
   const root = document.getElementById('root');

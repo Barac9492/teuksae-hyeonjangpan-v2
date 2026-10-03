@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import type { TabId } from './constants';
+import crownImage from './assets/crown.jpg';
 
 export type Venue = 'songrim' | 'dream';
 export type Tone = 'good' | 'neutral' | 'amber' | 'red';
@@ -86,12 +87,15 @@ export function StatusRow({ name, extra, value, tone = 'neutral' }: { name: stri
 export function PageHeading({ eyebrow, title, children, art }: { eyebrow: string; title: string; children: ReactNode; art?: ReactNode }) {
   return (
     <header className="tc-page-heading">
-      <div>
+      <div className="tc-page-heading__copy">
         <span className="tc-eyebrow">{eyebrow}</span>
         <h1>{title}</h1>
-        <p>{children}</p>
       </div>
-      {art && <div className="tc-page-heading__art" aria-hidden="true">{art}</div>}
+      <div className="tc-page-heading__visual" aria-hidden="true">
+        <img src={crownImage} alt="" width="1150" height="445" />
+        {art && <div className="tc-page-heading__art">{art}</div>}
+      </div>
+      <p>{children}</p>
     </header>
   );
 }
