@@ -65,7 +65,7 @@ function pageCursor(body: Record<string, unknown>): string | null {
   return body.nextCursor;
 }
 
-// A selection always refers to the exact version rendered on this page. No select-all.
+// A selection always refers to the exact version rendered on this page.
 export function CommunityModeration({ kind, trash = false }: { kind?: 'prayer' | 'photo'; trash?: boolean }) {
   const [items, setItems] = useState<Item[] | null>(null);
   const [busy, setBusy] = useState(false);
@@ -104,9 +104,14 @@ export function CommunityModeration({ kind, trash = false }: { kind?: 'prayer' |
     return () => { active.current = false; epochRef.current++; operation.current?.abort(); lock.current = false; };
   }, [load, trash]);
   const chosen = (items ?? []).filter(item => selected[item.id] === item.version);
-  const canApprove = (item: Item) => item.status === 'pending' && opened[item.id] && (item.kind === 'photo' ? !!photoSource(item.photoUrl) && loadedImages[item.id] && !brokenImages[item.id] : !!item.text.trim());
+  const allExpanded = !!items?.length && items.every(item => opened[item.id]);
+  // Rejected photos have no stored image left to inspect; opening the row is the whole review.
+  const contentRendered = (item: Item) => !!opened[item.id] && (item.kind !== 'photo' || item.status === 'rejected' && !photoSource(item.photoUrl) || !!photoSource(item.photoUrl) && !!loadedImages[item.id] && !brokenImages[item.id]);
+  const displayedPending = (items ?? []).filter(item => item.status === 'pending' && contentRendered(item));
+  const canApprove = (item: Item) => item.status === 'pending' && contentRendered(item) && (item.kind === 'photo' || !!item.text.trim());
+  const chosenContentRendered = chosen.every(contentRendered);
   const run = async (decision: Decision) => {
-    if (lock.current || error || confirmation !== decision || !chosen.length || decision === 'approved' && !chosen.every(canApprove)) return;
+    if (lock.current || error || confirmation !== decision || !chosen.length || decision === 'approved' && !chosen.every(canApprove) || ['trashed','deleted'].includes(decision) && !chosenContentRendered) return;
     lock.current = true; const epoch = ++generation.current;
     const controller = new AbortController(); operation.current = controller;
     setBusy(true); setNotice(''); setConfirmation(null); setResults([]);
@@ -131,7 +136,8 @@ export function CommunityModeration({ kind, trash = false }: { kind?: 'prayer' |
     }
     if (active.current && epoch === generation.current) {
       resetSelection(); setItems(null); setNextCursor(null); setResults(outcomes);
-      setNotice(`${chosen.length}개 중 ${succeeded}개 완료. ${chosen.length - succeeded}개는 처리 결과를 확인해주세요.`);
+      const failed = chosen.length - succeeded;
+      setNotice(`${chosen.length}개 중 ${succeeded}개 완료.${failed > 0 ? ` ${failed}개는 처리 결과를 확인해주세요.` : ''}`);
       try {
         const body = await request({signal:controller.signal}, listUrl(filter, null, kind));
         if (active.current && epoch === generation.current) { setItems(reviewItems(body)); setNextCursor(pageCursor(body)); setIsLaterPage(false); }
@@ -151,10 +157,12 @@ export function CommunityModeration({ kind, trash = false }: { kind?: 'prayer' |
     {busy && <p role="status">검토 목록 처리 중…</p>}
     {items?.length === 0 && <p>현재 검토 목록에 게시물이 없습니다.</p>}
     {!!items?.length && <div className="community-moderation__batch"><strong>현재 페이지 {items.length}개 · 선택 {chosen.length}개</strong><div className="community-moderation__actions">
+      <button type="button" className="ta-admin__secondary" disabled={busy} onClick={() => { if (allExpanded) { setOpened({}); setSelected({}); } else setOpened(Object.fromEntries(items.map(item => [item.id, true]))); setConfirmation(null); }}>{allExpanded ? '현재 페이지 내용 모두 접기' : '현재 페이지 내용 모두 펼치기'}</button>
+      <button type="button" className="ta-admin__secondary" disabled={busy || displayedPending.length === 0} onClick={() => { setSelected(Object.fromEntries(displayedPending.map(item => [item.id, item.version]))); setConfirmation(null); }}>펼친 검토 대기 항목 모두 선택</button>
       {!trash && <button className="ta-admin__primary" disabled={busy || !chosen.length || !chosen.every(canApprove)} onClick={() => setConfirmation('approved')}>선택 공개 승인</button>}
-      {!trash && <button className="ta-admin__secondary" disabled={busy || !trashSupported || !chosen.length || !chosen.every(x => ['pending','approved'].includes(x.status))} onClick={() => setConfirmation('trashed')}>선택 휴지통으로 이동</button>}
+      {!trash && <button className="ta-admin__secondary" disabled={busy || !trashSupported || !chosen.length || !chosenContentRendered || !chosen.every(x => ['pending','approved'].includes(x.status))} onClick={() => setConfirmation('trashed')}>선택 휴지통으로 이동</button>}
       {trash && <button className="ta-admin__primary" disabled={busy || !chosen.length} onClick={() => setConfirmation('restored')}>선택 복원</button>}
-      <button className="ta-admin__secondary" disabled={busy || !chosen.length} onClick={() => {setSelected({});setConfirmation(null);}}>선택 해제</button><details><summary>영구 삭제</summary><button className="ta-admin__secondary" disabled={busy || !chosen.length} onClick={() => setConfirmation('deleted')}>선택 영구 삭제</button></details>
+      <button className="ta-admin__secondary" disabled={busy || !chosen.length} onClick={() => {setSelected({});setConfirmation(null);}}>선택 해제</button><details><summary>영구 삭제</summary><button className="ta-admin__secondary" disabled={busy || !chosen.length || !chosenContentRendered} onClick={() => setConfirmation('deleted')}>선택 영구 삭제</button></details>
     </div></div>}
     {confirmation && <div className="community-moderation__confirmation" role="region" aria-label="선택 항목 확인"><p><strong>{chosen.length}개를 {confirmation === 'approved' ? '인터넷에 공개합니다. 개인정보와 얼굴·아동·보호자의 공개 동의를 모두 확인했나요?' : confirmation === 'restored' ? '검토 대기로 복원합니다. 자동 공개되지 않습니다.' : confirmation === 'deleted' ? '영구 삭제합니다. 내용과 사진은 제거되며 복원할 수 없습니다. 이미 저장된 사본은 회수할 수 없습니다.' : '휴지통으로 옮깁니다. 공개를 중단하고 복원용 내용을 보관합니다.'}</strong></p><button className="ta-admin__primary" disabled={busy} onClick={() => void run(confirmation)}>확인 후 {confirmation === 'approved' ? '일괄 공개 승인' : confirmation === 'restored' ? '복원' : confirmation === 'deleted' ? '영구 삭제' : '휴지통 이동'}</button><button className="ta-admin__secondary" disabled={busy} onClick={() => setConfirmation(null)}>취소</button></div>}
     <div className="community-moderation__grid">{items?.map(item => {
@@ -163,7 +171,7 @@ export function CommunityModeration({ kind, trash = false }: { kind?: 'prayer' |
         <h3>{item.kind === 'photo' ? '사진' : item.kind === 'reflection' ? '묵상' : '기도'} · {statusLabel[item.status]}</h3>
         <p className="community-moderation__meta"><time dateTime={item.createdAt}>{timestamp(item.createdAt)}</time> · 한국 시간 · 버전 {item.version}</p>
         <details open={!!opened[item.id]} onToggle={e => { const open = e.currentTarget.open; setOpened(old => ({...old,[item.id]:open})); if (!open) { setSelected(old => {const next={...old};delete next[item.id];return next;});setConfirmation(null); } }}><summary>내용 보기 · {item.text.slice(0, 35) || '사진'}</summary>
-          {opened[item.id] && <>{item.kind === 'photo' && source && !brokenImages[item.id] && <img src={source} alt="공개 검토용 제출 사진" onLoad={() => setLoadedImages(old => ({...old,[item.id]:true}))} onError={() => {setBrokenImages(old => ({...old,[item.id]:true}));setSelected(old => {const next={...old};delete next[item.id];return next;});setConfirmation(null);}} />}
+          {opened[item.id] && <>{item.kind === 'photo' && source && !brokenImages[item.id] && <img src={source} alt="공개 검토용 제출 사진" loading="lazy" onLoad={() => setLoadedImages(old => ({...old,[item.id]:true}))} onError={() => {setBrokenImages(old => ({...old,[item.id]:true}));setSelected(old => {const next={...old};delete next[item.id];return next;});setConfirmation(null);}} />}
           {unavailable && <p>이미지를 표시할 수 없습니다. 공개 승인할 수 없습니다.</p>}
           <p className="community-moderation__text">{item.text || '남아 있는 내용이 없습니다.'}</p>
           <label className="community-moderation__select"><input type="checkbox" aria-label={`${item.id} 선택`} checked={selected[item.id] === item.version} disabled={busy} onChange={e => {setSelected(old => {const next={...old};if(e.target.checked)next[item.id]=item.version;else delete next[item.id];return next;});setConfirmation(null);}} />내용 확인 후 선택</label></>}

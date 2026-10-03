@@ -18,14 +18,14 @@ it('shows ordinary dated operations before the event without a separate inspecti
  // All-date rehearsal availability: fresh readings show current values regardless of the
  // official event dates (no calendar eligibility gate), even though per-row history copy
  // is no longer rendered publicly.
- expect(screen.getAllByText('100%').length).toBeGreaterThan(0);
+ expect(screen.getAllByText('100% · 만차').length).toBeGreaterThan(0);
  expect(screen.queryByText(/갈보리/)).not.toBeInTheDocument();
  expect(liveStage(ops)).toBe(3);
 });
 it('keeps a fresh reading current across the calendar event boundary, since date eligibility gates were removed', () => {
  const ops = operations('2026-10-05T00:00:00+09:00');
  render(<LiveParkingPanel venue="songrim" setVenue={()=>{}} operations={ops}/>);
- expect(screen.getAllByText('100%').length).toBeGreaterThan(0);
+ expect(screen.getAllByText('100% · 만차').length).toBeGreaterThan(0);
  expect(liveStage(ops)).toBe(3);
 });
 it('does not hide live status after the official event end date, since date-based hiding was removed', () => {
@@ -42,7 +42,7 @@ it('falls back to a checking state on stale data across Korea midnight, without 
  ops.resources.forEach(resource => { resource.updatedAt = '2026-09-29T14:59:00Z'; });
  render(<LiveParkingPanel venue="songrim" setVenue={()=>{}} operations={ops}/>);
  expect(screen.queryByText(/조회일/)).not.toBeInTheDocument();
- expect(screen.queryByText('100%')).not.toBeInTheDocument();
+ expect(screen.queryByText(/100%/)).not.toBeInTheDocument();
  expect(screen.getAllByText('확인 필요')).toHaveLength(1);
  expect(screen.queryByText(/갈보리/)).not.toBeInTheDocument();
 });
@@ -50,7 +50,7 @@ it('does not claim a current value while offline', () => {
  const ops = {...operations('2026-10-04T23:59:59+09:00'), offline: true};
  render(<LiveParkingPanel venue="songrim" setVenue={()=>{}} operations={ops}/>);
  expect(screen.queryByText(/확인 \(한국 시간\)/)).not.toBeInTheDocument();
- expect(screen.queryByText('100%')).not.toBeInTheDocument();
+ expect(screen.queryByText(/100%/)).not.toBeInTheDocument();
  expect(screen.getAllByText('확인 필요')).toHaveLength(1);
  expect(screen.queryByText(/갈보리/)).not.toBeInTheDocument();
  expect(liveStage(ops)).toBeNull();
@@ -62,5 +62,5 @@ it('does not present a future timestamp as a confirmed reading', () => {
  // the unconfirmed state instead of showing the raw percentage.
  expect(screen.getAllByText('확인 필요').length).toBeGreaterThan(0);
  expect(screen.queryByText(/23:59 확인/)).not.toBeInTheDocument();
- expect(screen.queryByText('100%')).not.toBeInTheDocument();
+ expect(screen.queryByText(/100%/)).not.toBeInTheDocument();
 });

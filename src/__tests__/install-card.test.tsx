@@ -127,14 +127,14 @@ it('still renders and allows session dismissal when storage getters are blocked'
  expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
 });
 
-it.each(['prompt', 'choice'])('recovers when native %s never settles and ignores its late result', async pendingStage => {
+it('recovers when the native prompt never appears and ignores its late result', async () => {
  vi.useFakeTimers();
  try {
   let finish!: () => void;
   const pending = new Promise<void>(resolve => { finish = resolve; });
   const event = Object.assign(new Event('beforeinstallprompt', {cancelable:true}), {
-   prompt: vi.fn(() => pendingStage === 'prompt' ? pending : Promise.resolve()),
-   userChoice: pendingStage === 'choice' ? pending.then(() => ({outcome:'dismissed' as const})) : Promise.resolve({outcome:'dismissed' as const}),
+   prompt: vi.fn(() => pending),
+   userChoice: Promise.resolve({outcome:'dismissed' as const}),
   });
   render(<InstallCard />);
   await act(async()=>{window.dispatchEvent(event);});
@@ -147,6 +147,26 @@ it.each(['prompt', 'choice'])('recovers when native %s never settles and ignores
   await act(async()=>{finish();});
   expect(screen.queryByText(/설치는 취소되었어요/)).not.toBeInTheDocument();
   expect(localStorage.getItem('teuksae:pwa-installed')).toBeNull();
+  expect(event.prompt).toHaveBeenCalledOnce();
+ } finally { cleanup();vi.useRealTimers(); }
+});
+it('waits beyond ten seconds for a choice after the native prompt appears', async () => {
+ vi.useFakeTimers();
+ try {
+  let choose!: (choice: { outcome: 'dismissed' }) => void;
+  const event = Object.assign(new Event('beforeinstallprompt', {cancelable:true}), {
+   prompt: vi.fn().mockResolvedValue(undefined),
+   userChoice: new Promise<{ outcome: 'dismissed' }>(resolve => { choose = resolve; }),
+  });
+  render(<InstallCard />);
+  await act(async()=>{window.dispatchEvent(event);});
+  await act(async()=>{screen.getByRole('button',{name:'홈 화면에 추가'}).click(); await Promise.resolve();});
+  expect(vi.getTimerCount()).toBe(0);
+  await act(async()=>{await vi.advanceTimersByTimeAsync(15000);});
+  expect(screen.getByRole('button',{name:'설치 창 여는 중…'})).toBeDisabled();
+  expect(screen.queryByText(/설치 창을 확인하지 못했어요/)).not.toBeInTheDocument();
+  await act(async()=>{choose({outcome:'dismissed'});});
+  expect(screen.getByText(/설치는 취소되었어요/)).toBeVisible();
   expect(event.prompt).toHaveBeenCalledOnce();
  } finally { cleanup();vi.useRealTimers(); }
 });

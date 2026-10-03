@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, cleanup } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, cleanup, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PhotosPanel } from '../features/companion/photos';
 import { renderFramedPhoto } from '../features/companion/canvas';
@@ -38,7 +38,15 @@ describe('local photo feedback', () => {
     fireEvent.click(screen.getByRole('button', { name: '사진 다운로드' }));
     expect(downloadBlob).toHaveBeenCalledWith(expect.any(File), 'dawn-photo.png');
     expect(screen.getByRole('status')).toHaveTextContent('다운로드를 요청');
+    fireEvent.click(screen.getByText('사진 꾸미기·다운로드·도장'));
     fireEvent.click(screen.getByRole('button', { name: '이 기기의 도장 모두 지우기' }));
+    const confirmation = screen.getByRole('group', { name: '모든 도장 지우기 확인' });
+    expect(within(confirmation).getByText('정말 모두 지울까요?')).toBeVisible();
+    expect(localStorage.getItem(key)).toBe('[2]');
+    fireEvent.click(within(confirmation).getByRole('button', { name: '취소' }));
+    expect(localStorage.getItem(key)).toBe('[2]');
+    fireEvent.click(screen.getByRole('button', { name: '이 기기의 도장 모두 지우기' }));
+    fireEvent.click(within(screen.getByRole('group', { name: '모든 도장 지우기 확인' })).getByRole('button', { name: '확인' }));
     expect(localStorage.getItem(key)).toBeNull();
   });
   it('does not stamp an undecodable photo', async () => {

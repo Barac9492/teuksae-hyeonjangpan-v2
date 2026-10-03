@@ -26,6 +26,7 @@ export function PhotosPanel({ eventDay }: { eventDay: number | null }) {
   const [message, setMessage] = useState('');
   const [failedKey, setFailedKey] = useState<string | null>(null);
   const [stamps, setStamps] = useState(readStamps);
+  const [clearStampsConfirm, setClearStampsConfirm] = useState(false);
   const [rendered, setRendered] = useState<{ key: string; file: File } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const urlRef = useRef<string | null>(null);
@@ -134,10 +135,17 @@ export function PhotosPanel({ eventDay }: { eventDay: number | null }) {
             <p>사진을 고른 뒤 날짜별로 직접 남기는 개인 기록입니다. 출석 인증이나 전체 참여 인원이 아니에요. 사진과 메모는 저장하지 않습니다.</p>
             <ul>{SERVICE_DAYS.map((date, i) => <li key={date} data-stamped={stamps.includes(i)}>10/{date}<span>{stamps.includes(i) ? '남김' : '미기록'}</span></li>)}</ul>
             <button className="tc-secondary" type="button" disabled={!photo || !readyFile || day === null || stamps.includes(day)} onClick={addStamp}>{day !== null && stamps.includes(day) ? '이 날짜는 도장을 남겼어요' : '선택한 날짜에 도장 남기기'}</button>
-            <button className="tc-line-action" type="button" onClick={() => {
-              try { localStorage.removeItem(runtimeStorageKey(STAMPS_KEY)); setStamps([]); setMessage('이 기기의 새벽 도장을 모두 지웠어요.'); }
-              catch { setMessage('도장을 지우지 못했어요. 브라우저 저장소 설정을 확인해주세요.'); }
-            }}>이 기기의 도장 모두 지우기</button>
+            {clearStampsConfirm ? <div className="tc-photo-clear-confirm" role="group" aria-label="모든 도장 지우기 확인">
+              <p>정말 모두 지울까요?</p>
+              <div>
+                <button className="tc-secondary" type="button" onClick={() => {
+                  setClearStampsConfirm(false);
+                  try { localStorage.removeItem(runtimeStorageKey(STAMPS_KEY)); setStamps([]); setMessage('이 기기의 새벽 도장을 모두 지웠어요.'); }
+                  catch { setMessage('도장을 지우지 못했어요. 브라우저 저장소 설정을 확인해주세요.'); }
+                }}>확인</button>
+                <button className="tc-line-action" type="button" onClick={() => setClearStampsConfirm(false)}>취소</button>
+              </div>
+            </div> : <button className="tc-line-action" type="button" onClick={() => setClearStampsConfirm(true)}>이 기기의 도장 모두 지우기</button>}
           </div>
         </details>
         {!photo && <Community kind="photo" text={cleanMemo} eventDay={day} file={readyFile} payloadKey={renderKey} />}

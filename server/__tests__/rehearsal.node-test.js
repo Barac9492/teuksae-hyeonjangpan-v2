@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
 import { handleStatus } from '../../api/status.js';
-import { handleAdmin } from '../admin-auth.js';
+import { SESSION_SECONDS, handleAdmin } from '../admin-auth.js';
 import { handleCommunity } from '../community.js';
 import { isRehearsal, REHEARSAL_END } from '../runtime.js';
 const origin='https://teuksae-hyeonjangpan-v2.vercel.app';
@@ -11,7 +11,7 @@ const now=Date.parse('2026-09-29T12:00:00+09:00');
 const id='11111111-1111-4111-8111-111111111111';
 const ok=(value,status=200)=>({ok:status<300,status,json:async()=>value});
 function res(){return {headers:{},setHeader(k,v){this.headers[k]=v;},end(v){this.body=JSON.parse(v);}};}
-function cookie(time=now){const p=Buffer.from(JSON.stringify({v:2,sid:id,sub:'ADMIN',cv:1,iat:Math.floor(time/1000),exp:Math.floor(time/1000)+7200,nonce:'n'.repeat(32)})).toString('base64url');return `__Host-woori_admin=${p}.${createHmac('sha256',env.ADMIN_SESSION_SECRET).update(p).digest('base64url')}`;}
+function cookie(time=now){const p=Buffer.from(JSON.stringify({v:2,sid:id,sub:'ADMIN',cv:1,iat:Math.floor(time/1000),exp:Math.floor(time/1000)+SESSION_SECONDS,nonce:'n'.repeat(32)})).toString('base64url');return `__Host-woori_admin=${p}.${createHmac('sha256',env.ADMIN_SESSION_SECRET).update(p).digest('base64url')}`;}
 const session={id,username:'ADMIN',credentialVersion:1,role:'superadmin',displayName:'QA',label:'S-1111111111'};
 const req=(url,method='GET',body,headers={})=>({url,method,body,headers:{origin,'content-type':'application/json','x-woori-mode':'rehearsal',...headers}});
 const post={requestId:id,kind:'prayer',text:'QA rehearsal',eventDay:5,deleteToken:'a'.repeat(43),consent:true};

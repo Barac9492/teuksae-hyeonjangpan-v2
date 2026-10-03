@@ -135,7 +135,7 @@ function liveItem(id: string, operations: Operations): FloorItem {
   const resource = (operations.resources.find((item) => item.id === id) ?? byId.get(id)!);
   const status = freshness(resource.updatedAt, operations.now, operations.offline, operations.enabled);
   const capacity = hasOccupancySchema(resource);
-  const value = status !== 'fresh' ? '확인 필요' : resource.id === 'parking.dream' ? resource.state === 'available' && resource.guideFloor != null ? `B${resource.guideFloor}층으로 안내 중` : resource.state === 'full' ? '전체 만차' : stateText(resource) : capacity ? resource.state === 'closed' ? stateText(resource) : resource.occupancyPercent == null ? '사용률 확인 전' : `${resource.occupancyPercent}%` : stateText(resource);
+  const value = status !== 'fresh' ? '확인 필요' : resource.id === 'parking.dream' ? resource.state === 'available' && resource.guideFloor != null ? `B${resource.guideFloor}층으로 안내 중` : resource.state === 'full' ? '전체 만차' : stateText(resource) : capacity ? resource.state === 'closed' ? stateText(resource) : resource.occupancyPercent == null ? '사용률 확인 전' : `${resource.occupancyPercent}% · ${stateText(resource)}` : stateText(resource);
   const tone = status !== 'fresh' ? 'neutral' : capacity ? resource.state === 'closed' ? stateTone(resource.state) : resource.occupancyPercent == null ? 'neutral' : occupancyTone(resource.occupancyPercent) : stateTone(resource.state);
   return { key: id, label: resource.label, value, tone };
 }
@@ -153,7 +153,7 @@ export function liveStage(operations: Operations): number | null {
 export function LiveNotice({ enabled, offline, confirmed, guidance = false }: { enabled: boolean; offline: boolean; confirmed: boolean; guidance?: boolean }) {
   if (offline) return <div className="tc-live-notice tc-live-notice--offline" role="status"><strong>연결 확인 중</strong><span>마지막 안내를 실제 현황으로 표시하지 않습니다.</span></div>;
   if (!enabled || !confirmed) return <div className="tc-live-notice" role="status"><strong>현장팀 확인 전</strong><span>현재 표시된 장소에 최근 확인된 현황이 없습니다.</span></div>;
-  return <div className="tc-live-notice tc-live-notice--active"><strong>현장팀 확인 현황</strong><details><summary aria-label="현황 안내 자세히 보기">ⓘ 현황 안내</summary><p>{guidance ? '현재 안내 층과 전체 만차 여부는 현장 주차팀이 직접 확인한 정보입니다. 주차 여유 대수나 자동 감지 결과가 아닙니다.' : '각 항목은 마지막 확인 시각 기준입니다. 사용률은 운영자 추정이며 실측 수용률이 아닙니다. 초록 0~60% · 주황 70~90% · 빨강 100% · 회색 확인 필요'}</p></details></div>;
+  return <div className="tc-live-notice tc-live-notice--active"><strong>현장팀 확인 현황</strong><details><summary aria-label="현황 안내 자세히 보기">ⓘ 현황 안내</summary><p>{guidance ? '현재 안내 층과 전체 만차 여부는 현장 주차팀이 직접 확인한 정보입니다. 주차 여유 대수나 자동 감지 결과가 아닙니다.' : '최근 10분 안에 현장팀이 확인한 항목만 현재 현황으로 표시합니다. 사용률은 운영자 추정이며 실측 수용률이 아닙니다. 초록 0~60% · 주황 70~90% · 빨강 100% · 회색 확인 필요'}</p></details></div>;
 }
 
 function StatusList({ items }: { items: FloorItem[] }) {

@@ -2,8 +2,9 @@ import { createHash, createHmac, randomBytes, scryptSync, timingSafeEqual } from
 import { isRehearsal, rpcName, runtimeInfo } from './runtime.js';
 
 export const COOKIE_NAME = '__Host-woori_admin';
-export const SESSION_SECONDS = 2 * 60 * 60;
+export const SESSION_SECONDS = 4 * 60 * 60;
 const MAX_BODY_BYTES = 4096;
+const OVERVIEW_TIMEOUT_MS = 2000;
 const ROLES = new Set(['superadmin', 'parking', 'space']);
 const TEAM_ROLES = new Set(['parking', 'space']);
 const ALL_STATES = new Set(['checking', 'closed', 'available', 'busy', 'full', 'school_open', 'gym_open', 'hall_open', 'hall_closed']);
@@ -77,12 +78,19 @@ async function jsonBody(req) {
   if (!value || typeof value !== 'object' || Array.isArray(value) || Buffer.byteLength(JSON.stringify(value)) > MAX_BODY_BYTES) throw new Error('body');
   return value;
 }
-async function rpc(cfg, name, args, fetcher = fetch) {
-  const response = await fetcher(`${cfg.supabaseUrl}/rest/v1/rpc/${rpcName(name, cfg.rehearsal)}`, { method: 'POST', headers: { apikey: cfg.serviceKey, Authorization: `Bearer ${cfg.serviceKey}`, 'Content-Type': 'application/json' }, body: JSON.stringify(args) });
+async function rpc(cfg, name, args, fetcher = fetch, signal) {
+  const response = await fetcher(`${cfg.supabaseUrl}/rest/v1/rpc/${rpcName(name, cfg.rehearsal)}`, { method: 'POST', headers: { apikey: cfg.serviceKey, Authorization: `Bearer ${cfg.serviceKey}`, 'Content-Type': 'application/json' }, body: JSON.stringify(args), ...(signal ? { signal } : {}) });
   let data = null;
   try { data = await response.json(); } catch { /* fail closed */ }
   if (!response.ok) { const error = new Error('database unavailable'); error.status = response.status; error.code = typeof data?.code === 'string' ? data.code : null; if (name === 'ops_reset_rehearsal' && error.code === '21000' && ['UPDATE requires a WHERE clause', 'DELETE requires a WHERE clause'].includes(data?.message)) error.cardinalityReason = 'bulk_mutation_requires_where'; throw error; }
   return data;
+}
+async function rpcWithTimeout(cfg, name, args, fetcher, timeoutMs) {
+  const controller = new AbortController();
+  let timer;
+  const deadline = new Promise((_, reject) => { timer = setTimeout(() => { controller.abort(); reject(new Error('rpc timeout')); }, timeoutMs); });
+  try { return await Promise.race([rpc(cfg, name, args, fetcher, controller.signal), deadline]); }
+  finally { clearTimeout(timer); }
 }
 function hashPassword(password) { const salt = randomBytes(16); return `scrypt$${salt.toString('hex')}$${scryptSync(password, salt, 32, { N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 }).toString('hex')}`; }
 function verifyPassword(password, encoded) { try { const [, salt, hash] = String(encoded).split('$'); return timingSafeEqual(scryptSync(password, Buffer.from(salt, 'hex'), 32, { N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 }), Buffer.from(hash, 'hex')); } catch { return false; } }
@@ -181,7 +189,13 @@ async function logout(req, res, cfg, now, fetcher) {
 }
 async function operations(req, res, cfg, session, fetcher) {
   try {
-    if (req.method === 'GET') return reply(res, 200, await rpc(cfg, 'ops_list_operations', { p_session_id: session.tokenId }, fetcher));
+    if (req.method === 'GET') {
+      const scoped = rpc(cfg, 'ops_list_operations', { p_session_id: session.tokenId }, fetcher);
+      const overview = rpcWithTimeout(cfg, 'ops_public_resources', {}, fetcher, OVERVIEW_TIMEOUT_MS).catch(() => null);
+      const data = await scoped;
+      const publicResources = await overview;
+      return reply(res, 200, { ...data, publicResources: Array.isArray(publicResources) ? publicResources : data.resources });
+    }
     const body = await jsonBody(req);
     if (!validOperation(body)) return reply(res, 400, { error: '운영 상태 요청을 확인해주세요.' });
     const args = { p_session_id: session.tokenId, p_resource_id: body.resourceId, p_state: body.state, p_expected_version: body.expectedVersion, p_request_id: body.requestId };

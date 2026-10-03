@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AdminApp } from '../features/admin';
@@ -31,7 +31,7 @@ describe('role-aware AdminApp', () => {
     expect(screen.queryByText('사진 검토')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('송림 출입 상태')).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('tab', {name:'현황판'}));
-    expect(screen.getByLabelText('송림 출입 상태').querySelectorAll('option')).toHaveLength(6);
+    expect(screen.getByLabelText('송림 출입 상태').querySelectorAll('option')).toHaveLength(7);
   });
 
   it('preserves a draft on 409 and requires an explicit latest-state reread before resend', async () => {
@@ -60,6 +60,13 @@ describe('role-aware AdminApp', () => {
     expect(screen.getByLabelText('새 비밀번호 (선택)')).toHaveAttribute('autocomplete', 'new-password');
     expect(screen.getByText(/비밀번호 설정됨/)).toBeVisible();
     expect(screen.queryByText('not-disclosed')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button',{name:'parking-team 설정'}));
+    expect(screen.getByText('parking-team 수정 중')).toBeVisible();
+    expect(screen.getByLabelText('계정 아이디')).toHaveAttribute('readonly');
+    await userEvent.click(screen.getByRole('button',{name:'새 계정 입력으로 돌아가기'}));
+    expect(screen.queryByText('parking-team 수정 중')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('계정 아이디')).not.toHaveAttribute('readonly');
+    expect(screen.getByLabelText('계정 아이디')).toHaveValue('');
   });
 
   it('does not restore private UI from a stale response after logout', async () => {
@@ -82,4 +89,34 @@ it('preserves the edited draft when a newer server state is received', async () 
   // The conflict response represents the newer version observed before a write; draft remains full and cannot auto-resend.
   expect(screen.getByLabelText('본관 주차 상태')).toHaveValue('full');
   expect(v2.version).toBeGreaterThan(resources.resources[0].version);
+});
+
+
+it.each(['superadmin','parking','space'] as const)('shows the full read-only public overview and role-appropriate edit jump for %s',async role=>{
+ const all=[
+  {id:'space.songrim.access',label:'송림본당 개방 단계',category:'space',state:'hall_open',version:1,updatedAt:new Date(Date.now()-60_000).toISOString()},
+  {id:'space.songrim.hall',label:'본당1·2층',category:'space',state:'busy',version:1,updatedAt:null,occupancyPercent:70},
+  {id:'space.songrim.gym',label:'체육관',category:'space',state:'checking',version:1,updatedAt:null,occupancyPercent:null},
+  {id:'space.dream.f11',label:'드림센터 11층',category:'space',state:'available',version:1,updatedAt:null,occupancyPercent:20},
+  {id:'space.dream.f7',label:'드림센터 7층',category:'space',state:'busy',version:1,updatedAt:null,occupancyPercent:80},
+  {id:'space.dream.f3',label:'드림센터 3층',category:'space',state:'full',version:1,updatedAt:null,occupancyPercent:100},
+  {id:'parking.songrim',label:'송림주차장',category:'parking',state:'busy',version:1,updatedAt:null,occupancyPercent:70},
+  {id:'parking.dream',label:'드림센터 주차장',category:'parking',state:'available',version:1,updatedAt:null,occupancyPercent:null,guideFloor:2},
+ ];
+ const session={...parkingSession,role,username:role};
+ const editable=role==='superadmin'?all:all.filter(r=>r.category===role);
+ vi.spyOn(globalThis,'fetch').mockImplementation(async url=>response(String(url).endsWith('/session')?session:String(url).includes('/accounts')?{accounts:[]}:{resources:editable,publicResources:all,history:[],canManageAccounts:role==='superadmin'}));
+ render(<AdminApp/>);
+ await screen.findByRole('heading',{name:'예배·주차 현황판'});
+ if(role==='parking')await userEvent.click(screen.getByRole('tab',{name:'현황판'}));
+ expect(screen.getByText('1. 현장 확인 → 2. 값 선택 → 3. 현황 확인/저장, 10분마다 재확인')).toBeVisible();
+ const table=screen.getByRole('table',{name:'공개 현황 한눈에 보기'});
+ expect(within(table).getAllByRole('row')).toHaveLength(9);
+ for(const name of ['송림본당 개방 단계','본당1·2층','체육관','드림센터 11층','드림센터 7층','드림센터 3층','송림주차장','드림센터 주차장'])expect(within(table).getByRole('rowheader',{name})).toBeVisible();
+ expect(within(table).getByText('공개 중(10분 이내)')).toBeVisible();
+ expect(within(table).getAllByText('확인 필요')).toHaveLength(7);
+ expect(within(table).getByText('B2층으로 안내 중')).toBeVisible();
+ if(role==='parking')expect(screen.getByRole('button',{name:'주차 현황 입력하기'})).toBeVisible();
+ else expect(screen.getByRole('button',{name:'예배 공간 현황 입력으로 이동'})).toBeVisible();
+ if(role==='superadmin')expect(screen.getByRole('button',{name:'주차 현황 입력하기'})).toBeVisible();
 });

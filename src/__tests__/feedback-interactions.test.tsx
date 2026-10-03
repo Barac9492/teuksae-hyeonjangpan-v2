@@ -76,7 +76,8 @@ it('shows Songrim first, removes retired inputs and writes one Dream guidance wi
  const user=userEvent.setup();render(<AdminApp/>);await screen.findByLabelText('드림센터 현재 주차 안내');
  expect(screen.queryByText('갈보리')).not.toBeInTheDocument();expect(screen.queryByText('드림 B1')).not.toBeInTheDocument();
  expect(document.querySelector('.ta-admin__resource h3')).toHaveTextContent('송림주차장');
- expect(screen.getByLabelText('드림센터 현재 주차 안내')).toHaveValue('checking');
+ expect(screen.getByLabelText('드림센터 현재 주차 안내')).toHaveValue('unselected');
+ expect(within(screen.getByRole('heading',{name:'드림센터 주차장'}).closest('article')!).getByRole('button',{name:/현황 확인|상태 저장/})).toBeDisabled();
  await user.selectOptions(screen.getByLabelText('드림센터 현재 주차 안내'),'2');
  const card=screen.getByRole('heading',{name:'드림센터 주차장'}).closest('article')!;
  const save=within(card).getByRole('button',{name:/현황 확인|상태 저장/});act(()=>{save.click();save.click();});

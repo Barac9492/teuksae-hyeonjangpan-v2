@@ -1,4 +1,4 @@
-import { HOLIDAY_PARKING, OPENING_NOTICE, WEEKDAY_PARKING, songrimParkingNotice } from './officialNotice';
+import { DREAM_PARKING_NOTICE, HOLIDAY_PARKING, OPENING_NOTICE, WEEKDAY_PARKING, songrimParkingNotice } from './officialNotice';
 import type { Venue } from './ui';
 
 export function OfficialNotice() {
@@ -19,6 +19,6 @@ export function OfficialNotice() {
 export function ParkingNotice({ venue, day }: { venue: Venue; day: number | null }) {
   return <aside className="tc-quiet" aria-label="공식 주차 일정">
     <strong>공식 주차 일정{day === null ? '' : ` · 10월 ${day}일`}</strong>
-    <p>{venue === 'songrim' ? songrimParkingNotice(day) : '중간 출차가 필요하면 드림센터를 이용해주세요. 현재 주차 가능 여부와 안내 층은 현장 안내를 확인해주세요.'}</p>
+    <p>{venue === 'songrim' ? songrimParkingNotice(day) : DREAM_PARKING_NOTICE}</p>
   </aside>;
 }

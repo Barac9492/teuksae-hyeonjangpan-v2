@@ -5,7 +5,7 @@ import { AdminApp } from '../features/admin';
 
 const reply = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
 const resource = { id: 'parking.songrim', label: '송림본당 주차', category: 'parking', state: 'checking', version: 1, updatedAt: null as string | null };
-const identity = (role = 'parking') => ({ authenticated: true, username: 'FIXTURE', role, displayName: '검증자', expiresAt: new Date(Date.now() + 7200000).toISOString(), sessionId: 'S-FIXTURE', capabilities: { liveOperations: true, photoReview: false, prayerInbox: false, sharingModeration: false } });
+const identity = (role = 'parking') => ({ authenticated: true, username: 'FIXTURE', role, displayName: '검증자', expiresAt: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(), sessionId: 'S-FIXTURE', capabilities: { liveOperations: true, photoReview: false, prayerInbox: false, sharingModeration: false } });
 const data = (row = resource, superadmin = false) => ({ resources: [row], history: [], canManageAccounts: superadmin });
 function deferred() { let resolve!: (response: Response) => void; const promise = new Promise<Response>((done) => { resolve = done; }); return { promise, resolve }; }
 function capturePoll() { let tick: (() => void) | undefined; vi.spyOn(window, 'setInterval').mockImplementation(((handler: TimerHandler, delay: number) => { if (delay === 20000) tick = handler as () => void; return 99999; }) as typeof window.setInterval); return async () => { expect(tick).toBeDefined(); await act(async () => { tick?.(); }); }; }

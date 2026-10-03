@@ -21,6 +21,7 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
   const [submittedKey, setSubmittedKey] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
+  const [consentResetMessage, setConsentResetMessage] = useState('');
   const [storageFailed, setStorageFailed] = useState(false);
   const [records, setRecords] = useState(readReceipts);
   const [statuses, setStatuses] = useState<Record<string, string>>({});
@@ -38,7 +39,11 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
   const compactConsent = publicByDefault || kind === 'photo';
   const canShare = publicByDefault ? publicChoice && submittedKey !== key : consentKey === key;
   const currentKey = useRef(key); currentKey.current = key;
-  useEffect(() => { setConsentKey(null); }, [key]);
+  const consentWasGiven = useRef(false); consentWasGiven.current = consentKey !== null;
+  useEffect(() => {
+    if (kind === 'photo' && consentWasGiven.current) setConsentResetMessage('사진·메모·날짜가 바뀌어 공개 동의를 다시 선택해주세요.');
+    setConsentKey(null);
+  }, [key, kind]);
   const refresh = useCallback(async (supersede = false) => {
     if (!active.current || (feedRequest.current && !supersede)) return;
     feedRequest.current?.abort();
@@ -174,7 +179,7 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
         {!compactConsent && <><h3>앱에 들어온 모든 분께 공개하기</h3><p>특정 사람에게 보내는 메시지가 아닙니다. 접수 후 관리자 검수가 끝나면 앱에 들어온 누구나 볼 수 있습니다.</p></>}
         {publicByDefault
           ? <label className="tc-checkbox"><input type="checkbox" aria-describedby={consentDetailsId} checked={publicChoice} disabled={busy} onChange={e => setPublicChoice(e.target.checked)} /><span>함께 나누기 · 공개</span></label>
-          : <label className="tc-checkbox"><input type="checkbox" aria-describedby={consentDetailsId} checked={consentKey === key} disabled={busy} onChange={e => setConsentKey(e.target.checked ? key : null)} /><span>{compactConsent ? '함께 나누기 · 공개' : '모두에게 공개하는 데 동의합니다.'}</span></label>}
+          : <label className="tc-checkbox"><input type="checkbox" aria-describedby={consentDetailsId} checked={consentKey === key} disabled={busy} onChange={e => { setConsentKey(e.target.checked ? key : null); if (kind === 'photo') setConsentResetMessage(''); }} /><span>{compactConsent ? '함께 나누기 · 공개' : '모두에게 공개하는 데 동의합니다.'}</span></label>}
         {compactConsent
           ? <p id={consentDetailsId} hidden>{kind === 'photo' ? '관리자는 검수 대기 내용도 읽을 수 있습니다. 승인 후에는 로그인 없이 앱에 들어온 누구나 볼 수 있고, 캡처·외부 저장 사본은 삭제 후에도 남을 수 있습니다. 다른 사람의 정보·사진은 당사자 동의를, 미성년자는 보호자 동의를 확인했습니다. 내 제출 기록에서 삭제할 수 있고 관리자도 검수·삭제할 수 있습니다. 프레임을 입힌 PNG만 전송합니다. 최대 3MB이며 원본 EXIF는 포함하지 않습니다.' : '공개를 원하지 않으면 선택을 해제하고 미리보기에서 기도 카드를 저장할 수 있어요. 관리자는 검수 대기 내용도 읽을 수 있습니다. 승인 후에는 로그인 없이 앱에 들어온 누구나 볼 수 있고, 캡처·외부 저장 사본은 삭제 후에도 남을 수 있습니다. 다른 사람의 실명이나 민감한 사정은 적지 말아주세요. 다른 사람의 정보는 당사자 동의를, 미성년자는 보호자 동의를 확인해주세요. 내 제출 기록에서 삭제할 수 있고 관리자도 검수·삭제할 수 있습니다.'}</p>
           : <>
@@ -184,6 +189,7 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
           </>}
       </div>
       {compactConsent && submitButton}
+      {kind === 'photo' && consentResetMessage && <p className="tc-community-publish-note" role="status">{consentResetMessage}</p>}
       {kind === 'photo' && <p className="tc-community-publish-note">관리자 검수 후 앱에 들어온 누구나 볼 수 있어요. 함께 나온 분의 동의를 확인해주세요.</p>}
     </>;
   return <section className={`tc-community${kind === 'photo' ? ' tc-community--photo' : ''}`} aria-label={kind === 'photo' ? '공개 사진 나눔' : kind === 'reflection' ? '공개 묵상 나눔' : '공개 기도 나눔'}>

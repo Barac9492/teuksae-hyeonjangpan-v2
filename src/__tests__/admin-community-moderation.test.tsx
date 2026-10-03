@@ -22,7 +22,7 @@ describe('explicit page-scoped moderation',()=>{
   const {fetch}=setup();await screen.findByText(`내용 보기 · ${prayer.text}`);expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
   expect(screen.getByRole('button',{name:'선택 공개 승인'})).toBeDisabled();await select();await userEvent.click(screen.getByRole('button',{name:'선택 공개 승인'}));expect(posts(fetch)).toHaveLength(0);
   expect(screen.getByRole('region',{name:'선택 항목 확인'})).toHaveTextContent('공개 동의를 모두 확인');
-  await userEvent.click(screen.getByRole('button',{name:'확인 후 일괄 공개 승인'}));await screen.findByText('1개 중 1개 완료. 0개는 처리 결과를 확인해주세요.');
+  await userEvent.click(screen.getByRole('button',{name:'확인 후 일괄 공개 승인'}));await screen.findByText('1개 중 1개 완료.');expect(screen.queryByText(/0개는 처리 결과를 확인해주세요/)).not.toBeInTheDocument();
   expect(JSON.parse(String(posts(fetch)[0][1]?.body))).toEqual({id:prayer.id,decision:'approved',expectedVersion:3});expect(screen.getByRole('button',{name:'선택 공개 승인'})).toBeDisabled();
  });
  it('cancels without a write and clears selection when content is closed',async()=>{const {fetch}=setup();await select();await userEvent.click(screen.getByRole('button',{name:'선택 공개 승인'}));await userEvent.click(screen.getByRole('button',{name:'취소'}));expect(posts(fetch)).toHaveLength(0);await userEvent.click(screen.getByText(`내용 보기 · ${prayer.text}`));await waitFor(()=>expect(screen.getByText(/선택 0개/)).toBeVisible());});
@@ -40,12 +40,39 @@ describe('explicit page-scoped moderation',()=>{
  it.each([{items:[{bad:true}]},{items:null},{items:[prayer],nextCursor:22}])('rejects malformed list/cursor %j',async body=>{setup([],{get:async()=>response(body)});await screen.findByRole('alert');});
  it('excludes old deleted tombstones without rejecting other valid rows',async()=>{setup([{status:'deleted'},prayer]);await select();expect(screen.queryByRole('alert')).not.toBeInTheDocument();});
  it('shows an empty queue for only terminal tombstones',async()=>{setup([{status:'deleted'}]);await screen.findByText('현재 검토 목록에 게시물이 없습니다.');});
- it('requires loaded actual photo; failed preview clears selection and blocks approval',async()=>{setup([photo]);await select(photo);expect(screen.getByRole('button',{name:'선택 공개 승인'})).toBeDisabled();fireEvent.load(screen.getByAltText('공개 검토용 제출 사진'));expect(screen.getByRole('button',{name:'선택 공개 승인'})).toBeEnabled();fireEvent.error(screen.getByAltText('공개 검토용 제출 사진'));expect(screen.getByRole('button',{name:'선택 공개 승인'})).toBeDisabled();expect(screen.getByRole('checkbox')).not.toBeChecked();});
- it('never embeds an external photo URL or approves it',async()=>{setup([{...photo,photoUrl:'https://external.invalid/image'}]);await select(photo);expect(screen.queryByRole('img')).not.toBeInTheDocument();expect(screen.getByRole('button',{name:'선택 공개 승인'})).toBeDisabled();expect(screen.getByRole('button',{name:'선택 휴지통으로 이동'})).toBeEnabled();});
+ it('requires loaded actual photo for approval, trash and permanent deletion; failed preview clears selection',async()=>{setup([photo]);await select(photo);const image=screen.getByAltText('공개 검토용 제출 사진');expect(image).toHaveAttribute('loading','lazy');expect(screen.getByRole('button',{name:'선택 공개 승인'})).toBeDisabled();expect(screen.getByRole('button',{name:'선택 휴지통으로 이동'})).toBeDisabled();await userEvent.click(screen.getByText('영구 삭제',{exact:true}));expect(screen.getByRole('button',{name:'선택 영구 삭제'})).toBeDisabled();fireEvent.load(image);expect(screen.getByRole('button',{name:'선택 공개 승인'})).toBeEnabled();expect(screen.getByRole('button',{name:'선택 휴지통으로 이동'})).toBeEnabled();expect(screen.getByRole('button',{name:'선택 영구 삭제'})).toBeEnabled();fireEvent.error(image);expect(screen.getByRole('button',{name:'선택 공개 승인'})).toBeDisabled();expect(screen.getByRole('checkbox')).not.toBeChecked();});
+ it('never embeds an external photo URL or batch-processes it as reviewed',async()=>{setup([{...photo,photoUrl:'https://external.invalid/image'}]);await select(photo);expect(screen.queryByRole('img')).not.toBeInTheDocument();expect(screen.getByRole('button',{name:'선택 공개 승인'})).toBeDisabled();expect(screen.getByRole('button',{name:'선택 휴지통으로 이동'})).toBeDisabled();await userEvent.click(screen.getByText('영구 삭제',{exact:true}));expect(screen.getByRole('button',{name:'선택 영구 삭제'})).toBeDisabled();});
+ it('allows permanent deletion of a rejected photo whose image is already removed',async()=>{const rejected={...photo,status:'rejected',photoUrl:undefined};setup([rejected]);await select(rejected);await userEvent.click(screen.getByText('영구 삭제',{exact:true}));expect(screen.getByRole('button',{name:'선택 영구 삭제'})).toBeEnabled();expect(screen.getByRole('button',{name:'선택 공개 승인'})).toBeDisabled();});
  it('clears selection on page, filter and refresh; never selects future pages',async()=>{let reads=0;setup([prayer],{get:async()=>response({items:[prayer],nextCursor:reads++===0?'next':null,trashSupported:true})});await select();await userEvent.click(screen.getByRole('button',{name:'다음 페이지'}));await waitFor(()=>expect(screen.getByRole('button',{name:'선택 공개 승인'})).toBeDisabled());await select();await userEvent.selectOptions(screen.getByRole('combobox'),'pending');await waitFor(()=>expect(screen.getByRole('button',{name:'선택 공개 승인'})).toBeDisabled());await select();await userEvent.click(screen.getByRole('button',{name:'검토 목록 새로고침'}));await waitFor(()=>expect(screen.getByRole('button',{name:'선택 공개 승인'})).toBeDisabled());});
  it.each([['trashed','선택 휴지통으로 이동','확인 후 휴지통 이동'],['deleted','선택 영구 삭제','확인 후 영구 삭제']])('confirms %s and preserves expected version',async(decision,start,end)=>{const {fetch}=setup();await select();if(decision==='deleted')await userEvent.click(screen.getByText('영구 삭제',{exact:true}));await userEvent.click(screen.getByRole('button',{name:start}));expect(posts(fetch)).toHaveLength(0);await userEvent.click(screen.getByRole('button',{name:end}));await screen.findByText(/1개 중 1개 완료/);expect(JSON.parse(String(posts(fetch)[0][1]?.body))).toEqual({id:prayer.id,decision,expectedVersion:3});});
  it('restores to pending with no approval action in trash',async()=>{const {fetch}=setup([{...prayer,status:'trashed'}],{trash:true});await select();expect(screen.queryByRole('button',{name:'선택 공개 승인'})).not.toBeInTheDocument();await userEvent.click(screen.getByRole('button',{name:'선택 복원'}));expect(screen.getByRole('region',{name:'선택 항목 확인'})).toHaveTextContent('자동 공개되지');await userEvent.click(screen.getByRole('button',{name:'확인 후 복원'}));await screen.findByText(/1개 중 1개 완료/);expect(JSON.parse(String(posts(fetch)[0][1]?.body)).decision).toBe('restored');});
  it('disables recoverable deletion on the legacy backend',async()=>{setup([],{get:async()=>response({items:[prayer]})});await select();expect(screen.getByRole('button',{name:'선택 휴지통으로 이동'})).toBeDisabled();await screen.findByText(/DB 업데이트 후/);});
  it('does not accept a late read after unmount',async()=>{let finish!:(r:Response)=>void;const {unmount}=setup([],{get:()=>new Promise(r=>{finish=r;})});await waitFor(()=>expect(finish).toBeTypeOf('function'));unmount();await act(async()=>finish(response({items:[prayer]})));expect(screen.queryByText(prayer.text)).not.toBeInTheDocument();});
  it.each(['parking','space'])('does not request or expose community to %s',async role=>{const fetch=vi.spyOn(globalThis,'fetch').mockImplementation(async url=>response(String(url).endsWith('/session')?{authenticated:true,username:'TEAM',role,displayName:'담당',expiresAt:'2030-01-01',sessionId:'S-team',capabilities:{liveOperations:true}}:{resources:[],history:[],canManageAccounts:false}));render(<AdminApp/>);await screen.findByRole('heading',{name:'예배·주차 현황판'});expect(screen.queryByRole('tab',{name:'사진 승인'})).not.toBeInTheDocument();expect(fetch.mock.calls.some(([u])=>String(u).includes('/community'))).toBe(false);});
+});
+
+
+describe('fast page review controls',()=>{
+ it('expands every item and selects only displayed pending items',async()=>{
+  const approved={...prayer,id:'approved',text:'이미 공개',status:'approved' as const,version:7};
+  setup([prayer,photo,approved]);
+  await screen.findByRole('button',{name:'현재 페이지 내용 모두 펼치기'});
+  expect(screen.getByRole('button',{name:'펼친 검토 대기 항목 모두 선택'})).toBeDisabled();
+  await userEvent.click(screen.getByRole('button',{name:'현재 페이지 내용 모두 펼치기'}));
+  expect(screen.getByText('로컬 기도',{selector:'.community-moderation__text'})).toBeVisible();
+  expect(screen.getByText('로컬 사진',{selector:'.community-moderation__text'})).toBeVisible();
+  const image=screen.getByAltText('공개 검토용 제출 사진');expect(image).toHaveAttribute('src',new URL(photo.photoUrl,window.location.origin).href);
+  await userEvent.click(screen.getByRole('button',{name:'펼친 검토 대기 항목 모두 선택'}));
+  expect(screen.getByRole('checkbox',{name:'prayer-1 선택'})).toBeChecked();
+  expect(screen.getByRole('checkbox',{name:'photo-1 선택'})).not.toBeChecked();
+  expect(screen.getByRole('checkbox',{name:'approved 선택'})).not.toBeChecked();
+  expect(screen.getByText(/선택 1개/)).toBeVisible();
+  fireEvent.load(image);
+  await userEvent.click(screen.getByRole('button',{name:'펼친 검토 대기 항목 모두 선택'}));
+  expect(screen.getByRole('checkbox',{name:'photo-1 선택'})).toBeChecked();
+  expect(screen.getByText(/선택 2개/)).toBeVisible();
+  await userEvent.click(screen.getByRole('button',{name:'현재 페이지 내용 모두 접기'}));
+  expect(screen.getByText(/선택 0개/)).toBeVisible();
+  expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+ });
 });
