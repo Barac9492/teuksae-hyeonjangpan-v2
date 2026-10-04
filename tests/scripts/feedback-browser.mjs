@@ -5,7 +5,7 @@ const base = process.env.BASE_URL || 'http://127.0.0.1:4179';
 assert.equal(new URL(base).hostname, '127.0.0.1', 'Only isolated loopback fixtures are allowed');
 const { chromium }=await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const browser=await chromium.launch({executablePath:process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:true});
-const out=new URL('../../evidence/feedback-20261003/',import.meta.url).pathname;await mkdir(out,{recursive:true});
+const out=process.env.EVIDENCE_DIR || new URL('../../evidence/feedback-20261003/',import.meta.url).pathname;await mkdir(out,{recursive:true});
 console.log('browser launched');
 const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'});
 context.setDefaultTimeout(10000);
@@ -38,9 +38,10 @@ await admin.getByText(/저장했습니다/).waitFor();console.log('admin saved B
 await page.getByText('B5층으로 안내 중',{exact:true}).waitFor();console.log('public B5 synchronized');
 await admin.getByLabel('드림센터 현재 주차 안내').selectOption('full');await Promise.all([admin.waitForResponse(r=>r.url().endsWith('/api/admin/operations')&&r.request().method()==='POST'),dream.getByRole('button',{name:/현황 확인|상태 저장/}).click()]);
 await admin.getByLabel('드림센터 현재 주차 안내').isEnabled();await page.clock.runFor(20100);await page.getByText('전체 만차',{exact:true}).waitFor();
-// Staleness is a public safety boundary and does not leak the former directed floor.
-console.log('full synchronized');await page.clock.fastForward(610000);await page.getByRole('tabpanel',{name:'주차'}).getByText('확인 필요',{exact:true}).waitFor();
-assert.equal(await page.getByRole('tabpanel',{name:'주차'}).getByText('전체 만차',{exact:true}).count(),0);
+// Age retains the last saved full state, with neutral tone and its confirmation time.
+console.log('full synchronized');await page.clock.fastForward(610000);await page.getByRole('tabpanel',{name:'주차'}).getByText(/마지막 확인.*마지막 기록/).first().waitFor();
+assert.equal(await page.getByRole('tabpanel',{name:'주차'}).getByText('전체 만차',{exact:true}).count(),1);
+assert.match(await page.getByText('전체 만차',{exact:true}).getAttribute('class'),/neutral/);
 console.log('stale passed');await page.getByRole('tab',{name:'기도',exact:true}).click();const timer=page.getByRole('region',{name:'기도 타이머'});
 await timer.getByLabel('기도 시간',{exact:true}).selectOption('3');await timer.getByRole('button',{name:'기도 시작',exact:true}).click();
 await page.clock.runFor(10000);assert.ok((await timer.getByRole('timer').textContent()).includes('02:50'));
@@ -68,4 +69,4 @@ await page.screenshot({path:out+'desktop-photos.png'});
 await page.getByRole('tab',{name:'기도',exact:true}).click();await page.getByRole('button',{name:'함께 기도하기',exact:true}).click();await prayer.getByRole('button',{name:'최신 나눔으로'}).click();await prayer.locator('h2').scrollIntoViewIfNeeded();await page.screenshot({path:out+'desktop-prayers.png'});
 await admin.setViewportSize({width:1440,height:1000});await admin.evaluate(()=>window.dispatchEvent(new Event('online')));await admin.getByText('오프라인입니다. 최신 상태를 불러오지 못했습니다.',{exact:true}).waitFor({state:'hidden'});await admin.screenshot({path:out+'desktop-admin.png',fullPage:true});
 await page.setViewportSize({width:320,height:640});await page.getByRole('tab',{name:'주차',exact:true}).click();assert.equal(await page.locator('body').evaluate(e=>e.scrollWidth<=innerWidth),true);assert.equal(await page.locator('.tc-app > main').evaluate(e=>e.scrollWidth<=e.clientWidth),true);await page.screenshot({path:out+'narrow-parking.png'});
-assert.deepEqual(errors,[]);const result={passed:true,checks:['initial mobile game visibility','exact worship guidance','one Dream lot','Songrim ordering and retired inputs absent','admin save to public within 20s','full and stale fail-closed','timer pause/resume/reset/completion/tab switch','12/12/11 pagination with no duplicate cards','current-page refresh and scroll retention','composer preservation','offline/online recovery','desktop two-column photo/prayer grid','320px overflow','no browser exceptions'],screenshots:7,productionRequests:0};await writeFile(out+'browser-results.json',JSON.stringify(result,null,2));console.log(JSON.stringify(result));await browser.close();
+assert.deepEqual(errors,[]);const result={passed:true,checks:['initial mobile game visibility','exact worship guidance','one Dream lot','Songrim ordering and retired inputs absent','admin save to public within 20s','last saved full state retained after ten minutes with timestamp and neutral tone','timer pause/resume/reset/completion/tab switch','12/12/11 pagination with no duplicate cards','current-page refresh and scroll retention','composer preservation','offline/online recovery','desktop two-column photo/prayer grid','320px overflow','no browser exceptions'],screenshots:7,productionRequests:0};await writeFile(out+'browser-results.json',JSON.stringify(result,null,2));console.log(JSON.stringify(result));await browser.close();

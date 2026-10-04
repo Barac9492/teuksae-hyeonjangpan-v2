@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
 const {chromium}=await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const base=process.env.BASE_URL || 'http://127.0.0.1:4196';assert.equal(new URL(base).hostname,'127.0.0.1');
-const out=new URL('../../evidence/status-retention/',import.meta.url).pathname;await mkdir(out,{recursive:true});
+const out=process.env.EVIDENCE_DIR || new URL('../../evidence/status-retention/',import.meta.url).pathname;await mkdir(out,{recursive:true});
 const browser=await chromium.launch({executablePath:process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:true});
 const errors=[],checks=[];const now=Date.parse('2026-10-05T04:10:00+09:00');
 async function fixture(width,live=true){

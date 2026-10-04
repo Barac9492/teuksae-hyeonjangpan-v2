@@ -62,3 +62,4 @@ jobs:
             sleep 1
           done
           node tests/scripts/admin-feedback-browser.mjs
+          node tests/scripts/entrance-browser.mjs
