@@ -90,7 +90,7 @@ describe('CompanionApp', () => {
     render(<CompanionApp />);
     await chooseTab(user, '나눔');
     expect(screen.getByText('송림본당 · 서현')).toBeVisible();
-    expect(screen.getByText('송림본당: 학교 개방 전 · 학교 밖 대기 장소')).toBeVisible();
+    expect(screen.getByText('송림본당: 교문 개방 전 · 학교 밖 대기 장소')).toBeVisible();
     expect(screen.getByText(/개인 보온병에 따뜻한 물을 준비해 오시거나/)).toBeVisible();
     expect(screen.getByText(/체육관이 열린 뒤 내부 온수 정수기/)).toBeVisible();
     expect(screen.getByText(/학교 출입문만 열렸을 때는 이용할 수 없습니다/)).toBeVisible();

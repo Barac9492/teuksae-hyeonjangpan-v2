@@ -1,5 +1,5 @@
 import { requestWithDeadline } from '../../lib/requestDeadline';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import './CommunityModeration.css';
 
 type Item = {
@@ -10,6 +10,10 @@ type Decision = 'approved' | 'rejected' | 'deleted' | 'trashed' | 'restored';
 type Filter = 'all' | 'pending' | 'approved' | 'rejected' | 'trashed';
 const endpoint = '/api/admin/community';
 const statusLabel = { pending: '검토 대기', approved: '공개 중', rejected: '비공개', trashed: '휴지통' };
+const kindName = (kind: Item['kind']) => kind === 'photo' ? '사진' : kind === 'reflection' ? '묵상' : '기도';
+// Text is shown in full on the card itself; only photos need an explicit open + loaded image.
+const isText = (item: Item) => item.kind !== 'photo';
+const groupOrder = ['pending', 'approved', 'rejected', 'trashed'] as const;
 const timestamp = (value: string) => Number.isFinite(Date.parse(value))
   ? new Intl.DateTimeFormat('ko-KR', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Seoul' }).format(new Date(value))
   : '시간 확인 불가';
@@ -67,6 +71,7 @@ function pageCursor(body: Record<string, unknown>): string | null {
 
 // A selection always refers to the exact version rendered on this page.
 export function CommunityModeration({ kind, trash = false }: { kind?: 'prayer' | 'photo'; trash?: boolean }) {
+  const idPrefix = useId();
   const [items, setItems] = useState<Item[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -107,9 +112,10 @@ export function CommunityModeration({ kind, trash = false }: { kind?: 'prayer' |
     return () => { active.current = false; epochRef.current++; operation.current?.abort(); lock.current = false; };
   }, [load, trash]);
   const chosen = (items ?? []).filter(item => selected[item.id] === item.version);
-  const allExpanded = !!items?.length && items.every(item => opened[item.id]);
+  const photoItems = (items ?? []).filter(item => !isText(item));
+  const allExpanded = photoItems.length > 0 && photoItems.every(item => opened[item.id]);
   // Rejected photos have no stored image left to inspect; opening the row is the whole review.
-  const contentRendered = (item: Item) => !!opened[item.id] && (item.kind !== 'photo' || item.status === 'rejected' && !photoSource(item.photoUrl) || !!photoSource(item.photoUrl) && !!loadedImages[item.id] && !brokenImages[item.id]);
+  const contentRendered = (item: Item) => isText(item) || !!opened[item.id] && (item.status === 'rejected' && !photoSource(item.photoUrl) || !!photoSource(item.photoUrl) && !!loadedImages[item.id] && !brokenImages[item.id]);
   const displayedPending = (items ?? []).filter(item => item.status === 'pending' && contentRendered(item));
   const canApprove = (item: Item) => item.status === 'pending' && contentRendered(item) && (item.kind === 'photo' || !!item.text.trim());
   const chosenContentRendered = chosen.every(contentRendered);
@@ -150,10 +156,40 @@ export function CommunityModeration({ kind, trash = false }: { kind?: 'prayer' |
     if (epoch === generation.current) { lock.current = false; operation.current = null; if (active.current) setBusy(false); }
   };
   const title = trash ? '휴지통' : kind === 'photo' ? '사진 승인' : '기도카드 승인';
+  const subject = kind === 'photo' ? '사진' : kind === 'prayer' ? '기도' : '내용';
+  const counts = { pending: 0, approved: 0, rejected: 0, trashed: 0 };
+  for (const item of items ?? []) counts[item.status]++;
+  const groupTitle = (status: Item['status']) => ({ pending: `확정이 필요한 ${subject} · 검토 대기`, approved: `확정되어 공개 중인 ${subject}`, rejected: `비공개 처리한 ${subject}`, trashed: `휴지통의 ${subject}` }[status]);
+  const toggleSelect = (item: Item, checked: boolean) => { setSelected(old => { const next = { ...old }; if (checked) next[item.id] = item.version; else delete next[item.id]; return next; }); setConfirmation(null); };
+  const renderItem = (item: Item) => {
+    const source = photoSource(item.photoUrl), unavailable = item.kind === 'photo' && (!source || brokenImages[item.id]);
+    const selectable = isText(item) || !!opened[item.id];
+    const checkbox = <input type="checkbox" aria-label={`${item.id} 선택`} checked={selected[item.id] === item.version} disabled={busy || !selectable} onChange={e => toggleSelect(item, e.target.checked)} />;
+    const meta = <p className="community-moderation__meta"><time dateTime={item.createdAt}>{timestamp(item.createdAt)}</time> · 한국 시간 · 버전 {item.version}</p>;
+    const className = `community-moderation__item community-moderation__item--${item.status}${isText(item) ? ' community-moderation__item--text' : ''}${selected[item.id] === item.version ? ' community-moderation__item--selected' : ''}`;
+    // Compact text card: checkbox beside the full text so a page can be read and picked in one pass.
+    if (isText(item)) return <article key={item.id} className={className} aria-label={`${kindName(item.kind)} ${item.id}`}>
+      <label className="community-moderation__pick">{checkbox}<span className="community-moderation__sr">선택</span></label>
+      <div className="community-moderation__body">
+        <h4>{kindName(item.kind)} · {statusLabel[item.status]}</h4>{meta}
+        <p className="community-moderation__text">{item.text || '남아 있는 내용이 없습니다.'}</p>
+      </div>
+    </article>;
+    return <article key={item.id} className={className} aria-label={`${kindName(item.kind)} ${item.id}`}>
+      <h4>{kindName(item.kind)} · {statusLabel[item.status]}</h4>{meta}
+      <details open={!!opened[item.id]} onToggle={e => { const open = e.currentTarget.open; setOpened(old => ({...old,[item.id]:open})); if (!open) { setSelected(old => {const next={...old};delete next[item.id];return next;});setConfirmation(null); } }}><summary>내용 보기 · {item.text.slice(0, 35) || '사진'}</summary>
+        {opened[item.id] && <>{source && !brokenImages[item.id] && <img src={source} alt="공개 검토용 제출 사진" loading="lazy" onLoad={() => setLoadedImages(old => ({...old,[item.id]:true}))} onError={() => {setBrokenImages(old => ({...old,[item.id]:true}));setSelected(old => {const next={...old};delete next[item.id];return next;});setConfirmation(null);}} />}
+        {unavailable && <p>이미지를 표시할 수 없습니다. 공개 승인할 수 없습니다.</p>}
+        <p className="community-moderation__text">{item.text || '남아 있는 내용이 없습니다.'}</p>
+        </>}
+      </details>
+      <label className="community-moderation__select">{checkbox}{opened[item.id] ? '내용 확인 후 선택' : '내용을 펼친 후 선택'}</label>
+    </article>;
+  };
   return <section className="community-moderation" aria-labelledby="community-review-heading" aria-busy={busy}>
     <div className="community-moderation__header"><h2 id="community-review-heading">{title}</h2><button type="button" className="ta-admin__secondary" disabled={busy} onClick={() => void load(filter)}>검토 목록 새로고침</button></div>
     {!trash && <label>검토 상태<select aria-label="검토 상태" value={filter} disabled={busy} onChange={e => void load(e.target.value as Filter)}><option value="all">전체 (검토 대기 먼저)</option><option value="pending">검토 대기</option><option value="approved">공개 중</option><option value="rejected">비공개</option></select></label>}
-    <p>{trash ? '휴지통 항목은 공개되지 않습니다. 복원하면 검토 대기로 돌아가며, 다시 승인해야 공개됩니다. 이전 영구 삭제·비공개 처리로 지운 내용은 복원할 수 없습니다.' : '여러 개 승인: ① 내용 펼치기 → ② 확인한 항목 선택 → ③ 선택 공개 승인. 선택은 현재 페이지에만 적용되며 탭·페이지·필터·새로고침 시 해제됩니다.'}</p>
+    <p>{trash ? '휴지통 항목은 공개되지 않습니다. 복원하면 검토 대기로 돌아가며, 다시 승인해야 공개됩니다. 이전 영구 삭제·비공개 처리로 지운 내용은 복원할 수 없습니다.' : `여러 개 승인: ${kind === 'prayer' ? '① 내용 읽기' : '① 내용 펼치기(사진)'} → ② 확인한 항목 선택 → ③ 선택 공개 승인. 선택은 현재 페이지에만 적용되며 탭·페이지·필터·새로고침 시 해제됩니다.`}</p>
     {!trash && <details className="community-moderation__warning"><summary>공개·개인정보 검토 안내</summary><p>공개 승인한 기도·묵상·사진은 로그인 없이 누구나 인터넷에서 볼 수 있으며 복사·저장될 수 있습니다. 사진 속 얼굴, 특히 아동·청소년의 공개 동의와 보호자 동의를 확인하세요. 기도 내용에 이름·연락처·건강 등 민감한 정보가 없는지 확인하세요. 기도카드 목록에는 묵상 나눔도 포함됩니다.</p></details>}
     {!trash && !trashSupported && items && <p role="status">휴지통 기능은 DB 업데이트 후 사용할 수 있습니다.</p>}
     {error && <p role="alert" className="ta-admin__alert">{error}</p>}{notice && <p role="status">{notice}</p>}
@@ -161,28 +197,27 @@ export function CommunityModeration({ kind, trash = false }: { kind?: 'prayer' |
     {busy && <p role="status">{progress.total ? `선택 항목 처리 중… ${progress.completed} / ${progress.total}개` : '검토 목록 처리 중…'}</p>}
     {items?.length === 0 && <p>현재 검토 목록에 게시물이 없습니다.</p>}
     {!!items?.length && <div className="community-moderation__batch"><strong>현재 페이지 {items.length}개 · 선택 {chosen.length}개</strong><div className="community-moderation__actions">
-      <button type="button" className="ta-admin__secondary" disabled={busy} onClick={() => { if (allExpanded) { setOpened({}); setSelected({}); } else setOpened(Object.fromEntries(items.map(item => [item.id, true]))); setConfirmation(null); }}>{allExpanded ? '현재 페이지 내용 모두 접기' : '현재 페이지 내용 모두 펼치기'}</button>
-      <button type="button" className="ta-admin__secondary" disabled={busy || displayedPending.length === 0} onClick={() => { setSelected(Object.fromEntries(displayedPending.map(item => [item.id, item.version]))); setConfirmation(null); }}>펼친 검토 대기 항목 모두 선택</button>
+      {photoItems.length > 0 && <button type="button" className="ta-admin__secondary" disabled={busy} onClick={() => { if (allExpanded) { setOpened({}); setSelected(old => Object.fromEntries(Object.entries(old).filter(([id]) => !photoItems.some(item => item.id === id)))); } else setOpened(Object.fromEntries(photoItems.map(item => [item.id, true]))); setConfirmation(null); }}>{allExpanded ? '현재 페이지 내용 모두 접기' : '현재 페이지 내용 모두 펼치기'}</button>}
+      <button type="button" className="ta-admin__secondary" disabled={busy || displayedPending.length === 0} onClick={() => { setSelected(Object.fromEntries(displayedPending.map(item => [item.id, item.version]))); setConfirmation(null); }}>{photoItems.length > 0 ? '펼친 검토 대기 항목 모두 선택' : '검토 대기 항목 모두 선택'}</button>
 
       {!trash && <button className="ta-admin__secondary" disabled={busy || !trashSupported || !chosen.length || !chosenContentRendered || !chosen.every(x => ['pending','approved'].includes(x.status))} onClick={() => setConfirmation('trashed')}>선택 휴지통으로 이동</button>}
       {trash && <button className="ta-admin__primary" disabled={busy || !chosen.length} onClick={() => setConfirmation('restored')}>선택 복원</button>}
       <button className="ta-admin__secondary" disabled={busy || !chosen.length} onClick={() => {setSelected({});setConfirmation(null);}}>선택 해제</button><details><summary>영구 삭제</summary><button className="ta-admin__secondary" disabled={busy || !chosen.length || !chosenContentRendered} onClick={() => setConfirmation('deleted')}>선택 영구 삭제</button></details>
     </div></div>}
 
-    <div className="community-moderation__grid">{items?.map(item => {
-      const source = photoSource(item.photoUrl), unavailable = item.kind === 'photo' && (!source || brokenImages[item.id]);
-      return <article key={item.id} className={`community-moderation__item${selected[item.id] === item.version ? ' community-moderation__item--selected' : ''}`} aria-label={`${item.kind === 'photo' ? '사진' : item.kind === 'reflection' ? '묵상' : '기도'} ${item.id}`}>
-        <h3>{item.kind === 'photo' ? '사진' : item.kind === 'reflection' ? '묵상' : '기도'} · {statusLabel[item.status]}</h3>
-        <p className="community-moderation__meta"><time dateTime={item.createdAt}>{timestamp(item.createdAt)}</time> · 한국 시간 · 버전 {item.version}</p>
-        <details open={!!opened[item.id]} onToggle={e => { const open = e.currentTarget.open; setOpened(old => ({...old,[item.id]:open})); if (!open) { setSelected(old => {const next={...old};delete next[item.id];return next;});setConfirmation(null); } }}><summary>내용 보기 · {item.text.slice(0, 35) || '사진'}</summary>
-          {opened[item.id] && <>{item.kind === 'photo' && source && !brokenImages[item.id] && <img src={source} alt="공개 검토용 제출 사진" loading="lazy" onLoad={() => setLoadedImages(old => ({...old,[item.id]:true}))} onError={() => {setBrokenImages(old => ({...old,[item.id]:true}));setSelected(old => {const next={...old};delete next[item.id];return next;});setConfirmation(null);}} />}
-          {unavailable && <p>이미지를 표시할 수 없습니다. 공개 승인할 수 없습니다.</p>}
-          <p className="community-moderation__text">{item.text || '남아 있는 내용이 없습니다.'}</p>
-          </>}
-        </details>
-          <label className="community-moderation__select"><input type="checkbox" aria-label={`${item.id} 선택`} checked={selected[item.id] === item.version} disabled={busy || !opened[item.id]} onChange={e => {setSelected(old => {const next={...old};if(e.target.checked)next[item.id]=item.version;else delete next[item.id];return next;});setConfirmation(null);}} />{opened[item.id] ? '내용 확인 후 선택' : '내용을 펼친 후 선택'}</label>
-      </article>;
-    })}</div>
+    {!!items?.length && !trash && <p className="community-moderation__summary">현재 페이지: 확정 필요 {counts.pending} · 공개 중 {counts.approved} · 비공개 {counts.rejected}</p>}
+    {items && groupOrder.map(status => {
+      const group = items.filter(item => item.status === status);
+      const alwaysShow = status === 'pending' && !trash && (filter === 'all' || filter === 'pending');
+      if (!group.length && !alwaysShow) return null;
+      const headingId = `${idPrefix}-group-${status}`;
+      return <section key={status} className={`community-moderation__group community-moderation__group--${status}`} aria-labelledby={headingId}>
+        <h3 id={headingId}>{groupTitle(status)} <span className="community-moderation__count">{group.length}개</span></h3>
+        {status === 'approved' && <p className="community-moderation__group-note">확정되어 지금 앱에 공개된 내용입니다. 문제가 있으면 선택해 휴지통으로 옮기세요.</p>}
+        {!group.length && <p className="community-moderation__empty">지금 확정할 {subject}{subject === '기도' ? '가' : '이'} 없습니다.</p>}
+        {!!group.length && <div className={`community-moderation__grid${kind === 'prayer' ? ' community-moderation__grid--list' : ''}`}>{group.map(renderItem)}</div>}
+      </section>;
+    })}
     {!!items?.length && !trash && <div className="community-moderation__approve-bar" aria-label="일괄 승인 도구">
       <strong>{chosen.length}개 선택됨</strong>
       {!trash && <button className="ta-admin__primary" disabled={busy || !chosen.length || !chosen.every(canApprove)} onClick={() => setConfirmation('approved')}>선택 공개 승인</button>}

@@ -30,7 +30,7 @@ describe('public companion live operations', () => {
     ]));
     vi.stubGlobal('fetch', fetchMock);
     render(<CompanionApp />);
-    await waitFor(() => expect(screen.getByText('학교 개방')).toBeVisible());
+    await waitFor(() => expect(screen.getByText('교문 개방')).toBeVisible());
     expect(screen.getByText('입장 마감')).toBeVisible();
     expect(screen.getByText('이용 가능')).toBeVisible();
     expect(fetchMock).toHaveBeenCalledWith('/api/status', expect.anything());

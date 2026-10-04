@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CommunityModeration } from '../features/admin/CommunityModeration';
@@ -13,19 +13,21 @@ function setup(items: unknown[]=[prayer],options:{get?:()=>Promise<Response>;pos
   return options.get?options.get():response({items,nextCursor:null,trashSupported:true});
  });const view=render(<CommunityModeration kind={options.kind} trash={options.trash}/>);return {fetch,...view};
 }
-async function open(item:Row=prayer){await userEvent.click(await screen.findByText(`내용 보기 · ${item.text}`));return screen.findByRole('checkbox',{name:`${item.id} 선택`});}
+// Text cards are readable in place; only photos are opened before selection.
+async function open(item:Row=prayer){if(item.kind==='photo')await userEvent.click(await screen.findByText(`내용 보기 · ${item.text}`));return screen.findByRole('checkbox',{name:`${item.id} 선택`});}
 async function select(item:Row=prayer){await userEvent.click(await open(item));}
 const posts=(fetch:ReturnType<typeof setup>['fetch'])=>fetch.mock.calls.filter(([,init])=>init?.method==='POST');
 afterEach(()=>{cleanup();vi.restoreAllMocks();});
 describe('explicit page-scoped moderation',()=>{
  it('requires opening content, explicit selection, and batch publication confirmation',async()=>{
-  const {fetch}=setup();await screen.findByText(`내용 보기 · ${prayer.text}`);expect(screen.getByRole('checkbox')).toBeDisabled();
+  const {fetch}=setup();await screen.findByText(prayer.text,{selector:'.community-moderation__text'});expect(screen.getByRole('checkbox')).not.toBeChecked();
   expect(screen.getByRole('button',{name:'선택 공개 승인'})).toBeDisabled();await select();await userEvent.click(screen.getByRole('button',{name:'선택 공개 승인'}));expect(posts(fetch)).toHaveLength(0);
   expect(screen.getByRole('region',{name:'선택 항목 확인'})).toHaveTextContent('공개 동의를 모두 확인');
   await userEvent.click(screen.getByRole('button',{name:'확인 후 일괄 공개 승인'}));await screen.findByText('1개 중 1개 완료.');expect(screen.queryByText(/0개는 처리 결과를 확인해주세요/)).not.toBeInTheDocument();
   expect(JSON.parse(String(posts(fetch)[0][1]?.body))).toEqual({id:prayer.id,decision:'approved',expectedVersion:3});expect(screen.getByRole('button',{name:'선택 공개 승인'})).toBeDisabled();
  });
- it('cancels without a write and clears selection when content is closed',async()=>{const {fetch}=setup();await select();await userEvent.click(screen.getByRole('button',{name:'선택 공개 승인'}));await userEvent.click(screen.getByRole('button',{name:'취소'}));expect(posts(fetch)).toHaveLength(0);await userEvent.click(screen.getByText(`내용 보기 · ${prayer.text}`));await waitFor(()=>expect(screen.getByText(/선택 0개/)).toBeVisible());});
+ it('cancels without a write and clears selection when content is closed',async()=>{const {fetch}=setup();await select();await userEvent.click(screen.getByRole('button',{name:'선택 공개 승인'}));await userEvent.click(screen.getByRole('button',{name:'취소'}));expect(posts(fetch)).toHaveLength(0);await userEvent.click(screen.getByRole('checkbox',{name:`${prayer.id} 선택`}));await waitFor(()=>expect(screen.getByText(/선택 0개/)).toBeVisible());});
+ it('clears a photo selection when the photo is closed',async()=>{setup([photo]);await select(photo);fireEvent.load(screen.getByAltText('공개 검토용 제출 사진'));await userEvent.click(screen.getByText(`내용 보기 · ${photo.text}`));await waitFor(()=>expect(screen.getByText(/선택 0개/)).toBeVisible());});
  it('only sends explicitly selected visible items and prevents repeated clicks',async()=>{
   let finish!:(r:Response)=>void;const other={...prayer,id:'other',text:'다른 기도'};
   const {fetch}=setup([prayer,other],{post:()=>new Promise(resolve=>{finish=resolve;})});await select();await userEvent.click(screen.getByRole('button',{name:'선택 공개 승인'}));await userEvent.dblClick(screen.getByRole('button',{name:'확인 후 일괄 공개 승인'}));expect(posts(fetch)).toHaveLength(1);expect(JSON.parse(String(posts(fetch)[0][1]?.body)).id).toBe(prayer.id);
@@ -57,9 +59,9 @@ describe('fast page review controls',()=>{
   const approved={...prayer,id:'approved',text:'이미 공개',status:'approved' as const,version:7};
   setup([prayer,photo,approved]);
   await screen.findByRole('button',{name:'현재 페이지 내용 모두 펼치기'});
-  expect(screen.getByRole('button',{name:'펼친 검토 대기 항목 모두 선택'})).toBeDisabled();
-  await userEvent.click(screen.getByRole('button',{name:'현재 페이지 내용 모두 펼치기'}));
   expect(screen.getByText('로컬 기도',{selector:'.community-moderation__text'})).toBeVisible();
+  expect(screen.queryByText('로컬 사진',{selector:'.community-moderation__text'})).not.toBeInTheDocument();
+  await userEvent.click(screen.getByRole('button',{name:'현재 페이지 내용 모두 펼치기'}));
   expect(screen.getByText('로컬 사진',{selector:'.community-moderation__text'})).toBeVisible();
   const image=screen.getByAltText('공개 검토용 제출 사진');expect(image).toHaveAttribute('src',new URL(photo.photoUrl,window.location.origin).href);
   await userEvent.click(screen.getByRole('button',{name:'펼친 검토 대기 항목 모두 선택'}));
@@ -72,7 +74,36 @@ describe('fast page review controls',()=>{
   expect(screen.getByRole('checkbox',{name:'photo-1 선택'})).toBeChecked();
   expect(screen.getByText(/선택 2개/)).toBeVisible();
   await userEvent.click(screen.getByRole('button',{name:'현재 페이지 내용 모두 접기'}));
-  expect(screen.getByText(/선택 0개/)).toBeVisible();
-  expect(screen.getAllByRole('checkbox').every(box => box.hasAttribute('disabled'))).toBe(true);
+  expect(screen.getByText(/선택 1개/)).toBeVisible();
+  expect(screen.getByRole('checkbox',{name:'prayer-1 선택'})).toBeChecked();
+  expect(screen.getByRole('checkbox',{name:'photo-1 선택'})).toBeDisabled();
  });
+});
+
+describe('prayer review at a glance',()=>{
+ const long={...prayer,id:'long',text:'첫 줄 기도 제목입니다. 서른다섯 글자를 훨씬 넘는 아주 긴 기도 내용이 끝까지 그대로 보여야 합니다.\n둘째 줄도 보여야 합니다.'};
+ const approved={...prayer,id:'approved',text:'이미 공개된 기도',status:'approved' as const,version:7};
+ const rejected={...prayer,id:'rejected',text:'숨긴 기도 내용',status:'rejected' as const,version:2};
+ it('shows full prayer text without expanding and allows direct selection',async()=>{
+  setup([long],{kind:'prayer'});
+  const text=await screen.findByText((_,el)=>el?.classList.contains('community-moderation__text')===true&&el.textContent===long.text);
+  expect(text).toBeVisible();
+  expect(screen.queryByText(/^내용 보기/)).not.toBeInTheDocument();
+  expect(screen.queryByRole('button',{name:'현재 페이지 내용 모두 펼치기'})).not.toBeInTheDocument();
+  const box=screen.getByRole('checkbox',{name:'long 선택'});expect(box).toBeEnabled();
+  await userEvent.click(box);expect(screen.getByRole('button',{name:'선택 공개 승인'})).toBeEnabled();
+ });
+ it('separates items needing confirmation from already published and private ones',async()=>{
+  setup([prayer,approved,rejected],{kind:'prayer'});
+  const pending=await screen.findByRole('region',{name:/확정이 필요한 기도/});
+  const published=screen.getByRole('region',{name:/확정되어 공개 중인 기도/});
+  const hidden=screen.getByRole('region',{name:/비공개 처리한 기도/});
+  expect(within(pending).getByText('로컬 기도')).toBeVisible();expect(within(pending).queryByText('이미 공개된 기도')).not.toBeInTheDocument();
+  expect(within(published).getByText('이미 공개된 기도')).toBeVisible();expect(within(published).queryByText('로컬 기도')).not.toBeInTheDocument();
+  expect(within(hidden).getByText('숨긴 기도 내용')).toBeVisible();
+  expect(screen.getByText(/확정 필요 1 · 공개 중 1 · 비공개 1/)).toBeVisible();
+  await userEvent.click(screen.getByRole('button',{name:'검토 대기 항목 모두 선택'}));
+  expect(screen.getByRole('checkbox',{name:'prayer-1 선택'})).toBeChecked();expect(screen.getByRole('checkbox',{name:'approved 선택'})).not.toBeChecked();
+ });
+ it('says clearly when nothing needs confirmation',async()=>{setup([approved],{kind:'prayer'});const pending=await screen.findByRole('region',{name:/확정이 필요한 기도/});expect(within(pending).getByText('지금 확정할 기도가 없습니다.')).toBeVisible();});
 });
