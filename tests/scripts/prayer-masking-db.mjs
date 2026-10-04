@@ -8,7 +8,13 @@ const {PGlite}=await import(process.env.PGLITE_MODULE || '@electric-sql/pglite')
 const db=new PGlite(),dir=new URL('../../supabase/migrations/',import.meta.url);
 let checks=0;const ok=(condition,label)=>{assert.ok(condition,label);checks++;console.log(`PASS ${label}`);};
 await db.exec(`create role anon;create role authenticated;create role service_role;create schema storage;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);create table storage.objects(id uuid primary key,bucket_id text,name text);`);
-for(const f of (await readdir(dir)).filter(f=>/^(00[2-9]|01[01])_/.test(f)||/^2026.*\.sql$/.test(f)).sort()) await db.exec(await readFile(new URL(f,dir),'utf8'));
+for(const f of (await readdir(dir)).filter(f=>/^(00[2-9]|01[01])_/.test(f)||/^2026.*\.sql$/.test(f)).sort()) {
+ const isUpgrade=f.endsWith('_reviewed_prayer_masking.sql');let before;
+ if(isUpgrade){await db.query("insert into community_v2_items(id,kind,text,status,ready,token_hash,payload_hash) values('ffffffff-ffff-4fff-8fff-ffffffffffff','prayer','폭행 합성 기존 승인 원문','approved',true,$1,$2)",['a'.repeat(64),'b'.repeat(64)]);before=(await db.query('select to_jsonb(c) snapshot from community_v2_items c')).rows[0].snapshot;}
+ await db.exec(await readFile(new URL(f,dir),'utf8'));
+ if(isUpgrade){const after=(await db.query("select to_jsonb(c)-'masked_public_text'-'masked_policy_version'-'masked_source_hash' snapshot from community_v2_items c")).rows[0].snapshot;assert.deepEqual(after,before);ok(true,'upgrade leaves existing original and every prior field unchanged');await db.exec("delete from community_v2_items where id='ffffffff-ffff-4fff-8fff-ffffffffffff'");}
+}
+const privileges=(await db.query("select bool_and(not has_function_privilege('anon',p.oid,'EXECUTE') and not has_function_privilege('authenticated',p.oid,'EXECUTE') and has_function_privilege('service_role',p.oid,'EXECUTE')) safe from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('community_v2','community_public_page','prayer_mask_text','prayer_mask_policy_version','prayer_needs_review','prayer_publication_allowed')")).rows[0];ok(privileges.safe,'new and existing RPC effective privileges remain service-role only');
 const call=async(action,args={})=>(await db.query('select public.community_v2($1,$2) r',[action,JSON.stringify(args)])).rows[0].r;
 const page=async(cursor=null)=>(await db.query("select public.community_public_page('prayer',$1,$2) r",[cursor?.createdAt??null,cursor?.id??null])).rows[0].r;
 const session=randomUUID();await db.query("insert into ops_accounts(username,role,display_label,active) values('MASKADMIN','superadmin','검토자',true)");
@@ -49,8 +55,8 @@ ok(reviewSeen.size===32,'separate-review cursor traverses held and pending items
 const env={SUPABASE_URL:'https://synthetic.supabase.co',SUPABASE_SERVICE_ROLE_KEY:'x'.repeat(40),ADMIN_SESSION_SECRET:'s'.repeat(64)};const now=Date.now();
 const payload=Buffer.from(JSON.stringify({v:2,sid:session,sub:'MASKADMIN',cv:1,iat:Math.floor(now/1000),exp:Math.floor(now/1000)+14400,nonce:'n'.repeat(32)})).toString('base64url');
 const cookie=`__Host-woori_admin=${payload}.${createHmac('sha256',env.ADMIN_SESSION_SECRET).update(payload).digest('base64url')}`;
-const http=async(route,url,body,auth=false)=>{const res={headers:{},setHeader(k,v){this.headers[k]=v;},end(s){this.body=JSON.parse(s);}};
- await handleCommunity(route,{url,method:body?'POST':'GET',body,headers:{origin:'https://teuksae-hyeonjangpan-v2.vercel.app','content-type':'application/json',...(auth?{cookie}:{})}},res,env,async(url,init)=>{const args=JSON.parse(init.body);const name=url.split('/').at(-1);let data;
+const http=async(route,url,body,auth=false,handler=handleCommunity)=>{const res={headers:{},setHeader(k,v){this.headers[k]=v;},end(s){this.body=JSON.parse(s);}};
+ await handler(route,{url,method:body?'POST':'GET',body,headers:{origin:'https://teuksae-hyeonjangpan-v2.vercel.app','content-type':'application/json',...(auth?{cookie}:{})}},res,env,async(url,init)=>{const args=JSON.parse(init.body);const name=url.split('/').at(-1);let data;
  if(name==='community_v2')data=await call(args.p_action,args.p_args);
  else if(name==='community_public_page')data=(await db.query('select public.community_public_page($1,$2,$3) r',[args.p_kind,args.p_before_at,args.p_before_id])).rows[0].r;
  else if(name==='ops_get_session')data=(await db.query('select public.ops_get_session($1) r',[args.p_session_id])).rows[0].r;
@@ -58,6 +64,10 @@ const http=async(route,url,body,auth=false)=>{const res={headers:{},setHeader(k,
 for(const path of ['/api/community?kind=prayer','/api/community?kind=prayer&page=1']){const r=await http('public',path);ok(r.statusCode===200&&!prayerMask(JSON.stringify(r.body)).required&&!JSON.stringify(r.body).includes('masked_source_hash'),'HTTP public legacy/page responses contain no originals or review metadata');}
 let httpCursor=null,httpSeen=new Set();do{const query=new URLSearchParams({kind:'prayer',page:'1'});if(httpCursor){query.set('beforeAt',httpCursor.createdAt);query.set('beforeId',httpCursor.id);}const r=await http('public','/api/community?'+query);assert.equal(r.statusCode,200);assert.ok(!prayerMask(JSON.stringify(r.body)).required);for(const x of r.body.items){assert.ok(!httpSeen.has(x.id));httpSeen.add(x.id);}httpCursor=r.body.nextCursor;}while(httpCursor);
 ok(httpSeen.size===32,'HTTP all public pages contain no raw terms and preserve pagination');
+if(process.env.LEGACY_COMMUNITY_MODULE){
+ const {handleCommunity:legacyHandler}=await import(process.env.LEGACY_COMMUNITY_MODULE);
+ for(const path of ['/api/community?kind=prayer','/api/community?kind=prayer&page=1']){const r=await http('public',path,undefined,false,legacyHandler);ok(r.statusCode===200&&!prayerMask(JSON.stringify(r.body)).required,'actual main handler with new SQL never emits originals');}
+}
 const blocked=await http('admin','/api/admin/community',{id:pending,decision:'approved',expectedVersion:0},true);assert.equal(blocked.statusCode,409,JSON.stringify(blocked.body));ok(true,'HTTP generic approval bypass blocked');
 const preview=await http('admin','/api/admin/community?kind=prayer&status=mask_review',undefined,true);ok(preview.body.items.every(x=>x.kind!=='prayer'||x.masking.supported&&x.masking.publicText===prayerMask(x.text).publicText),'admin HTTP provides exact supported previews');
 ok((await http('admin','/api/admin/community?kind=prayer',undefined,false)).statusCode===401,'anonymous admin read rejected');

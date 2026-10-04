@@ -51,7 +51,7 @@ API no-store, SW의 API 캐시 제외, 공개 본문의 메모리 전용 보관�
 ## 검증과 화면
 
 - React/UI: 393 tests; Node server: 94 tests.
-- 새 PGlite(실제 SQL) 검증: 34 assertions, 20개 SQL/JS 규칙 일치 예시 포함.
+- 새 PGlite(실제 SQL) 검증: 36 assertions, 20개 SQL/JS 규칙 일치 예시 포함.
 - 기존 감사/역할 SQL 회귀: 새 마이그레이션 포함 30 checks.
 - 기존 커뮤니티/리허설 SQL 회귀: 233 checks (기존 002..011 호환 경로).
 - build, lint, diff whitespace 확인 통과.
@@ -61,3 +61,16 @@ API no-store, SW의 API 캐시 제외, 공개 본문의 메모리 전용 보관�
 
 실행: `npm test`, `npm run test:server`, `npm run build`, `npm run lint`.
 SQL: `PGLITE_MODULE=/path/to/@electric-sql/pglite/dist/index.js npm run test:prayer-masking-sql`.
+
+
+## 릴리스 사전 점검과 차단 기록
+
+- 운영 프로젝트 `ikvzbyueyqcjajcaqomb`의 기존 `community_v2` / `community_public_page` 본문 MD5가 검토 기준과 일치: `023513f32cc6ffc176b1f25356976a13` / `82cc3c219f289bd3c971321f036eabd9`.
+- 기존 RLS 활성, anon/authenticated 테이블 SELECT 및 두 RPC EXECUTE 없음, service_role 실행 허용 확인. 새 컬럼/함수는 미적용.
+- 마이그레이션 SHA-256: `9c6ffab17e720c0a840ab9176a193ed9e5d76e06aa16d2f1751a7c22b8c61261`.
+- 현재 main의 실제 서버 handler를 새 SQL과 함께 로컬 실행하여 옛 목록·페이지 API 모두 원문을 내보내지 않는 것을 합성 데이터로 검증.
+- 기존 승인 매칭 글은 status를 바꾸지 않고도 새 별도 검토 조회에서 발견됨. 업그레이드 전후 기존 행의 모든 필드가 그대로인 합성 검증 및 효과적 권한 검증 추가.
+- CI에 신규 SQL 검증 추가. 기존 관리자 브라우저 fixture에 최신 스키마를 적재하고 별도 검토→일반 승인 차단→정확한 미리보기 게시→기존 승인 글 보류를 실제 SQL/HTTP/브라우저로 확인.
+- 사용자 후속 배포 승인 증거로 공식 마이그레이션 도구를 호출했으나 자동 승인 검토가 초기 검토 전용 제한을 근거로 거절. 동일 호출 1회 재시도도 거절되어 중단. 우회 없음. 첫 거절 후 read-only 재확인에서 새 컬럼 0 / 등록 0. 두 번째 호출도 명시적 거절. PR/push/merge/deploy 없음.
+- 운영 별칭은 여전히 `42cdee70891df83977ed7ae9e070cd8100437310`, READY 상태를 사전 확인.
+- Library: desktop-confirm.png = `libfile_2433448686888191bd9d790c9c74eeda`; mobile-separate-review.png = `libfile_b0edc8b80e6081918b25288367ce998b`.
