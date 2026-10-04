@@ -19,7 +19,7 @@ const posts=(fetch:ReturnType<typeof setup>['fetch'])=>fetch.mock.calls.filter((
 afterEach(()=>{cleanup();vi.restoreAllMocks();});
 describe('explicit page-scoped moderation',()=>{
  it('requires opening content, explicit selection, and batch publication confirmation',async()=>{
-  const {fetch}=setup();await screen.findByText(`내용 보기 · ${prayer.text}`);expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+  const {fetch}=setup();await screen.findByText(`내용 보기 · ${prayer.text}`);expect(screen.getByRole('checkbox')).toBeDisabled();
   expect(screen.getByRole('button',{name:'선택 공개 승인'})).toBeDisabled();await select();await userEvent.click(screen.getByRole('button',{name:'선택 공개 승인'}));expect(posts(fetch)).toHaveLength(0);
   expect(screen.getByRole('region',{name:'선택 항목 확인'})).toHaveTextContent('공개 동의를 모두 확인');
   await userEvent.click(screen.getByRole('button',{name:'확인 후 일괄 공개 승인'}));await screen.findByText('1개 중 1개 완료.');expect(screen.queryByText(/0개는 처리 결과를 확인해주세요/)).not.toBeInTheDocument();
@@ -73,6 +73,6 @@ describe('fast page review controls',()=>{
   expect(screen.getByText(/선택 2개/)).toBeVisible();
   await userEvent.click(screen.getByRole('button',{name:'현재 페이지 내용 모두 접기'}));
   expect(screen.getByText(/선택 0개/)).toBeVisible();
-  expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+  expect(screen.getAllByRole('checkbox').every(box => box.hasAttribute('disabled'))).toBe(true);
  });
 });

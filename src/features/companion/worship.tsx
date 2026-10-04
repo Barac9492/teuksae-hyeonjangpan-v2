@@ -1,3 +1,5 @@
+import { servicePeriod } from './serviceSchedule';
+import type { ServiceMode } from './serviceSchedule';
 import { InstallCard } from './InstallCard';
 import { useId, useState } from 'react';
 import type { ReactNode } from 'react';
@@ -27,13 +29,17 @@ export function WorshipHero({ crownImage }: { crownImage: string }) {
 /** Six little suns for the six dawns, plus a gentle countdown. */
 export function DawnJourney({ now, previewDay }: { now: number; previewDay: number | null }) {
   const phase = dawnPhase(now);
-  const done = previewDay === null ? phase.doneCount : previewDay;
-  const nextIndex = previewDay !== null ? previewDay : phase.phase === 'before' ? 0 : phase.phase === 'during' ? phase.nextIndex : -1;
+  const service = servicePeriod(now);
+  const done = previewDay !== null ? previewDay : service.mode === 'worship' ? service.eventDay! - 5 : phase.doneCount;
+  const nextIndex = previewDay !== null ? previewDay : service.mode === 'worship' ? service.eventDay! - 5 : phase.phase === 'before' ? 0 : phase.phase === 'during' ? phase.nextIndex : -1;
   let headline: ReactNode;
   let sub: string;
   if (previewDay !== null) {
     headline = <><small>미리 보는 날</small>10월 {SERVICE_DAYS[previewDay]}일({WEEKDAYS[previewDay]})</>;
     sub = `${previewDay + 1}번째 새벽 · 미리 선택한 행사일`;
+  } else if (service.mode === 'worship' || service.mode === 'after') {
+    headline = <><small>10월 {service.eventDay}일</small>{service.mode === 'worship' ? '예배 중' : '예배 후'}</>;
+    sub = service.mode === 'worship' ? '함께 예배드리는 시간입니다' : '오늘의 새벽을 함께 나눠요';
   } else if (phase.phase === 'after') {
     headline = <>여섯 번의 새벽을<br />함께 지나왔어요</>;
     sub = '함께해 주셔서 감사합니다';
@@ -143,7 +149,7 @@ export function WakePlanner({ venue, day = null }: { venue: Venue; day?: number 
         <span className="tc-wake__peek">{wake}</span>
       </summary>
       <div className="tc-wake__body">
-        <p className="tc-wake__warning">이 기능은 기상 시간을 계산할 뿐, 알람을 설정하거나 울리지 않습니다. 아래 시간을 참고해 휴대폰 시계 앱에서 알람을 직접 설정해주세요.</p>
+        <p className="tc-wake__warning">계산한 시간을 참고해 휴대폰 시계 앱에서 알람을 직접 설정해주세요.</p>
         <div className="tc-wake__result" aria-live="polite">
           <span>일어날 시간</span>
           <strong>{wake}</strong>
@@ -180,7 +186,8 @@ export function VerseCard() {
   );
 }
 
-export function WorshipPanel({ crownImage, venue, setVenue, now, previewDay, stage, children, actions, after }: {
+export function WorshipPanel({ mode = 'outside', crownImage, venue, setVenue, now, previewDay, stage, children, actions, after }: {
+  mode?: ServiceMode;
   crownImage: string;
   venue: Venue;
   setVenue: (venue: Venue) => void;
@@ -202,16 +209,16 @@ export function WorshipPanel({ crownImage, venue, setVenue, now, previewDay, sta
       <DawnJourney now={now} previewDay={previewDay} />
       <OfficialNotice />
       <div className="tc-section">
-        <h2 className="tc-section-title">지금 예배 공간은</h2>
+        <h2 className="tc-section-title">{mode === 'after' ? '예배를 마친 뒤' : '지금 예배 공간은'}</h2>
         <VenueSwitch venue={venue} onChange={setVenue} label="예배 장소" />
-        <p className="tc-panel-note">{OPENING_NOTICE}</p>
-        {venue === 'songrim' && <StageTrail stage={stage} />}
+        {mode !== 'after' && <p className="tc-panel-note">{OPENING_NOTICE}</p>}
+        {venue === 'songrim' && mode !== 'worship' && mode !== 'after' && <StageTrail stage={stage} />}
         {children}
 
         {after}
       </div>
       <div className="tc-section">
-        <WakePlanner venue={venue} day={previewDay === null ? noticeServiceDay(now) : SERVICE_DAYS[previewDay] ?? null} />
+        {mode !== 'worship' && mode !== 'after' && <WakePlanner venue={venue} day={previewDay === null ? noticeServiceDay(now) : SERVICE_DAYS[previewDay] ?? null} />}
 
         <VerseCard />
       </div>

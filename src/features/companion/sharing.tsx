@@ -150,7 +150,6 @@ export function SharingPanel({ eventDay, stories, onAddStory, onDeleteStory, onH
               <p>개인 보온병에 따뜻한 물을 준비해 오시거나,<br /><b>체육관이 열린 뒤 내부 온수 정수기</b>를 이용하실 수 있어요.</p>
               <small>학교 출입문만 열렸을 때는 이용할 수 없습니다. 학교 밖에서는 뜨거운 물을 나눠드리지 않습니다.</small>
             </div>
-            <p className="tc-footnote"><strong>정확한 학교 밖 위치와 시작·마감 시각은 주최팀 확인 전입니다.</strong> 확인 전에는 임의의 장소나 시각을 안내하지 않습니다.</p>
             <StorySection stories={stories} onAdd={onAddStory} onDelete={onDeleteStory} onHide={onHideStory} onMore={onMoreStories} />
             <button className="tc-line-action" type="button" onClick={() => setView('breakfast')}>예배 후 아침 식당도 살펴보기 <span aria-hidden="true">→</span></button>
           </>
@@ -159,10 +158,10 @@ export function SharingPanel({ eventDay, stories, onAddStory, onDeleteStory, onH
             <div className="tc-breakfast-intro">
               <span className="tc-tiny">예배를 마친 뒤</span>
               <h2>같이 아침 먹고 갈까요?</h2>
-              <p>예배 종료 시각은 주최 측 공식 확인 전이라 안내하지 않습니다. 이동은 당일 예배 안내를 따르고, 식당은 출발 전 전화로 당일 영업을 확인해주세요.</p>
+              <p>이동은 당일 예배 안내를 따르고, 식당은 출발 전 전화로 영업을 확인해주세요.</p>
             </div>
             <VenueSwitch venue={venue} onChange={setVenue} label="아침 식사 지역" />
-            {venue === 'songrim' && <div className="tc-district-note">아래 식당은 <strong>야탑으로 이동이 필요</strong>해요. 송림본당 바로 앞이나 도보권 추천은 아닙니다.</div>}
+            {venue === 'songrim' && <div className="tc-district-note">송림본당에서 아래 식당을 이용하려면 <strong>야탑으로 이동해주세요.</strong></div>}
             <div className="tc-restaurant-list">{restaurants[venue].map((restaurant) => (
             <article className="tc-restaurant" key={restaurant.name} aria-label={restaurant.name}>
               <div className="tc-restaurant__bowl" aria-hidden="true">{Icon.pot}</div>
@@ -170,7 +169,6 @@ export function SharingPanel({ eventDay, stories, onAddStory, onDeleteStory, onH
               <p>{restaurant.type} · {restaurant.area}</p>
               <p>{restaurant.address}</p>
               {restaurant.caution && <p className="tc-restaurant__caution"><strong>{restaurant.caution}</strong></p>}
-              <small>공개 영업정보 확인: 2026.09.24 · 특새 기간 영업·휴무는 매장 확인 필요</small>
               <footer>
                 <a className="tc-pill-link" href={`tel:${restaurant.phone}`}>전화 확인</a>
                 <a className="tc-pill-link" href={restaurant.map} target="_blank" rel="noopener noreferrer">지도·영업정보 ↗</a>
@@ -178,7 +176,6 @@ export function SharingPanel({ eventDay, stories, onAddStory, onDeleteStory, onH
               </footer>
             </article>
             ))}</div>
-            <p className="tc-footnote">‘지금 영업 중’을 뜻하지 않으며 교회 제휴 식당이 아닙니다.</p>
           </>
         )}
       </div>

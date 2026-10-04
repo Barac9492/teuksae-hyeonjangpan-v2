@@ -12,7 +12,7 @@ function panel(venue: Venue, setVenue = vi.fn()) {
 it('shows three Yatap options without claiming they are walkable from Songrim', () => {
   render(panel('songrim'));
   expect(screen.getAllByRole('article')).toHaveLength(3);
-  expect(screen.getByText(/송림본당 바로 앞이나 도보권 추천은 아닙니다/)).toBeVisible();
+  expect(screen.getByText(/송림본당에서 아래 식당을 이용하려면/)).toBeVisible();
   for (const restaurant of restaurants.songrim) {
     const card = within(screen.getByRole('article', { name: restaurant.name }));
     expect(card.getByRole('link', { name: '전화 확인' })).toHaveAttribute('href', `tel:${restaurant.phone}`);
@@ -25,7 +25,7 @@ it('shows Seohyeon opening exceptions even on the first event day', () => {
   expect(screen.getAllByRole('article')).toHaveLength(3);
   expect(screen.getByText(/10\/5\(월\)은 오전 9시 개점/)).toBeVisible();
   expect(screen.getByText('매일 06:00~22:00 안내')).toBeVisible();
-  expect(screen.getByText(/지금 영업 중.*뜻하지 않으며/)).toBeVisible();
+  expect(screen.getByText(/식당은 출발 전 전화로 영업을 확인해주세요/)).toBeVisible();
   expect(screen.queryByText('역전국밥 야탑점')).not.toBeInTheDocument();
 });
 it('switches the breakfast region without mixing restaurants', async () => {

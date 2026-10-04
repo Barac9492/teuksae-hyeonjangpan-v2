@@ -2,7 +2,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { beforeEach, afterEach, expect, it, vi } from 'vitest';
 import { LiveParkingPanel, useLiveOperations } from '../features/companion/LiveOperations';
 function Harness(){const operations=useLiveOperations();return <LiveParkingPanel venue="songrim" setVenue={()=>{}} operations={operations}/>;}
-beforeEach(() => { vi.useFakeTimers({toFake: ['Date']}); vi.setSystemTime(new Date('2026-10-06T04:40:00+09:00')); });
+beforeEach(() => { vi.useFakeTimers({toFake: ['Date']}); vi.setSystemTime(new Date('2026-10-06T04:10:00+09:00')); });
 afterEach(()=>{cleanup();vi.restoreAllMocks();vi.useRealTimers();});
 // Calvary is excluded from the public parking panel (Songrim venue publicly shows only
 // parking.songrim), so these cases mock the visible Songrim resource directly rather than
@@ -11,7 +11,7 @@ function mock(percent: unknown, updatedAt=new Date().toISOString(), state='busy'
   vi.spyOn(globalThis,'fetch').mockResolvedValue(new Response(JSON.stringify({enabled:true,resources:[{id:'parking.songrim',category:'parking',state,version:2,updatedAt,occupancyPercent:percent,lastFullAt:'2026-10-04T19:00:00Z'}]})));
 }
 it('displays an explicit operator estimate for Songrim without exposing raw history metadata, and never a hidden Calvary banner',async()=>{
- mock(70);render(<Harness/>);expect(await screen.findByText('70% · 혼잡')).toHaveClass('tc-status-value--warn');expect(screen.getByText('송림주차장')).toBeVisible();expect(screen.getByText(/최근 10분 안에 현장팀이 확인한 항목만 현재 현황으로 표시합니다/)).toBeInTheDocument();expect(screen.queryByText(/각 항목은 마지막 확인 시각 기준입니다/)).not.toBeInTheDocument();expect(screen.queryByText(/갈보리/)).not.toBeInTheDocument();expect(screen.queryByText(/최근 만차·만석 기록/)).not.toBeInTheDocument();
+ mock(70);render(<Harness/>);expect(await screen.findByText('70% · 혼잡')).toHaveClass('tc-status-value--warn');expect(screen.getByText('송림주차장')).toBeVisible();expect(screen.getByText(/사용률은 현장팀의 추정치입니다. 10분이 지난 정보는 ‘확인 필요’로 표시합니다/)).toBeInTheDocument();expect(screen.queryByText(/각 항목은 마지막 확인 시각 기준입니다/)).not.toBeInTheDocument();expect(screen.queryByText(/갈보리/)).not.toBeInTheDocument();expect(screen.queryByText(/최근 만차·만석 기록/)).not.toBeInTheDocument();
 });
 it('uses green at 0%',async()=>{
  mock(0,new Date().toISOString(),'available');render(<Harness/>);expect(await screen.findByText('0% · 이용 가능')).toHaveClass('tc-status-value--good');
@@ -37,7 +37,7 @@ it.each([[65,'busy'],[40,'full'],[0,'closed']])('fails closed on malformed step/
 });
 
 function mockPrevious(firstFullAt: string | null, closedAt: string | null, date='2026-10-05') {
- vi.spyOn(globalThis,'fetch').mockResolvedValue(new Response(JSON.stringify({enabled:true,resources:[{id:'parking.songrim',category:'parking',state:'busy',version:2,updatedAt:'2026-10-05T19:00:00Z',occupancyPercent:70,previousDay:{date,firstFullAt,closedAt}}]})));
+ vi.spyOn(globalThis,'fetch').mockResolvedValue(new Response(JSON.stringify({enabled:true,resources:[{id:'parking.songrim',category:'parking',state:'busy',version:2,updatedAt:new Date(Date.now()-11*60000).toISOString(),occupancyPercent:70,previousDay:{date,firstFullAt,closedAt}}]})));
 }
 // previousDay history is validated by the backend schema (see parkingDay()) but is no longer
 // rendered as public per-row copy; these cases assert the current-value/state stays correct and

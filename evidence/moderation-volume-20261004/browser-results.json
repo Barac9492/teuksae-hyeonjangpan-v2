@@ -1,0 +1,25 @@
+{
+  "base": "http://127.0.0.1:4197",
+  "syntheticOnly": true,
+  "checks": [
+    {
+      "kind": "prayer",
+      "pages": 11,
+      "uniquePending": 210,
+      "explicitLastPageApprovals": 10
+    },
+    {
+      "kind": "photo",
+      "pages": 6,
+      "uniquePending": 105,
+      "explicitLastPageApprovals": 5
+    }
+  ],
+  "viewports": [
+    320,
+    390,
+    1440
+  ],
+  "writes": 15,
+  "errors": []
+}

@@ -1,3 +1,6 @@
+import { canPublishPublicRequest, servicePeriod } from './serviceSchedule';
+import type { ServiceMode } from './serviceSchedule';
+import { useServiceClock } from './useServiceClock';
 import { foregroundPolling } from './polling';
 import { useRuntime } from '../rehearsal/runtime';
 import { useEffect, useMemo, useState } from 'react';
@@ -29,10 +32,8 @@ type LiveResource = { id: string; label: string; category: Category; state: Live
 type StatusResponse = { enabled: boolean; resources: LiveResource[] };
 type Freshness = 'fresh' | 'unconfirmed' | 'stale' | 'invalid' | 'future' | 'offline';
 
-// All-date rehearsal availability: no calendar/event-window gate hides features. The real event
-// schedule stays accurate elsewhere (e.g. countdown/calendar exports outside this file); this
-// file only decides what is safe to show as a *current* reading, using finite/not-future
-// timestamp safety, independent of the official event dates.
+// Public reads pause during the scheduled services. Outside that window,
+// finite/not-future timestamp checks still determine whether a reading is current.
 const REFRESH_MS = 20_000;
 const FRESH_MS = 10 * 60_000;
 const defaults: LiveResource[] = [
@@ -92,39 +93,36 @@ export function useLiveOperations(active = true) {
   const runtime = useRuntime();
   const [response, setResponse] = useState<StatusResponse | null>(null);
   const [offline, setOffline] = useState(typeof navigator !== 'undefined' && !navigator.onLine);
-  const [now, setNow] = useState(Date.now());
+  const now = useServiceClock();
+  const mode = servicePeriod(now).mode;
   const [lastSync, setLastSync] = useState<number | null>(null);
   useEffect(() => {
     if (!active || runtime.managed) return undefined;
     const polling = foregroundPolling(async signal => {
+      const startedAt = Date.now();
       try {
         const result = await fetch('/api/status', { cache: 'no-store', headers: { accept: 'application/json' }, signal });
         const body = await result.json().catch(() => null) as unknown;
-        if (signal.aborted) return;
-        setNow(Date.now());
+        if (signal.aborted || !canPublishPublicRequest(startedAt)) return;
         if (!result.ok || !body || typeof body !== 'object' || (body as { enabled?: unknown }).enabled !== true || !Array.isArray((body as { resources?: unknown }).resources)) { setResponse(current => ({ enabled: false, resources: current?.resources ?? [] })); return; }
         const resources = (body as { resources: unknown[] }).resources.map(validResource).filter((item): item is LiveResource => item !== null);
         setResponse({ enabled: true, resources }); setOffline(false); setLastSync(Date.now());
-      } catch { if (!signal.aborted || signal.reason?.message === 'timeout') setOffline(true); }
-    }, REFRESH_MS, () => setOffline(true));
-    const clock = window.setInterval(() => setNow(Date.now()), 30_000);
-    return () => { polling.stop(); window.clearInterval(clock); };
+      } catch { if (canPublishPublicRequest(startedAt) && (!signal.aborted || signal.reason?.message === 'timeout')) setOffline(true); }
+    }, REFRESH_MS, () => setOffline(true), true, false, { publicSchedule: true, onPeriodChange: () => { setResponse(null); setLastSync(null); } });
+    return polling.stop;
   }, [active, runtime.managed]);
-  useEffect(() => {
-    if (!runtime.managed) return;
-    const clock = window.setInterval(() => setNow(Date.now()), 30000);
-    return () => window.clearInterval(clock);
-  }, [runtime.managed]);
-  const effectiveResponse = useMemo(() => runtime.managed ? { enabled: runtime.status?.enabled === true, resources: (runtime.status?.resources ?? []).map(validResource).filter((r): r is LiveResource => r !== null) } : response, [runtime.managed, runtime.status, response]);
+  const sourceResponse = useMemo(() => runtime.managed ? { enabled: runtime.status?.enabled === true, resources: (runtime.status?.resources ?? []).map(validResource).filter((r): r is LiveResource => r !== null) } : response, [runtime.managed, runtime.status, response]);
+  const syncTime = runtime.managed ? runtime.lastSync : lastSync;
+  const effectiveResponse = syncTime != null && canPublishPublicRequest(syncTime, now) ? sourceResponse : null;
   const effectiveOffline = runtime.managed ? runtime.offline : offline;
   const resources = useMemo(() => { const remote = new Map((effectiveResponse?.resources ?? []).map((resource) => [resource.id, resource])); return defaults.map((fallback) => remote.get(fallback.id) ?? fallback); }, [effectiveResponse]);
-  const effectiveNow = runtime.managed ? Math.max(now, runtime.lastSync ?? now) : now;
+  const effectiveNow = Math.max(now, syncTime ?? now);
   const confirmed = resources.some((resource) => freshness(resource.updatedAt, effectiveNow, effectiveOffline, effectiveResponse?.enabled === true) === 'fresh');
-  return { resources, enabled: effectiveResponse?.enabled === true, offline: effectiveOffline, now: effectiveNow, confirmed, lastSync: runtime.managed ? runtime.lastSync : lastSync, rehearsal: runtime.rehearsal };
+  return { mode, resources, enabled: effectiveResponse?.enabled === true, offline: effectiveOffline, now: effectiveNow, confirmed, lastSync: runtime.managed ? runtime.lastSync : lastSync, rehearsal: runtime.rehearsal };
 }
 
 
-type Operations = Omit<ReturnType<typeof useLiveOperations>, 'rehearsal'> & { rehearsal?: boolean };
+type Operations = Omit<ReturnType<typeof useLiveOperations>, 'rehearsal' | 'mode'> & { rehearsal?: boolean; mode?: ServiceMode };
 
 function hasFreshDisplayedResource(ids: string[], operations: Operations): boolean {
   return operations.resources.some(resource => ids.includes(resource.id)
@@ -132,6 +130,7 @@ function hasFreshDisplayedResource(ids: string[], operations: Operations): boole
 }
 
 function liveItem(id: string, operations: Operations): FloorItem {
+  if (operations.mode === 'worship') return { key: id, label: byId.get(id)!.label, value: '예배 중', tone: 'neutral' };
   const resource = (operations.resources.find((item) => item.id === id) ?? byId.get(id)!);
   const status = freshness(resource.updatedAt, operations.now, operations.offline, operations.enabled);
   const capacity = hasOccupancySchema(resource);
@@ -143,6 +142,7 @@ function liveItem(id: string, operations: Operations): FloorItem {
 /** Songrim's current step, only when the access value is fresh. */
 // eslint-disable-next-line react-refresh/only-export-components
 export function liveStage(operations: Operations): number | null {
+  if (operations.mode === 'worship' || operations.mode === 'after') return null;
   const access = operations.resources.find((item) => item.id === 'space.songrim.access')!;
   if (freshness(access.updatedAt, operations.now, operations.offline, operations.enabled) !== 'fresh') return null;
   const order: LiveResourceState[] = ['closed', 'school_open', 'gym_open', 'hall_open', 'hall_closed'];
@@ -153,7 +153,7 @@ export function liveStage(operations: Operations): number | null {
 export function LiveNotice({ enabled, offline, confirmed, guidance = false }: { enabled: boolean; offline: boolean; confirmed: boolean; guidance?: boolean }) {
   if (offline) return <div className="tc-live-notice tc-live-notice--offline" role="status"><strong>연결 확인 중</strong><span>마지막 안내를 실제 현황으로 표시하지 않습니다.</span></div>;
   if (!enabled || !confirmed) return <div className="tc-live-notice" role="status"><strong>현장팀 확인 전</strong><span>현재 표시된 장소에 최근 확인된 현황이 없습니다.</span></div>;
-  return <div className="tc-live-notice tc-live-notice--active"><strong>현장팀 확인 현황</strong><details><summary aria-label="현황 안내 자세히 보기">ⓘ 현황 안내</summary><p>{guidance ? '현재 안내 층과 전체 만차 여부는 현장 주차팀이 직접 확인한 정보입니다. 주차 여유 대수나 자동 감지 결과가 아닙니다.' : '최근 10분 안에 현장팀이 확인한 항목만 현재 현황으로 표시합니다. 사용률은 운영자 추정이며 실측 수용률이 아닙니다. 초록 0~60% · 주황 70~90% · 빨강 100% · 회색 확인 필요'}</p></details></div>;
+  return <div className="tc-live-notice tc-live-notice--active"><strong>현장팀 확인 현황</strong><details><summary aria-label="현황 안내 자세히 보기">ⓘ 현황 안내</summary><p>{guidance ? '주차팀이 안내하는 층과 전체 만차 여부입니다.' : '사용률은 현장팀의 추정치입니다. 10분이 지난 정보는 ‘확인 필요’로 표시합니다. 초록 0~60% · 주황 70~90% · 빨강 100% · 회색 확인 필요'}</p></details></div>;
 }
 
 function StatusList({ items }: { items: FloorItem[] }) {
@@ -161,9 +161,10 @@ function StatusList({ items }: { items: FloorItem[] }) {
 }
 
 export function LiveWorshipStatus({ venue, operations }: { venue: Venue; operations: Operations }) {
+  if (operations.mode === 'after') return <div className="tc-quiet"><strong>예배 후</strong><p>귀가 동선과 주차 출차 안내를 확인해주세요.</p><ParkingNotice venue={venue} day={noticeServiceDay(operations.now)} /></div>;
   const ids = venue === 'songrim' ? ['space.songrim.access', 'space.songrim.hall', 'space.songrim.gym'] : ['space.dream.f11', 'space.dream.f7', 'space.dream.f3'];
   const items = ids.map((id) => liveItem(id, operations));
-  return <><LiveNotice enabled={operations.enabled} offline={operations.offline} confirmed={hasFreshDisplayedResource(ids, operations)} />{venue === 'songrim' ? <StatusList items={items} /> : <FloorStack items={items} variant="above" />}</>;
+  return <>{operations.mode === 'worship' ? <p className="tc-quiet">예배 중 · 현황 갱신을 잠시 멈춥니다.</p> : <LiveNotice enabled={operations.enabled} offline={operations.offline} confirmed={hasFreshDisplayedResource(ids, operations)} />}{venue === 'songrim' ? <StatusList items={items} /> : <FloorStack items={items} variant="above" />}</>;
 }
 
 export function LiveParkingPanel({ venue, setVenue, operations, art }: { venue: Venue; setVenue: (venue: Venue) => void; operations: Operations; art?: ReactNode }) {
@@ -175,12 +176,10 @@ export function LiveParkingPanel({ venue, setVenue, operations, art }: { venue: 
       <div className="tc-section tc-section--topless">
         <VenueSwitch venue={venue} onChange={setVenue} label="주차 장소" />
         <ParkingNotice venue={venue} day={noticeServiceDay(operations.now)} />
-        <p className="tc-panel-note">현장 주차팀이 저장한 안내입니다. 화면이 열려 있으면 20초마다 자동 확인하며, 앱으로 돌아오거나 연결이 복구되면 바로 확인합니다. 마지막 현장 확인이 10분을 넘으면 확인 필요로 표시합니다.</p>
-        {venue === 'dream' && <p className="tc-panel-note">드림센터 전체를 하나의 주차장으로 안내합니다. 표시된 층은 주차팀이 현재 안내하는 층입니다. 층이 차면 담당자가 안내 층을 변경합니다. 실제 이동은 현장 안내를 따라주세요.</p>}
-        <LiveNotice guidance={venue === 'dream'} enabled={operations.enabled} offline={operations.offline} confirmed={hasFreshDisplayedResource(ids, operations)} />
+        {venue === 'dream' && operations.mode !== 'worship' && <p className="tc-panel-note">드림센터는 표시된 층으로 안내합니다. 이동은 현장 주차요원의 안내를 따라주세요.</p>}
+        {operations.mode === 'worship' ? <p className="tc-quiet">예배 중 · 현황 갱신을 잠시 멈춥니다.</p> : <LiveNotice guidance={venue === 'dream'} enabled={operations.enabled} offline={operations.offline} confirmed={hasFreshDisplayedResource(ids, operations)} />}
         <StatusList items={items} />
         {venue === 'songrim' && <div className="tc-quiet"><strong>학교 출입과 예배당 입장은 달라요.</strong><p>학교 문이 열려 차량이 들어가도 본당·체육관은 아직 닫혀 있을 수 있습니다.</p></div>}
-        <p className="tc-panel-note">실제와 조금 차이가 있을 수 있습니다.</p>
         <p className="tc-safety"><span aria-hidden="true">🚗</span> 운전 중 화면을 조작하지 마세요. 동승자가 확인하거나 안전하게 정차한 뒤 이용해주세요.</p>
       </div>
     </section>

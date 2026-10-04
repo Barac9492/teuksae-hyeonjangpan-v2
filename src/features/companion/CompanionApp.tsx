@@ -1,3 +1,5 @@
+import { servicePeriod } from './serviceSchedule';
+import { useServiceClock } from './useServiceClock';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import crownImage from './assets/crown.jpg';
@@ -34,15 +36,6 @@ export function liveEventDay(date = new Date()): number | null {
   return year === 2026 && month === 10 && day >= 5 && day <= 10 ? day - 5 : null;
 }
 
-function useClock(intervalMs = 30_000) {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), intervalMs);
-    return () => window.clearInterval(timer);
-  }, [intervalMs]);
-  return now;
-}
-
 function ParkingArt() {
   return (
     <svg className="tc-parking-art" viewBox="0 0 120 64" aria-hidden="true">
@@ -63,7 +56,8 @@ type ModalState = { type: 'settings' } | { type: 'route'; venue: Venue } | { typ
 export function CompanionApp() {
   const isPreview = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('preview') === '1';
   const operations = useLiveOperations(!isPreview);
-  const now = useClock();
+  const now = useServiceClock();
+  const mode = isPreview ? 'outside' : servicePeriod(now).mode;
   const [liveDay, setLiveDay] = useState(() => liveEventDay());
   useEffect(() => { if (!isPreview) setLiveDay(liveEventDay(new Date(now))); }, [isPreview, now]);
   const [tab, setTab] = useState<TabId>(() => new URLSearchParams(window.location.search).get('tab') === 'parking' ? 'parking' : 'worship');
@@ -123,8 +117,7 @@ export function CompanionApp() {
       : dayForContent !== null && venue === 'songrim' && <button type="button" onClick={goToSnack}><span aria-hidden="true">☕</span>오병이어 챌린지</button>}
   </>;
   const worshipAfter = <>
-    <p className="tc-panel-note">{isPreview ? '현황은 모두 디자인 검토용 예시입니다. 운영 시스템과 연결되지 않았고 실제 현장 상태를 뜻하지 않습니다.' : '현장팀이 확인한 공개 안내만 표시합니다.'}</p>
-    <p className="tc-panel-note">실제와 조금 차이가 있을 수 있습니다.</p>
+    {isPreview && <p className="tc-panel-note">현황은 모두 디자인 검토용 예시입니다. 운영 시스템과 연결되지 않았고 실제 현장 상태를 뜻하지 않습니다.</p>}
     {isPreview && venue === 'songrim' && stage === 0 && !stale && (
       <button className="tc-snack-teaser" type="button" onClick={goToSnack}>
         <span><small>학교 밖 대기 장소 · 오병이어 챌린지 안내</small><strong>{eventDay === 0 ? '10월 5일부터 함께해요' : '10월 6일부터, 원하는 분들이 자율적으로 나눠요'}</strong></span>
@@ -156,9 +149,13 @@ export function CompanionApp() {
         {isPreview
           ? <div className="tc-demo-banner"><span><i aria-hidden="true" />디자인 미리보기 · 실제 현황 아님</span><button type="button" onClick={() => setModal({ type: 'settings' })}>상황 바꿔보기</button></div>
           : operations.offline ? <div className="tc-live-banner" data-offline="true" role="status">오프라인 · 최신 현황을 확인할 수 없습니다.</div> : null}
+        {(mode === 'worship' || mode === 'after') && <div className="tc-service-banner" role="status" aria-live="polite" data-service-mode={mode}>
+          <strong>{mode === 'worship' ? '예배 중' : '예배 후'}</strong>
+          <span>{mode === 'worship' ? '04:40–05:50 · 정보 갱신을 잠시 멈춥니다.' : '귀가·아침 식사와 나눔을 안내합니다.'}</span>
+        </div>}
         <main id={mainId} ref={mainRef} tabIndex={-1}>
           <div hidden={tab !== 'worship'}>
-            <WorshipPanel crownImage={crownImage} venue={venue} setVenue={setVenue} now={now} previewDay={isPreview ? eventDay : null} stage={isPreview ? (stale ? null : stage) : liveStage(operations)} actions={worshipActions} after={worshipAfter}>{worshipStatus}</WorshipPanel>
+            <WorshipPanel mode={mode} crownImage={crownImage} venue={venue} setVenue={setVenue} now={now} previewDay={isPreview ? eventDay : null} stage={isPreview ? (stale ? null : stage) : liveStage(operations)} actions={worshipActions} after={worshipAfter}>{worshipStatus}</WorshipPanel>
           </div>
           <div hidden={tab !== 'parking'}>
             {isPreview

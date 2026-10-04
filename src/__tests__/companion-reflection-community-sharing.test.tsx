@@ -115,15 +115,15 @@ describe('local memo and unconfirmed schedule copy', () => {
     expect(container).not.toHaveTextContent('공개될 글이라고 생각하고');
   });
 
-  it('gives organizer-confirmation guidance without inventing snack or service times', () => {
+  it('keeps actionable sharing guidance without internal confirmation disclaimers', () => {
     const view = render(<SharingPanel {...baseProps} view="snacks" />);
-    expect(screen.getByText(/정확한 학교 밖 위치와 시작·마감 시각은 주최팀 확인 전입니다/)).toBeVisible();
-    expect(screen.getByText(/확인 전에는 임의의 장소나 시각을 안내하지 않습니다/)).toBeVisible();
-    // youth-team/picket reveal copy is hidden from public views (see sharing.tsx footnote).
+    expect(screen.queryByText(/정확한 학교 밖 위치와 시작·마감 시각은 주최팀 확인 전입니다/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/확인 전에는 임의의 장소나 시각을 안내하지 않습니다/)).not.toBeInTheDocument();
+    // Keep unapproved event details out of the public copy.
     expect(screen.queryByText(/1청년부|피켓/)).not.toBeInTheDocument();
 
     view.rerender(<SharingPanel {...baseProps} view="breakfast" />);
-    expect(screen.getByText(/예배 종료 시각은 주최 측 공식 확인 전이라 안내하지 않습니다/)).toBeVisible();
+    expect(screen.queryByText(/예배 종료 시각은 주최 측 공식 확인 전이라 안내하지 않습니다/)).not.toBeInTheDocument();
     expect(screen.getByText(/이동은 당일 예배 안내를 따르고/)).toBeVisible();
   });
 });
