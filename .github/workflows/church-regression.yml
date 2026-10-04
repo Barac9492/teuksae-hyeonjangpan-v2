@@ -38,6 +38,7 @@ jobs:
           node tests/scripts/feedback-db.mjs
           node tests/scripts/admin-feedback-db.mjs
           npm run test:community-sql
+          npm run test:moderation-audit-sql
       - name: Verify mobile and desktop interactions
         run: |
           test -x "$CHROME_PATH"
