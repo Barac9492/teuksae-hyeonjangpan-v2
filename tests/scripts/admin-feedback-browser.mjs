@@ -33,17 +33,33 @@ await page.setViewportSize({width:320,height:640});for(const name of ['현황판
 await page.getByRole('tab',{name:'기도카드 승인',exact:true}).click();await page.screenshot({path:out+'narrow-prayer-review.png'});
 assert.deepEqual(errors,[]);await writeFile(out+'browser-results.json',JSON.stringify({browser:'Separate headless Google Chrome; fresh Playwright context; external traffic blocked',base,viewports:[390,1440,320],checks:['tabs and keyboard','bounded history','parking save/public read','explicit two-item approval and double-click lock','pagination selection reset','photo load','trash/restore to pending','public excludes restored','no horizontal overflow','no browser exceptions'],writes:posts.length,errors},null,2));// New separate track: real SQL + HTTP enforcement, synthetic rows only.
 await page.getByRole('tab',{name:'기도카드 승인',exact:true}).click();
-await page.getByRole('button',{name:'별도 검토 · 가림 게시'}).click();
+await page.getByRole('button',{name:'별도 검토 · 공개 문구'}).click();
 await page.getByRole('article',{name:'기도 aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'}).waitFor();
 assert.equal(await page.locator('.community-moderation__item').count(),2);
 assert.equal(await page.getByRole('button',{name:'선택 공개 승인',exact:true}).count(),0);
 const rejected=await context.request.post(base+'/api/admin/community',{data:{id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1',decision:'approved',expectedVersion:0}});assert.equal(rejected.status(),409);
 const row=page.getByRole('article',{name:'기도 aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'});assert.equal(await row.locator('mark').count(),2);
-await row.getByRole('button',{name:'가림 처리본 게시',exact:true}).click();
-assert.equal(await page.getByLabel('게시할 가림 처리본').textContent(),'**예방과 ** 중단을 위한 합성 기도');
-await page.getByRole('button',{name:'확인 후 가림 처리본 게시'}).click();await page.getByText('1개 중 1개 완료.',{exact:true}).waitFor();
+await row.getByRole('button',{name:'공개 미리보기 확인',exact:true}).click();
+assert.equal(await page.getByLabel('게시할 공개 문구').textContent(),'**예방과 ** 중단을 위한 합성 기도');
+await page.setViewportSize({width:1280,height:950});await row.screenshot({path:out+'desktop-auto-confirm.png'});
+await page.getByRole('button',{name:'확인 후 공개 문구 게시'}).dblclick();await row.waitFor({state:'detached'});
 const maskedPublic=(await (await context.request.get(base+'/api/community?kind=prayer')).json()).items;
 assert.equal(maskedPublic.find(x=>x.id==='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1').text,'**예방과 ** 중단을 위한 합성 기도');
 assert.ok(!maskedPublic.some(x=>x.id==='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2'));
+// Manual mode uses an independent editable public draft; original never becomes editable.
+const manualRow=page.getByRole('article',{name:'기도 aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2'});
+await manualRow.getByRole('radio',{name:'직접 수정'}).check();const draft=manualRow.getByRole('textbox',{name:'공개할 문구만 수정'});
+assert.equal(await manualRow.getByRole('button',{name:'공개 미리보기 확인'}).isDisabled(),true);
+await draft.fill('평안과 회복을 위한 합성 공개 문구입니다.');
+await manualRow.getByRole('radio',{name:'자동 가림'}).check();await manualRow.getByRole('radio',{name:'직접 수정'}).check();assert.equal(await draft.inputValue(),'평안과 회복을 위한 합성 공개 문구입니다.');
+await manualRow.getByRole('button',{name:'공개 미리보기 확인'}).click();await manualRow.getByRole('button',{name:'확인 취소 · 초안 유지'}).click();assert.equal(await draft.inputValue(),'평안과 회복을 위한 합성 공개 문구입니다.');
+await manualRow.getByRole('button',{name:'공개 미리보기 확인'}).click();assert.equal(await manualRow.getByLabel('게시할 공개 문구').textContent(),'평안과 회복을 위한 합성 공개 문구입니다.');
+await manualRow.screenshot({path:out+'desktop-manual-confirm.png'});
+await page.setViewportSize({width:390,height:844});await manualRow.screenshot({path:out+'mobile-manual-confirm.png'});assert.equal(await page.locator('body').evaluate(e=>e.scrollWidth<=innerWidth),true);
+await manualRow.getByRole('button',{name:'확인 후 공개 문구 게시'}).click();await manualRow.waitFor({state:'detached'});
+const finalPublic=(await (await context.request.get(base+'/api/community?kind=prayer')).json()).items;
+assert.equal(finalPublic.find(x=>x.id==='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2').text,'평안과 회복을 위한 합성 공개 문구입니다.');
+const adminOriginal=(await (await context.request.get(base+'/api/admin/community?kind=prayer&status=approved')).json()).items.find(x=>x.id==='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2');assert.equal(adminOriginal.text,'성폭행 피해 회복을 위한 합성 기도');assert.equal(adminOriginal.publicationMode,'manual');
+assert.equal(posts.filter(x=>x.decision==='reviewed_approved').length,2);
 assert.equal(errors.length,0);console.log('PASS separate review, generic bypass rejection, exact masked publication, old approval hold');
 await browser.close();console.log('PASS mobile/desktop/narrow browser QA; screenshots at '+out);
