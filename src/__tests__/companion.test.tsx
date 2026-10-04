@@ -173,9 +173,9 @@ describe('CompanionApp', () => {
     expect(screen.getByRole('checkbox', { name: /함께 나누기 · 공개/ })).toBeChecked();
     await user.type(screen.getByLabelText('어떤 마음으로 기도하고 있나요?'), '가족을 위해 기도합니다.');
     await user.click(screen.getByRole('button', { name: /입력 내용 미리보기/ }));
-    const dialog = screen.getByRole('dialog', { name: '내 기도 제목 미리보기' });
+    const dialog = screen.getByRole('dialog', { name: '내 원문 미리보기' });
     expect(within(dialog).getByText('가족을 위해 기도합니다.')).toBeVisible();
-    expect(within(dialog).getByText(/이 미리보기는 내 화면에만 보입니다/)).toBeVisible();
+    expect(within(dialog).getByText(/이 미리보기는 내 원문이며 내 화면에만 보입니다/)).toBeVisible();
     expect(fetchSpy.mock.calls.filter(([, options]) => options?.method === 'POST')).toHaveLength(0);
     expect(fetchSpy.mock.calls.every(([, options]) => options?.body === undefined)).toBe(true);
     expect(JSON.stringify(fetchSpy.mock.calls)).not.toContain('가족을 위해 기도합니다.');

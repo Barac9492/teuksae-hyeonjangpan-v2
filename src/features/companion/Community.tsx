@@ -129,8 +129,8 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
       remember({ id: result.id, kind, token: a.token }, a.requestId);
       finishSubmission(a);
       setSubmittedKey(key);
-      setStatuses(s => ({ ...s, [result.id as string]: statusLabels[result.status as string] }));
-      setMessage(result.status === 'pending' ? '서버에 접수했어요. 내 제출 기록에서 현재 상태를 확인할 수 있어요.' : `이 요청의 기존 접수 상태를 확인했어요: ${statusLabels[result.status as string]}`);
+      setStatuses(s => ({ ...s, [result.id as string]: result.publicationHeld === true ? '공개 보류 · 가림 검토 대기' : statusLabels[result.status as string] }));
+      setMessage(result.status === 'pending' ? '서버에 접수했어요. 내 제출 기록에서 현재 상태를 확인할 수 있어요.' : `이 요청의 기존 접수 상태를 확인했어요: ${result.publicationHeld === true ? '공개 보류 · 가림 검토 대기' : statusLabels[result.status as string]}`);
       if (currentKey.current === key) setConsentKey(null);
       void refresh(true);
     } catch (error) {
@@ -153,7 +153,7 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
     try {
       const result = await communityRequest({ action, id: record.id, deleteToken: record.token }, undefined, { signal: controller.signal });
       if (!isCurrent()) return;
-      const status = typeof result.status === 'string' && Object.hasOwn(statusLabels, result.status) ? statusLabels[result.status] : action === 'delete' && result.deleted === true ? '삭제됨' : undefined;
+      const status = typeof result.status === 'string' && Object.hasOwn(statusLabels, result.status) ? result.publicationHeld === true ? '공개 보류 · 가림 검토 대기' : statusLabels[result.status] : action === 'delete' && result.deleted === true ? '삭제됨' : undefined;
       if (!status) throw new Error('처리 결과를 확인하지 못했어요. 다시 확인해주세요.');
       // A pending status may still need an exact-byte retry to finish uploading.
       // Approved/terminal results and confirmed withdrawal no longer need pixels.
@@ -197,6 +197,7 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
             {submitButton}
           </>}
       </div>
+      {kind === 'prayer' && <p className="tc-community-publish-note">어린이도 함께 보는 공간입니다. 일부 표현은 관리자가 확인한 뒤 **로 가려 공개합니다. 원문은 보관됩니다.</p>}
       {compactConsent && submitButton}
       {kind === 'photo' && consentResetMessage && <p className="tc-community-publish-note" role="status">{consentResetMessage}</p>}
       {kind === 'photo' && <p className="tc-community-publish-note">관리자 검수 후 앱에 들어온 누구나 볼 수 있어요. 함께 나온 분의 동의를 확인해주세요.</p>}

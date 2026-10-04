@@ -209,14 +209,14 @@ export function CompanionApp() {
         </Modal>
       )}
       {modal?.type === 'prayer' && (
-        <Modal title="내 기도 제목 미리보기" onClose={() => setModal(null)}>
+        <Modal title="내 원문 미리보기" onClose={() => setModal(null)}>
           <span className="tc-tiny">이 미리보기 자체는 서버에 전송되지 않습니다</span>
           <div className="tc-prayer-card">
             <span className="tc-prayer-card__top">가을특별새벽부흥회 · 나의 기도</span>
             <div className="tc-preview-text">{modal.text}</div>
             <img src={crownImage} alt="" aria-hidden="true" />
           </div>
-          <p>이 미리보기는 내 화면에만 보입니다. 공개 접수 후 관리자 검수가 끝나면 앱에 들어온 모든 분이 볼 수 있습니다.</p>
+          <p>이 미리보기는 내 원문이며 내 화면에만 보입니다. 공개 시에는 관리자 검토에 따라 일부 표현이 **로 표시될 수 있습니다. 공개 접수 후 관리자 검수가 끝나면 앱에 들어온 모든 분이 볼 수 있습니다.</p>
           <button className="tc-secondary" type="button" onClick={async () => {
             try { await savePrayerCard(modal.text, crownImage); setCardState('기도 카드를 내 기기에 저장했어요.'); } catch { setCardState('이 브라우저에서는 저장하지 못했어요. 화면을 캡처해 주세요.'); }
           }}>기도 카드로 내 기기에 저장 <span aria-hidden="true">↓</span></button>
