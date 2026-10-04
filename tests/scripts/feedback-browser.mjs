@@ -10,14 +10,24 @@ console.log('browser launched');
 const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'});
 context.setDefaultTimeout(10000);
 // Reject accidental external API calls. All content, writes and images are fixtures.
-await context.route('**/*',route=>new URL(route.request().url()).hostname==='127.0.0.1'?route.continue():route.abort());
+// Fix the public clock outside event hours; preserve each fixture reading's age.
+const publicNow=Date.parse('2026-10-01T12:00:00+09:00');let clockOffset=publicNow-Date.now();
+await context.route('**/*',async route=>{
+ const url=new URL(route.request().url());if(url.hostname!=='127.0.0.1')return route.abort();
+ if(url.pathname==='/api/status'){
+  const response=await route.fetch(),body=await response.json();
+  if(Array.isArray(body.resources))body.resources=body.resources.map(r=>({...r,updatedAt:r.updatedAt?new Date(Date.parse(r.updatedAt)+clockOffset).toISOString():null}));
+  return route.fulfill({response,json:body});
+ }
+ return route.continue();
+});
 const admin=await context.newPage();await admin.goto(base + '/admin');
 await admin.getByLabel('드림센터 현재 주차 안내').waitFor();
 await admin.getByLabel('드림센터 현재 주차 안내').selectOption('2');
 await admin.locator('article').filter({has:admin.getByRole('heading',{name:'드림센터 주차장',exact:true})}).getByRole('button',{name:/현황 확인|상태 저장/}).click();
 await admin.getByText(/저장했습니다/).waitFor();
 const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
-await page.clock.install();await page.goto(base + '/');await page.getByRole('link',{name:'다윗 게임 열기 (새 탭)'}).waitFor();
+clockOffset=publicNow-Date.now();await page.clock.install({time:publicNow});await page.goto(base + '/');await page.getByRole('link',{name:'다윗 게임 열기 (새 탭)'}).waitFor();
 const game=await page.getByRole('link',{name:'다윗 게임 열기 (새 탭)'}).boundingBox();
 assert.ok(game.y+game.height<770,'Game entry visible on initial 390x844 home');
 assert.equal(await page.locator('body').evaluate(e=>e.scrollWidth<=innerWidth),true);
