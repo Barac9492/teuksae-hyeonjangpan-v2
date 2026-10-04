@@ -52,4 +52,6 @@ npm run lint
 
 ## Rollout for approval
 
+Integration follow-up: the 320px dashboard overflow above is now resolved by allowing resource-card grid children and selects to shrink with `min-width: 0`. Long select options had forced a 289px track and a 333px document at a 320px viewport; the document now fits 320px. No content or behavior changed. The unchanged full administrator browser regression now passes all eight tabs at 320px plus the mobile/desktop approval, trash/restore, parking, history and keyboard checks. Final integrated application tests (377), server tests (85), lint and build also pass.
+
 Cherry-pick this local commit into the parent integration checkout after reviewing the other workers' changes. Re-run combined build/unit/server checks and the isolated moderation volume browser test. Deploy the reviewed frontend bundle only after release approval. No migration, quota, grant or environment-variable change is needed. Read-only smoke check both admin tabs after deployment; perform real approvals only when separately requested by the operator. Rollback is the frontend commit revert; stored content/state remains compatible.
