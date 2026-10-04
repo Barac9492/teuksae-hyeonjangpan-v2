@@ -107,7 +107,7 @@ export function SharingPanel({ eventDay, stories, onAddStory, onDeleteStory, onH
         </div>
         {view === 'snacks' ? (
           <>
-            <div className="tc-snack-place"><strong>송림본당 · 서현</strong><span>송림본당: 학교 개방 전 · 학교 밖 대기 장소</span></div>
+            <div className="tc-snack-place"><strong>송림본당 · 서현</strong><span>송림본당: 교문 개방 전 · 학교 밖 대기 장소</span></div>
             <h2 className="tc-serif-title">잠을 깨우는 소소한 간식나눔 챌린지</h2>
             <DayChips eventDay={eventDay} />
             {eventDay === null ? (

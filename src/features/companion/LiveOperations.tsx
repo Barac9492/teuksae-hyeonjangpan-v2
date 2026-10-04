@@ -79,7 +79,7 @@ function freshness(updatedAt: string | null, now: number, offline: boolean, enab
 }
 function stateText(resource: LiveResource): string {
   if (resource.state === 'full') return resource.category === 'parking' ? '만차' : '입장 마감';
-  return ({ checking: '확인 중', closed: '닫힘', available: '이용 가능', busy: '혼잡', school_open: '학교 개방', gym_open: '체육관 개방', hall_open: '본당 입장 가능', hall_closed: '본당 입장 마감' })[resource.state] ?? '확인 중';
+  return ({ checking: '확인 중', closed: '닫힘', available: '이용 가능', busy: '혼잡', school_open: '교문 개방', gym_open: '체육관 개방', hall_open: '본당 입장 가능', hall_closed: '본당 입장 마감' })[resource.state] ?? '확인 중';
 }
 function stateTone(state: LiveResourceState): ValueTone {
   if (state === 'available' || state === 'school_open' || state === 'gym_open' || state === 'hall_open') return 'good';
