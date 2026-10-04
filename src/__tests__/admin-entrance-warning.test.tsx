@@ -59,12 +59,12 @@ it('shows existing differences without granting write controls to read-only acco
 it('updates the admin public disclosure at worship and after-service boundaries without a save',async()=>{
  const env=setup();render(<AdminApp/>);await screen.findByRole('table',{name:'공개 현황 한눈에 보기'});
  const publicTable=()=>within(screen.getByRole('table',{name:'공개 현황 한눈에 보기'}));
- expect(publicTable().getAllByText('공개 중(10분 이내)')).toHaveLength(3);
+ expect(publicTable().getAllByText('공개 중(최근 확인)')).toHaveLength(3);
  for(const [time,text] of [['04:40:00','예배 중 · 05:50까지 현황 표시·갱신 중지'],['05:50:00','예배 후 · 귀가 안내 표시']]) {
   vi.mocked(Date.now).mockReturnValue(Date.parse(`2026-10-05T${time}+09:00`));fireEvent(window,new Event('focus'));
   expect(publicTable().getAllByText(text)).toHaveLength(3);
  }
- vi.mocked(Date.now).mockReturnValue(Date.parse('2026-10-11T04:40:00+09:00'));fireEvent(window,new Event('focus'));expect(publicTable().getAllByText('확인 필요')).toHaveLength(3);expect(env.writes).toHaveLength(0);
+ vi.mocked(Date.now).mockReturnValue(Date.parse('2026-10-11T04:40:00+09:00'));fireEvent(window,new Event('focus'));expect(publicTable().getAllByText('마지막 기록 표시 중')).toHaveLength(3);expect(env.writes).toHaveLength(0);
 });
 
 it('does not write when the pre-save status refresh fails',async()=>{

@@ -11,7 +11,7 @@ function mock(percent: unknown, updatedAt=new Date().toISOString(), state='busy'
   vi.spyOn(globalThis,'fetch').mockResolvedValue(new Response(JSON.stringify({enabled:true,resources:[{id:'parking.songrim',category:'parking',state,version:2,updatedAt,occupancyPercent:percent,lastFullAt:'2026-10-04T19:00:00Z'}]})));
 }
 it('displays an explicit operator estimate for Songrim without exposing raw history metadata, and never a hidden Calvary banner',async()=>{
- mock(70);render(<Harness/>);expect(await screen.findByText('70% · 혼잡')).toHaveClass('tc-status-value--warn');expect(screen.getByText('송림주차장')).toBeVisible();expect(screen.getByText(/사용률은 현장팀의 추정치입니다. 10분이 지난 정보는 ‘확인 필요’로 표시합니다/)).toBeInTheDocument();expect(screen.queryByText(/각 항목은 마지막 확인 시각 기준입니다/)).not.toBeInTheDocument();expect(screen.queryByText(/갈보리/)).not.toBeInTheDocument();expect(screen.queryByText(/최근 만차·만석 기록/)).not.toBeInTheDocument();
+ mock(70);render(<Harness/>);expect(await screen.findByText('70% · 혼잡')).toHaveClass('tc-status-value--warn');expect(screen.getByText('송림주차장')).toBeVisible();expect(screen.getByText(/사용률은 현장팀의 추정치입니다. 마지막 저장값과 확인 시각을 함께 표시합니다/)).toBeInTheDocument();expect(screen.queryByText(/각 항목은 마지막 확인 시각 기준입니다/)).not.toBeInTheDocument();expect(screen.queryByText(/갈보리/)).not.toBeInTheDocument();expect(screen.queryByText(/최근 만차·만석 기록/)).not.toBeInTheDocument();
 });
 it('uses green at 0%',async()=>{
  mock(0,new Date().toISOString(),'available');render(<Harness/>);expect(await screen.findByText('0% · 이용 가능')).toHaveClass('tc-status-value--good');
@@ -19,8 +19,8 @@ it('uses green at 0%',async()=>{
 it('uses red at 100%',async()=>{
  mock(100,new Date().toISOString(),'full');render(<Harness/>);expect(await screen.findByText('100% · 만차')).toHaveClass('tc-status-value--stop');
 });
-it('never displays stale percentages and falls back to a checking state, without exposing history copy or a Calvary row',async()=>{
- mock(70,new Date(Date.now()-11*60000).toISOString());render(<Harness/>);expect(await screen.findAllByText('확인 필요')).toHaveLength(1);expect(screen.queryByText(/70%/)).not.toBeInTheDocument();expect(screen.queryByText(/최근 만차·만석 기록/)).not.toBeInTheDocument();expect(screen.queryByText(/갈보리/)).not.toBeInTheDocument();
+it('retains old percentages with neutral last-record disclosure, without exposing history copy or a Calvary row',async()=>{
+ mock(70,new Date(Date.now()-11*60000).toISOString());render(<Harness/>);expect(await screen.findByText('70% · 혼잡')).toHaveClass('tc-status-value--neutral');expect(screen.getByText('마지막 확인 기록')).toBeVisible();expect(screen.queryByText(/최근 만차·만석 기록/)).not.toBeInTheDocument();expect(screen.queryByText(/갈보리/)).not.toBeInTheDocument();
 });
 it('fails closed on invalid percentages',async()=>{
  mock(101);render(<Harness/>);expect(await screen.findByText('송림주차장')).toBeVisible();expect(screen.queryByText(/101%/)).not.toBeInTheDocument();expect(screen.queryByText('혼잡')).not.toBeInTheDocument();
@@ -42,16 +42,16 @@ function mockPrevious(firstFullAt: string | null, closedAt: string | null, date=
 // previousDay history is validated by the backend schema (see parkingDay()) but is no longer
 // rendered as public per-row copy; these cases assert the current-value/state stays correct and
 // that no prior-day history text leaks into the public panel, regardless of the input shape.
-it('correctly falls back to a checking state (stale updatedAt) when valid prior full/closing history is present',async()=>{
+it('retains the last estimate (old updatedAt) when valid prior full/closing history is present',async()=>{
  mockPrevious('2026-10-04T19:20:00Z','2026-10-04T20:10:00Z');render(<Harness/>);
- expect(await screen.findAllByText('확인 필요')).toHaveLength(1);
- expect(screen.queryByText(/70%/)).not.toBeInTheDocument();
+ expect(await screen.findByText('70% · 혼잡')).toHaveClass('tc-status-value--neutral');
+ expect(screen.getByText('마지막 확인 기록')).toBeVisible();
  expect(screen.queryByText(/주차 기록/)).not.toBeInTheDocument();
 });
-it('correctly falls back to a checking state (stale updatedAt) when prior full/closing history is missing',async()=>{
+it('retains the last estimate (old updatedAt) when prior full/closing history is missing',async()=>{
  mockPrevious(null,null);render(<Harness/>);
- expect(await screen.findAllByText('확인 필요')).toHaveLength(1);
- expect(screen.queryByText(/70%/)).not.toBeInTheDocument();
+ expect(await screen.findByText('70% · 혼잡')).toHaveClass('tc-status-value--neutral');
+ expect(screen.getByText('마지막 확인 기록')).toBeVisible();
  expect(screen.queryByText(/기록 없음/)).not.toBeInTheDocument();
 });
 it('does not surface prior-day history text from another Korea day either, and never shows a Calvary row',async()=>{

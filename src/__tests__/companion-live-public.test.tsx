@@ -56,7 +56,7 @@ describe('public companion live operations', () => {
     expect(screen.queryByText('개방 · 여유')).not.toBeInTheDocument();
   });
 
-  it('fails closed when a staff update is stale and shows independent Dream worship floors and one aggregate parking lot', async () => {
+  it('retains last known values when a staff update is old and shows independent Dream worship floors and one aggregate parking lot', async () => {
     const stale = new Date(Date.now() - 11 * 60_000).toISOString();
     vi.stubGlobal('fetch', routeFetch(() => reply([
       { id: 'space.dream.f3', label: '3층', category: 'space', state: 'available', version: 1, updatedAt: stale },
@@ -68,10 +68,10 @@ describe('public companion live operations', () => {
     const user = userEvent.setup();
     render(<CompanionApp />);
     await user.click(screen.getByRole('button', { name: '서현 · 드림센터' }));
-    await waitFor(() => expect(screen.getAllByText('확인 필요').length).toBeGreaterThan(0));
+    await waitFor(() => expect(screen.getByText('이용 가능')).toHaveClass('tc-status-value--neutral'));
     expect(screen.queryByText(/확인 \(한국 시간\)/)).not.toBeInTheDocument();
-    expect(screen.getAllByText('확인 필요')[0]).toBeVisible();
-    expect(within(screen.getByRole('tabpanel', { name: '예배' })).queryByText('이용 가능')).not.toBeInTheDocument();
+    expect(screen.getByText(/마지막 확인 .*마지막 기록/)).toBeVisible();
+    expect(within(screen.getByRole('tabpanel', { name: '예배' })).getByText('이용 가능')).toBeVisible();
     expect(screen.getByText('혼잡')).toBeVisible();
     await user.click(screen.getByRole('tab', { name: '주차' }));
     expect(screen.getByText('드림센터 주차장')).toBeVisible();
@@ -82,9 +82,11 @@ describe('public companion live operations', () => {
   it.each(['2026-10-04T14:59:59Z', '2026-10-06T00:00:00Z', '2026-10-05T18:00:00Z'])('does not claim a confirmed live banner for invalid freshness %s', async (updatedAt) => {
     vi.stubGlobal('fetch', routeFetch(() => reply([{ id: 'space.songrim.hall', category: 'space', state: 'available', version: 1, updatedAt }])));
     render(<CompanionApp />);
-    await waitFor(() => expect(screen.getAllByText('현장팀 확인 전')[0]).toBeVisible());
+    const future = Date.parse(updatedAt) > eventNow;
+    await waitFor(() => expect(within(screen.getByRole('tabpanel', { name: '예배' })).getByText(future ? '현장팀 확인 전' : '마지막 확인 기록')).toBeVisible());
     expect(screen.queryByText('현장팀 확인 현황')).not.toBeInTheDocument();
-    expect(screen.queryByText('이용 가능')).not.toBeInTheDocument();
+    if (future) expect(screen.queryByText('이용 가능')).not.toBeInTheDocument();
+    else expect(screen.getByText('이용 가능')).toHaveClass('tc-status-value--neutral');
   });
 
   it('uses the Seoul event day only during October 5 through 10', () => {

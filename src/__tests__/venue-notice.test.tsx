@@ -13,7 +13,7 @@ it('does not borrow fresh parking from another venue, and recomputes on venue sw
  const operations=ops('parking.dream');
  const view=render(<LiveParkingPanel venue="songrim" setVenue={()=>{}} operations={operations}/>);
  expect(screen.queryByText('현장팀 확인 현황')).not.toBeInTheDocument();
- expect(screen.getByText('현장팀 확인 전')).toBeVisible();
+ expect(screen.getByText('마지막 확인 기록')).toBeVisible();
  view.rerender(<LiveParkingPanel venue="dream" setVenue={()=>{}} operations={operations}/>);
  expect(screen.getByText('현장팀 확인 현황')).toBeVisible();
 });

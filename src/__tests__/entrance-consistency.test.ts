@@ -41,14 +41,14 @@ describe('public disclosure uses the same event clock',()=>{
   });
  }
  it.each([4,11])('does not suspend on non-event day %s',day=>{
-  const now=at('04:45:00',day);expect(publicStatusDisclosure('space',new Date(now).toISOString(),now)).toBe('공개 중(10분 이내)');
+  const now=at('04:45:00',day);expect(publicStatusDisclosure('space',new Date(now).toISOString(),now)).toBe('공개 중(최근 확인)');
  });
- it('keeps TTL exact and does not treat invalid or future timestamps as fresh',()=>{
+ it('keeps freshness classification exact and does not treat invalid or future timestamps as fresh',()=>{
   const now=at('04:10:00');
   expect(isFreshStatus(new Date(now-600000).toISOString(),now)).toBe(true);
   expect(isFreshStatus(new Date(now-600001).toISOString(),now)).toBe(false);
   for(const value of [null,'invalid',new Date(now+1).toISOString()]) {expect(isFreshStatus(value,now)).toBe(false);expect(lastConfirmedText(value,now)).toBe('아직 확인 기록 없음');}
-  expect(lastConfirmedText(new Date(now-600001).toISOString(),now)).toBe('마지막 확인 03:59 (한국) · 10분 경과');
+  expect(lastConfirmedText(new Date(now-600001).toISOString(),now)).toBe('마지막 확인 03:59 (한국) · 마지막 기록');
   expect(lastConfirmedText('2026-10-03T16:00:00Z',now)).toContain('10. 4.');
  });
 });

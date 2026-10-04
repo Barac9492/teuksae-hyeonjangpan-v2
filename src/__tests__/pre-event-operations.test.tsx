@@ -22,11 +22,12 @@ it('shows ordinary dated operations before the event without a separate inspecti
  expect(screen.queryByText(/갈보리/)).not.toBeInTheDocument();
  expect(liveStage(ops)).toBe(3);
 });
-it('keeps a fresh reading current across the calendar event boundary, since date eligibility gates were removed', () => {
+it('retains a prior-day value across midnight without claiming a current stage', () => {
  const ops = operations('2026-10-05T00:00:00+09:00');
  render(<LiveParkingPanel venue="songrim" setVenue={()=>{}} operations={ops}/>);
  expect(screen.getAllByText('100% · 만차').length).toBeGreaterThan(0);
- expect(liveStage(ops)).toBe(3);
+ expect(liveStage(ops)).toBeNull();
+ expect(screen.getByText(/마지막 확인 10. 4./)).toBeVisible();
 });
 it('does not hide live status after the official event end date, since date-based hiding was removed', () => {
  const ops = operations('2026-10-12T00:10:00+09:00');
@@ -37,21 +38,21 @@ it('does not hide live status after the official event end date, since date-base
  expect(liveStage(ops)).toBe(3);
 });
 
-it('falls back to a checking state on stale data across Korea midnight, without claiming a current value', () => {
+it('retains dated last-known values across Korea midnight', () => {
  const ops = operations('2026-09-30T00:15:00+09:00');
  ops.resources.forEach(resource => { resource.updatedAt = '2026-09-29T14:59:00Z'; });
  render(<LiveParkingPanel venue="songrim" setVenue={()=>{}} operations={ops}/>);
  expect(screen.queryByText(/조회일/)).not.toBeInTheDocument();
- expect(screen.queryByText(/100%/)).not.toBeInTheDocument();
- expect(screen.getAllByText('확인 필요')).toHaveLength(1);
+ expect(screen.getByText('100% · 만차')).toHaveClass('tc-status-value--neutral');
+ expect(screen.getByText(/마지막 확인 .*한국/)).toBeVisible();
  expect(screen.queryByText(/갈보리/)).not.toBeInTheDocument();
 });
-it('does not claim a current value while offline', () => {
+it('retains a neutral last-known value while offline', () => {
  const ops = {...operations('2026-10-04T23:59:59+09:00'), offline: true};
  render(<LiveParkingPanel venue="songrim" setVenue={()=>{}} operations={ops}/>);
  expect(screen.queryByText(/확인 \(한국 시간\)/)).not.toBeInTheDocument();
- expect(screen.queryByText(/100%/)).not.toBeInTheDocument();
- expect(screen.getAllByText('확인 필요')).toHaveLength(1);
+ expect(screen.getByText('100% · 만차')).toHaveClass('tc-status-value--neutral');
+ expect(screen.getByText(/마지막 확인 .*한국/)).toBeVisible();
  expect(screen.queryByText(/갈보리/)).not.toBeInTheDocument();
  expect(liveStage(ops)).toBeNull();
 });

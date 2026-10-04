@@ -90,9 +90,10 @@ it.each([
  ['closed',null,0,'닫힘'],
  ['available',6,0,'확인 필요'],
  ['available',null,0,'확인 필요'],
- ['available',2,11*60000,'확인 필요'],
+ ['available',2,11*60000,'B2층으로 안내 중'],
  ['available',2,-60000,'확인 필요'],
-] as const)('Dream guidance fails closed for state=%s floor=%s age=%s',async(state,guideFloor,age,text)=>{
+] as const)('Dream guidance preserves old valid values and rejects invalid values for state=%s floor=%s age=%s',async(state,guideFloor,age,text)=>{
+ vi.spyOn(Date,'now').mockReturnValue(Date.parse('2026-10-06T04:10:00+09:00'));
  const { LiveParkingPanel,useLiveOperations }=await import('../features/companion/LiveOperations');
  vi.spyOn(globalThis,'fetch').mockImplementation(async()=>response({enabled:true,resources:[{id:'parking.dream',category:'parking',state,guideFloor,version:1,updatedAt:new Date(Date.now()-age).toISOString(),occupancyPercent:null}]}));
  function View(){const operations=useLiveOperations();return <LiveParkingPanel venue="dream" setVenue={()=>{}} operations={operations}/>;}
