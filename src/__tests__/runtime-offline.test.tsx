@@ -6,7 +6,7 @@ import { RuntimeProvider } from '../features/rehearsal/RuntimeProvider';
 import { useRuntime } from '../features/rehearsal/runtime';
 import type { Runtime } from '../features/rehearsal/runtime';
 
-const now = Date.parse('2026-10-06T04:40:00+09:00');
+const now = Date.parse('2026-10-06T04:10:00+09:00');
 const status = (version = 1) => ({ enabled: true, resources: [{ id: 'space.songrim.hall', category: 'space', state: 'available', version, updatedAt: new Date(now).toISOString() }] });
 const response = (body: unknown) => ({ ok: true, json: async () => body });
 function deferred<T>() {

@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CompanionApp } from '../features/companion';
 import { liveEventDay } from '../features/companion/CompanionApp';
 
-const eventNow = Date.parse('2026-10-06T04:40:00+09:00');
+const eventNow = Date.parse('2026-10-06T04:10:00+09:00');
 const fresh = new Date(eventNow).toISOString();
 const communityReply = () => Promise.resolve({ ok: true, json: async () => ({ enabled: true, items: [], photoCountToday: 0, today: '2026-09-24' }) });
 const routeFetch = (statusReply: () => ReturnType<typeof reply>) => vi.fn((input: unknown) => {

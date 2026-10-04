@@ -1,8 +1,22 @@
+import { servicePeriod, watchServiceClock } from './serviceSchedule';
 /** Foreground polling: one request at a time, abort on hide/offline/unmount. */
-export function foregroundPolling(load: (signal: AbortSignal) => Promise<void>, interval: number, onOffline?: () => void, immediate = true, supersedeOnVisible = false) {
+export function foregroundPolling(load: (signal: AbortSignal) => Promise<void>, interval: number, onOffline?: () => void, immediate = true, supersedeOnVisible = false, policy?: { publicSchedule: boolean; onPeriodChange?: () => void }) {
   let stopped = false;
   let active: AbortController | null = null;
+  let periodKey = servicePeriod().key;
+  const syncPeriod = () => {
+    if (!policy?.publicSchedule) return true;
+    const period = servicePeriod();
+    if (period.key !== periodKey) {
+      periodKey = period.key;
+      active?.abort(); active = null;
+      policy.onPeriodChange?.();
+    }
+    return period.mode !== 'worship';
+  };
   const refresh = async () => {
+    if (stopped) return;
+    if (!syncPeriod()) { active?.abort(); active = null; return; }
     if (stopped || active || document.visibilityState === 'hidden') return;
     if (!navigator.onLine) { onOffline?.(); return; }
     const request = new AbortController(); active = request;
@@ -20,6 +34,11 @@ export function foregroundPolling(load: (signal: AbortSignal) => Promise<void>, 
   const visible = () => { if (document.visibilityState === 'hidden' || supersedeOnVisible) cancel(); if (document.visibilityState !== 'hidden') void refresh(); };
   const offline = () => { cancel(); onOffline?.(); };
   const resume = () => { void refresh(); };
+  const unwatch = policy?.publicSchedule ? watchServiceClock(() => {
+    const previous = periodKey;
+    const allowed = syncPeriod();
+    if (previous !== periodKey && allowed) void refresh();
+  }) : () => {};
   if (immediate) void refresh();
   const timer = window.setInterval(resume, interval);
   document.addEventListener('visibilitychange', visible);
@@ -27,7 +46,7 @@ export function foregroundPolling(load: (signal: AbortSignal) => Promise<void>, 
   window.addEventListener('offline', offline);
   window.addEventListener('pageshow', resume);
   return { refresh, stop: () => {
-    stopped = true; cancel(); window.clearInterval(timer);
+    stopped = true; unwatch(); cancel(); window.clearInterval(timer);
     document.removeEventListener('visibilitychange', visible);
     window.removeEventListener('online', resume); window.removeEventListener('offline', offline);
     window.removeEventListener('pageshow', resume);

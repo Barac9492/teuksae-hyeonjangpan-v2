@@ -580,3 +580,8 @@ body { background: #fbfbfa; }
   .tc-app { width: min(760px, calc(100vw - 350px)); }
   .tc-community-wall { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* One persistent service phase across all public tabs. */
+.tc-service-banner { display: flex; flex-wrap: wrap; gap: 3px 12px; padding: 12px 20px; background: var(--paper-2); border-bottom: 1px solid var(--line); color: var(--ink); font-size: 13px; }
+.tc-service-banner strong { font-size: 16px; }
+.tc-service-banner span { align-self: center; }

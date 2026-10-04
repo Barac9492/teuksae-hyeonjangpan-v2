@@ -2,7 +2,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { beforeEach, afterEach, expect, it, vi } from 'vitest';
 import { LiveParkingPanel, useLiveOperations } from '../features/companion/LiveOperations';
 function Harness(){const operations=useLiveOperations();return <LiveParkingPanel venue="songrim" setVenue={()=>{}} operations={operations}/>;}
-beforeEach(() => { vi.useFakeTimers({toFake: ['Date']}); vi.setSystemTime(new Date('2026-10-06T04:40:00+09:00')); });
+beforeEach(() => { vi.useFakeTimers({toFake: ['Date']}); vi.setSystemTime(new Date('2026-10-06T04:10:00+09:00')); });
 afterEach(()=>{cleanup();vi.restoreAllMocks();vi.useRealTimers();});
 // Calvary is excluded from the public parking panel (Songrim venue publicly shows only
 // parking.songrim), so these cases mock the visible Songrim resource directly rather than
@@ -37,7 +37,7 @@ it.each([[65,'busy'],[40,'full'],[0,'closed']])('fails closed on malformed step/
 });
 
 function mockPrevious(firstFullAt: string | null, closedAt: string | null, date='2026-10-05') {
- vi.spyOn(globalThis,'fetch').mockResolvedValue(new Response(JSON.stringify({enabled:true,resources:[{id:'parking.songrim',category:'parking',state:'busy',version:2,updatedAt:'2026-10-05T19:00:00Z',occupancyPercent:70,previousDay:{date,firstFullAt,closedAt}}]})));
+ vi.spyOn(globalThis,'fetch').mockResolvedValue(new Response(JSON.stringify({enabled:true,resources:[{id:'parking.songrim',category:'parking',state:'busy',version:2,updatedAt:new Date(Date.now()-11*60000).toISOString(),occupancyPercent:70,previousDay:{date,firstFullAt,closedAt}}]})));
 }
 // previousDay history is validated by the backend schema (see parkingDay()) but is no longer
 // rendered as public per-row copy; these cases assert the current-value/state stays correct and

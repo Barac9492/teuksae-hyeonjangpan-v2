@@ -1,3 +1,5 @@
+import { servicePeriod } from './serviceSchedule';
+import { useServiceClock } from './useServiceClock';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import crownImage from './assets/crown.jpg';
@@ -34,15 +36,6 @@ export function liveEventDay(date = new Date()): number | null {
   return year === 2026 && month === 10 && day >= 5 && day <= 10 ? day - 5 : null;
 }
 
-function useClock(intervalMs = 30_000) {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), intervalMs);
-    return () => window.clearInterval(timer);
-  }, [intervalMs]);
-  return now;
-}
-
 function ParkingArt() {
   return (
     <svg className="tc-parking-art" viewBox="0 0 120 64" aria-hidden="true">
@@ -63,7 +56,8 @@ type ModalState = { type: 'settings' } | { type: 'route'; venue: Venue } | { typ
 export function CompanionApp() {
   const isPreview = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('preview') === '1';
   const operations = useLiveOperations(!isPreview);
-  const now = useClock();
+  const now = useServiceClock();
+  const mode = isPreview ? 'outside' : servicePeriod(now).mode;
   const [liveDay, setLiveDay] = useState(() => liveEventDay());
   useEffect(() => { if (!isPreview) setLiveDay(liveEventDay(new Date(now))); }, [isPreview, now]);
   const [tab, setTab] = useState<TabId>(() => new URLSearchParams(window.location.search).get('tab') === 'parking' ? 'parking' : 'worship');
@@ -155,9 +149,13 @@ export function CompanionApp() {
         {isPreview
           ? <div className="tc-demo-banner"><span><i aria-hidden="true" />디자인 미리보기 · 실제 현황 아님</span><button type="button" onClick={() => setModal({ type: 'settings' })}>상황 바꿔보기</button></div>
           : operations.offline ? <div className="tc-live-banner" data-offline="true" role="status">오프라인 · 최신 현황을 확인할 수 없습니다.</div> : null}
+        {(mode === 'worship' || mode === 'after') && <div className="tc-service-banner" role="status" aria-live="polite" data-service-mode={mode}>
+          <strong>{mode === 'worship' ? '예배 중' : '예배 후'}</strong>
+          <span>{mode === 'worship' ? '04:40–05:50 · 정보 갱신을 잠시 멈춥니다.' : '귀가·아침 식사와 나눔을 안내합니다.'}</span>
+        </div>}
         <main id={mainId} ref={mainRef} tabIndex={-1}>
           <div hidden={tab !== 'worship'}>
-            <WorshipPanel crownImage={crownImage} venue={venue} setVenue={setVenue} now={now} previewDay={isPreview ? eventDay : null} stage={isPreview ? (stale ? null : stage) : liveStage(operations)} actions={worshipActions} after={worshipAfter}>{worshipStatus}</WorshipPanel>
+            <WorshipPanel mode={mode} crownImage={crownImage} venue={venue} setVenue={setVenue} now={now} previewDay={isPreview ? eventDay : null} stage={isPreview ? (stale ? null : stage) : liveStage(operations)} actions={worshipActions} after={worshipAfter}>{worshipStatus}</WorshipPanel>
           </div>
           <div hidden={tab !== 'parking'}>
             {isPreview
