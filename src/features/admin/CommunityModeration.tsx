@@ -163,18 +163,26 @@ export function CommunityModeration({ kind, trash = false }: { kind?: 'prayer' |
   const renderItem = (item: Item) => {
     const source = photoSource(item.photoUrl), unavailable = item.kind === 'photo' && (!source || brokenImages[item.id]);
     const selectable = isText(item) || !!opened[item.id];
-    return <article key={item.id} className={`community-moderation__item community-moderation__item--${item.status}${selected[item.id] === item.version ? ' community-moderation__item--selected' : ''}`} aria-label={`${kindName(item.kind)} ${item.id}`}>
-      <h4>{kindName(item.kind)} · {statusLabel[item.status]}</h4>
-      <p className="community-moderation__meta"><time dateTime={item.createdAt}>{timestamp(item.createdAt)}</time> · 한국 시간 · 버전 {item.version}</p>
-      {isText(item)
-        ? <p className="community-moderation__text">{item.text || '남아 있는 내용이 없습니다.'}</p>
-        : <details open={!!opened[item.id]} onToggle={e => { const open = e.currentTarget.open; setOpened(old => ({...old,[item.id]:open})); if (!open) { setSelected(old => {const next={...old};delete next[item.id];return next;});setConfirmation(null); } }}><summary>내용 보기 · {item.text.slice(0, 35) || '사진'}</summary>
-          {opened[item.id] && <>{source && !brokenImages[item.id] && <img src={source} alt="공개 검토용 제출 사진" loading="lazy" onLoad={() => setLoadedImages(old => ({...old,[item.id]:true}))} onError={() => {setBrokenImages(old => ({...old,[item.id]:true}));setSelected(old => {const next={...old};delete next[item.id];return next;});setConfirmation(null);}} />}
-          {unavailable && <p>이미지를 표시할 수 없습니다. 공개 승인할 수 없습니다.</p>}
-          <p className="community-moderation__text">{item.text || '남아 있는 내용이 없습니다.'}</p>
-          </>}
-        </details>}
-      <label className="community-moderation__select"><input type="checkbox" aria-label={`${item.id} 선택`} checked={selected[item.id] === item.version} disabled={busy || !selectable} onChange={e => toggleSelect(item, e.target.checked)} />{isText(item) ? '선택' : opened[item.id] ? '내용 확인 후 선택' : '내용을 펼친 후 선택'}</label>
+    const checkbox = <input type="checkbox" aria-label={`${item.id} 선택`} checked={selected[item.id] === item.version} disabled={busy || !selectable} onChange={e => toggleSelect(item, e.target.checked)} />;
+    const meta = <p className="community-moderation__meta"><time dateTime={item.createdAt}>{timestamp(item.createdAt)}</time> · 한국 시간 · 버전 {item.version}</p>;
+    const className = `community-moderation__item community-moderation__item--${item.status}${isText(item) ? ' community-moderation__item--text' : ''}${selected[item.id] === item.version ? ' community-moderation__item--selected' : ''}`;
+    // Compact text card: checkbox beside the full text so a page can be read and picked in one pass.
+    if (isText(item)) return <article key={item.id} className={className} aria-label={`${kindName(item.kind)} ${item.id}`}>
+      <label className="community-moderation__pick">{checkbox}<span className="community-moderation__sr">선택</span></label>
+      <div className="community-moderation__body">
+        <h4>{kindName(item.kind)} · {statusLabel[item.status]}</h4>{meta}
+        <p className="community-moderation__text">{item.text || '남아 있는 내용이 없습니다.'}</p>
+      </div>
+    </article>;
+    return <article key={item.id} className={className} aria-label={`${kindName(item.kind)} ${item.id}`}>
+      <h4>{kindName(item.kind)} · {statusLabel[item.status]}</h4>{meta}
+      <details open={!!opened[item.id]} onToggle={e => { const open = e.currentTarget.open; setOpened(old => ({...old,[item.id]:open})); if (!open) { setSelected(old => {const next={...old};delete next[item.id];return next;});setConfirmation(null); } }}><summary>내용 보기 · {item.text.slice(0, 35) || '사진'}</summary>
+        {opened[item.id] && <>{source && !brokenImages[item.id] && <img src={source} alt="공개 검토용 제출 사진" loading="lazy" onLoad={() => setLoadedImages(old => ({...old,[item.id]:true}))} onError={() => {setBrokenImages(old => ({...old,[item.id]:true}));setSelected(old => {const next={...old};delete next[item.id];return next;});setConfirmation(null);}} />}
+        {unavailable && <p>이미지를 표시할 수 없습니다. 공개 승인할 수 없습니다.</p>}
+        <p className="community-moderation__text">{item.text || '남아 있는 내용이 없습니다.'}</p>
+        </>}
+      </details>
+      <label className="community-moderation__select">{checkbox}{opened[item.id] ? '내용 확인 후 선택' : '내용을 펼친 후 선택'}</label>
     </article>;
   };
   return <section className="community-moderation" aria-labelledby="community-review-heading" aria-busy={busy}>
