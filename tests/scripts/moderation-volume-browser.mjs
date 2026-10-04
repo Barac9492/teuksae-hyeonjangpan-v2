@@ -28,7 +28,8 @@ try {
   await rows.first().waitFor();
   assert.equal(await rows.count(),20);
   assert.equal(await page.getByRole('checkbox').count(),20);
-  assert.equal(await page.getByRole('checkbox').first().isDisabled(),true);
+  // Prayer text is readable in place, so its checkbox is usable immediately; photos still need opening.
+  assert.equal(await page.getByRole('checkbox').first().isDisabled(),kind==='photo');
   await overflow();
   if(kind==='prayer'){await rows.first().scrollIntoViewIfNeeded();await page.screenshot({path:out+'mobile-visible-checkboxes.png'});}
   const ids=[];let pageNumber=0;
@@ -38,7 +39,7 @@ try {
    assert.ok(pageNumber<20,'pagination terminates');
    if(!(await page.getByRole('button',{name:'다음 페이지',exact:true}).count()))break;
    // Explicit selections on a page are discarded when advancing.
-   await rows.first().locator('summary').click();
+   if(kind==='photo')await rows.first().locator('summary').click();
    if(kind==='photo')await rows.first().locator('img').evaluate(e=>e.decode());
    await rows.first().getByRole('checkbox').check();
    const oldName=names[0];
@@ -46,12 +47,12 @@ try {
    await page.waitForFunction(old=>document.querySelector('.community-moderation__item')?.getAttribute('aria-label')!==old,oldName);
    await rows.first().waitFor();
    assert.equal(await page.getByRole('button',{name:'선택 공개 승인',exact:true}).isDisabled(),true);
-   assert.equal(await page.getByRole('checkbox').first().isDisabled(),true);
+   assert.equal(await page.getByRole('checkbox').first().isChecked(),false);
   }
   assert.equal(ids.length,total);assert.equal(new Set(ids).size,total);assert.equal(posts.length,kind==='photo'?10:0);
-  await page.getByRole('button',{name:'현재 페이지 내용 모두 펼치기'}).click();
+  if(kind==='photo')await page.getByRole('button',{name:'현재 페이지 내용 모두 펼치기'}).click();
   if(kind==='photo')for(const img of await page.locator('.community-moderation__item img').all()){await img.scrollIntoViewIfNeeded();await img.evaluate(e=>e.decode());}
-  await page.getByRole('button',{name:'펼친 검토 대기 항목 모두 선택'}).click();
+  await page.getByRole('button',{name:kind==='photo'?'펼친 검토 대기 항목 모두 선택':'검토 대기 항목 모두 선택'}).click();
   const count=await rows.count(),before=posts.length;
   assert.equal(count,kind==='prayer'?10:5);
   await page.getByRole('button',{name:'선택 공개 승인',exact:true}).click();
