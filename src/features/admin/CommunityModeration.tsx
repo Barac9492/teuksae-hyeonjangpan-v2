@@ -1,5 +1,5 @@
 import { requestWithDeadline } from '../../lib/requestDeadline';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import './CommunityModeration.css';
 
 type Item = {
@@ -71,6 +71,7 @@ function pageCursor(body: Record<string, unknown>): string | null {
 
 // A selection always refers to the exact version rendered on this page.
 export function CommunityModeration({ kind, trash = false }: { kind?: 'prayer' | 'photo'; trash?: boolean }) {
+  const idPrefix = useId();
   const [items, setItems] = useState<Item[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -204,12 +205,12 @@ export function CommunityModeration({ kind, trash = false }: { kind?: 'prayer' |
       <button className="ta-admin__secondary" disabled={busy || !chosen.length} onClick={() => {setSelected({});setConfirmation(null);}}>선택 해제</button><details><summary>영구 삭제</summary><button className="ta-admin__secondary" disabled={busy || !chosen.length || !chosenContentRendered} onClick={() => setConfirmation('deleted')}>선택 영구 삭제</button></details>
     </div></div>}
 
-    {!!items?.length && !trash && <p className="community-moderation__summary" role="status">현재 페이지: 확정 필요 {counts.pending} · 공개 중 {counts.approved} · 비공개 {counts.rejected}</p>}
+    {!!items?.length && !trash && <p className="community-moderation__summary">현재 페이지: 확정 필요 {counts.pending} · 공개 중 {counts.approved} · 비공개 {counts.rejected}</p>}
     {items && groupOrder.map(status => {
       const group = items.filter(item => item.status === status);
       const alwaysShow = status === 'pending' && !trash && (filter === 'all' || filter === 'pending');
       if (!group.length && !alwaysShow) return null;
-      const headingId = `community-group-${status}`;
+      const headingId = `${idPrefix}-group-${status}`;
       return <section key={status} className={`community-moderation__group community-moderation__group--${status}`} aria-labelledby={headingId}>
         <h3 id={headingId}>{groupTitle(status)} <span className="community-moderation__count">{group.length}개</span></h3>
         {status === 'approved' && <p className="community-moderation__group-note">확정되어 지금 앱에 공개된 내용입니다. 문제가 있으면 선택해 휴지통으로 옮기세요.</p>}
