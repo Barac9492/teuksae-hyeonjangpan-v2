@@ -12,6 +12,7 @@
     "lint": "eslint . --max-warnings=0",
     "test:server": "node --test server/__tests__/*.node-test.js",
     "test:community-sql": "node tests/scripts/community-db.mjs",
+    "test:photo-archive-sql": "node tests/scripts/photo-archive-db.mjs",
     "test:prayer-masking-sql": "node tests/scripts/prayer-masking-db.mjs",
     "test:moderation-audit-sql": "node tests/scripts/moderation-audit-db.mjs"
   },

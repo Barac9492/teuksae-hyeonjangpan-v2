@@ -29,6 +29,7 @@ describe.each(kinds)('%s public status copy', kind => {
     ['approved', '공개 중'],
     ['rejected', '반려'],
     ['deleted', '삭제됨'],
+    ...(kind === 'photo' ? [['archived', '관리자 비공개 보관 중'], ['trashed', '휴지통 (비공개)']] : []),
   ])('keeps the receipt truthful after pending becomes %s', async (nextStatus, label) => {
     let serverStatus = 'pending';
     let submissionId = '';
