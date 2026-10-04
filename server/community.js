@@ -137,6 +137,14 @@ export async function handleCommunity(route, req, res, env = process.env, fetche
     }
     if (route === 'admin') {
       const session = await moderator();
+      if (req.method === 'GET' && url.searchParams.has('view')) {
+        if (url.searchParams.get('view') !== 'audit' || [...url.searchParams.keys()].some(k => k !== 'view') || url.searchParams.getAll('view').length > 1) throw fail(400,'요청을 확인해주세요.');
+        let data;
+        // A pre-migration RPC rejects the unknown action; report that as a pending DB update.
+        try { data = await call('auditList',{session}); } catch (e) { if (e?.status === 403) throw e; throw fail(503,'승인 기록 DB 업데이트가 필요합니다.'); }
+        if (data.attribution !== true || !Array.isArray(data.items) || data.items.length > 100) throw fail(503,'승인 기록을 확인하지 못했습니다.');
+        return reply(res,200,{items:data.items});
+      }
       if (req.method === 'GET') {
         const args = adminPageArgs(url.searchParams);
         const data = await call('adminList',{session,...args});
