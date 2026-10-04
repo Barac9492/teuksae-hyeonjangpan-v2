@@ -1,3 +1,4 @@
+import { STATUS_FRESH_MS, lastConfirmedText } from './statusPresentation';
 import { canPublishPublicRequest, servicePeriod } from './serviceSchedule';
 import type { ServiceMode } from './serviceSchedule';
 import { useServiceClock } from './useServiceClock';
@@ -35,9 +36,9 @@ type Freshness = 'fresh' | 'unconfirmed' | 'stale' | 'invalid' | 'future' | 'off
 // Public reads pause during the scheduled services. Outside that window,
 // finite/not-future timestamp checks still determine whether a reading is current.
 const REFRESH_MS = 20_000;
-const FRESH_MS = 10 * 60_000;
+const FRESH_MS = STATUS_FRESH_MS;
 const defaults: LiveResource[] = [
-  { id: 'space.songrim.access', label: '학교 출입', category: 'space', state: 'checking', version: 0, updatedAt: null },
+  { id: 'space.songrim.access', label: '송림 입장 단계', category: 'space', state: 'checking', version: 0, updatedAt: null },
   { id: 'space.songrim.hall', label: '본당 1·2층', category: 'space', state: 'checking', version: 0, updatedAt: null },
   { id: 'space.songrim.gym', label: '체육관', category: 'space', state: 'checking', version: 0, updatedAt: null },
   { id: 'space.dream.f3', label: '3층', category: 'space', state: 'checking', version: 0, updatedAt: null },
@@ -136,7 +137,7 @@ function liveItem(id: string, operations: Operations): FloorItem {
   const capacity = hasOccupancySchema(resource);
   const value = status !== 'fresh' ? '확인 필요' : resource.id === 'parking.dream' ? resource.state === 'available' && resource.guideFloor != null ? `B${resource.guideFloor}층으로 안내 중` : resource.state === 'full' ? '전체 만차' : stateText(resource) : capacity ? resource.state === 'closed' ? stateText(resource) : resource.occupancyPercent == null ? '사용률 확인 전' : `${resource.occupancyPercent}% · ${stateText(resource)}` : stateText(resource);
   const tone = status !== 'fresh' ? 'neutral' : capacity ? resource.state === 'closed' ? stateTone(resource.state) : resource.occupancyPercent == null ? 'neutral' : occupancyTone(resource.occupancyPercent) : stateTone(resource.state);
-  return { key: id, label: resource.label, value, tone };
+  return { key: id, label: resource.label, value, tone, sub: lastConfirmedText(resource.updatedAt, operations.now) };
 }
 
 /** Songrim's current step, only when the access value is fresh. */
