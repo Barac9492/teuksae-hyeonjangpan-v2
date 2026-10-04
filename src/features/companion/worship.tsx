@@ -186,7 +186,7 @@ export function VerseCard() {
   );
 }
 
-export function WorshipPanel({ mode = 'outside', crownImage, venue, setVenue, now, previewDay, stage, children, actions, after }: {
+export function WorshipPanel({ crownImage, venue, setVenue, now, previewDay, stage, children, actions, after }: {
   mode?: ServiceMode;
   crownImage: string;
   venue: Venue;
@@ -209,16 +209,16 @@ export function WorshipPanel({ mode = 'outside', crownImage, venue, setVenue, no
       <DawnJourney now={now} previewDay={previewDay} />
       <OfficialNotice />
       <div className="tc-section">
-        <h2 className="tc-section-title">{mode === 'after' ? '예배를 마친 뒤' : '지금 예배 공간은'}</h2>
+        <h2 className="tc-section-title">지금 예배 공간은</h2>
         <VenueSwitch venue={venue} onChange={setVenue} label="예배 장소" />
-        {mode !== 'after' && <p className="tc-panel-note">{OPENING_NOTICE}</p>}
-        {venue === 'songrim' && mode !== 'worship' && mode !== 'after' && <StageTrail stage={stage} />}
+        <p className="tc-panel-note">{OPENING_NOTICE}</p>
+        {venue === 'songrim' && <StageTrail stage={stage} />}
         {children}
 
         {after}
       </div>
       <div className="tc-section">
-        {mode !== 'worship' && mode !== 'after' && <WakePlanner venue={venue} day={previewDay === null ? noticeServiceDay(now) : SERVICE_DAYS[previewDay] ?? null} />}
+        <WakePlanner venue={venue} day={previewDay === null ? noticeServiceDay(now) : SERVICE_DAYS[previewDay] ?? null} />
 
         <VerseCard />
       </div>

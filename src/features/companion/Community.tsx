@@ -13,10 +13,9 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
 }) {
   const now = useServiceClock();
   const period = servicePeriod(now);
-  const paused = period.mode === 'worship';
   const [storedFeed, setFeed] = useState<CommunityFeed | null>(null);
   const [feedPeriod, setFeedPeriod] = useState('');
-  const feed = !paused && feedPeriod === period.key ? storedFeed : null;
+  const feed = feedPeriod === period.date ? storedFeed : null;
   const [feedError, setFeedError] = useState('');
   const [cursors, setCursors] = useState<(FeedCursor | null)[]>([null]);
   const [page, setPage] = useState(0);
@@ -53,14 +52,14 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
   }, [key, kind]);
   const refresh = useCallback(async (supersede = false) => {
     const startedAt = Date.now();
-    if (servicePeriod(startedAt).mode === 'worship' || document.visibilityState === 'hidden' || !navigator.onLine || !active.current || (feedRequest.current && !supersede)) return;
+    if (document.visibilityState === 'hidden' || !navigator.onLine || !active.current || (feedRequest.current && !supersede)) return;
     feedRequest.current?.abort();
     const controller = new AbortController();
     feedRequest.current = controller;
     const epoch = ++feedGeneration.current;
     try {
       const next = validateFeed(await communityRequest(undefined, kind, { signal: controller.signal, cursor }));
-      if (!controller.signal.aborted && canPublishPublicRequest(startedAt) && active.current && epoch === feedGeneration.current) { setFeedPeriod(servicePeriod(startedAt).key); setFeed(next); setFeedError(''); }
+      if (!controller.signal.aborted && canPublishPublicRequest(startedAt) && active.current && epoch === feedGeneration.current) { setFeedPeriod(servicePeriod(startedAt).date); setFeed(next); setFeedError(''); }
     } catch (error) {
       if (canPublishPublicRequest(startedAt) && active.current && epoch === feedGeneration.current) {
         // Hide stale public content/counts as soon as freshness cannot be verified.
@@ -104,7 +103,7 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
     setRecords(readReceipts());
   };
   const submit = async () => {
-    if (servicePeriod().mode === 'worship' || locked.current || !canShare || !feed || feedError || (kind !== 'photo' ? !text.trim() : !file)) return;
+    if (locked.current || !canShare || !feed || feedError || (kind !== 'photo' ? !text.trim() : !file)) return;
     locked.current = true; setBusy(true); setMessage('');
     const epoch = ++actionGeneration.current;
     const controller = new AbortController(); actionRequest.current = controller;
@@ -114,7 +113,6 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
       const a = submissionAttempt(submissionKey); attemptedId = a.requestId;
       const imageBase64 = kind === 'photo' && file ? a.imageBase64 ?? await photoBase64(file, controller.signal) : undefined;
       if (!isCurrent()) return;
-      if (servicePeriod().mode === 'worship') throw new Error('예배 중에는 공개 접수를 잠시 멈춥니다. 05:50 이후 다시 시도해주세요.');
       // Returning to the same photo/date/memo can regenerate different grain
       // pixels. Replay the first transmitted bytes along with its request ID,
       // only in memory until confirmation; never persist the image in receipts.
@@ -180,7 +178,7 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
     }
   };
   const submitButton = (
-      <button type="button" className="tc-primary" disabled={paused || busy || !canShare || !feed || !!feedError || (kind !== 'photo' ? !text.trim() : !file)} onClick={() => void submit()}>{busy ? '처리 중…' : publicByDefault ? submittedKey === key ? '접수 완료' : '기도제목 공개로 올리기' : kind === 'photo' ? '사진 공개하기' : '공개 접수하기 · 검수 후 게시'}</button>
+      <button type="button" className="tc-primary" disabled={busy || !canShare || !feed || !!feedError || (kind !== 'photo' ? !text.trim() : !file)} onClick={() => void submit()}>{busy ? '처리 중…' : publicByDefault ? submittedKey === key ? '접수 완료' : '기도제목 공개로 올리기' : kind === 'photo' ? '사진 공개하기' : '공개 접수하기 · 검수 후 게시'}</button>
   );
   const visibleItems = !feed ? [] : feed.items.filter(item => item.kind === kind);
   const composer = showComposer && <>
@@ -203,22 +201,21 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
       {kind === 'photo' && <p className="tc-community-publish-note">관리자 검수 후 앱에 들어온 누구나 볼 수 있어요. 함께 나온 분의 동의를 확인해주세요.</p>}
     </>;
   return <section className={`tc-community${kind === 'photo' ? ' tc-community--photo' : ''}`} aria-label={kind === 'photo' ? '공개 사진 나눔' : kind === 'reflection' ? '공개 묵상 나눔' : '공개 기도 나눔'}>
-    {paused && <p className="tc-quiet" role="status"><strong>예배 중</strong> · 공개 목록과 접수는 05:50에 재개합니다. 작성 중인 내용과 내 제출 기록은 유지됩니다.</p>}
     {kind === 'photo' && composer}
     <header><h2>{kind === 'photo' ? '함께 남긴 새벽 사진' : kind === 'reflection' ? '함께 나누는 묵상' : '함께 나누는 기도'}</h2>
-      {kind === 'photo' && !paused && <><strong className="tc-community-count">{feed && !feedError ? `오늘 사진 참여 ${feed.photoCountToday}건` : feedError ? '오늘 사진 참여 건수 확인 불가' : '오늘 사진 참여 건수 확인 중'}</strong><details className="tc-footnote"><summary>ⓘ 참여 수 안내</summary><p>한국 시간 실제 접수일 기준입니다. 같은 사람의 여러 제출도 각각 셉니다. 검수 대기·공개 사진을 포함하고 반려·삭제는 제외합니다. 사진에 선택한 행사 날짜와는 무관해요.{feed && !feedError && ` (${feed.today})`}</p></details></>}
+      {kind === 'photo' && <><strong className="tc-community-count">{feed && !feedError ? `오늘 사진 참여 ${feed.photoCountToday}건` : feedError ? '오늘 사진 참여 건수 확인 불가' : '오늘 사진 참여 건수 확인 중'}</strong><details className="tc-footnote"><summary>ⓘ 참여 수 안내</summary><p>한국 시간 실제 접수일 기준입니다. 같은 사람의 여러 제출도 각각 셉니다. 검수 대기·공개 사진을 포함하고 반려·삭제는 제외합니다. 사진에 선택한 행사 날짜와는 무관해요.{feed && !feedError && ` (${feed.today})`}</p></details></>}
     </header>
-    {!paused && (feedError ? <p role="alert">{feedError} 최신 여부를 확인할 수 없어 이전 게시물과 참여 건수를 숨겼어요. <button type="button" className="tc-line-action" onClick={() => void refresh(true)}>다시 불러오기</button></p> : !feed ? <p role="status">공개 나눔 정보를 불러오는 중이에요.</p> : null)}
+    {(feedError ? <p role="alert">{feedError} 최신 여부를 확인할 수 없어 이전 게시물과 참여 건수를 숨겼어요. <button type="button" className="tc-line-action" onClick={() => void refresh(true)}>다시 불러오기</button></p> : !feed ? <p role="status">공개 나눔 정보를 불러오는 중이에요.</p> : null)}
     {kind !== 'photo' && composer}
     {storageFailed && <p role="alert">{storageWarning}</p>}
     {message && <p role="status">{message}</p>}
     {feed && !feedError && (visibleItems.length ? <ul className="tc-community-wall">{visibleItems.map(item => <li key={item.id}>{kind === 'photo' && safePhotoUrl(item.photoUrl) && <a href={safePhotoUrl(item.photoUrl)!} target="_blank" rel="noopener noreferrer"><img src={safePhotoUrl(item.photoUrl)!} alt="공개 동의 후 승인된 새벽 사진" loading="lazy" /></a>}{kind === 'reflection' && item.eventDay !== null && <strong>10월 {item.eventDay + 5}일 묵상</strong>}<p>{item.text}</p></li>)}</ul> : <p className="tc-community-empty">아직 승인되어 공개된 {kind === 'photo' ? '사진이' : kind === 'reflection' ? '묵상이' : '기도제목이'} 없어요. 접수한 내용은 검수 후 보입니다.</p>)}
-    {!paused && <nav className="tc-community-pages" aria-label="공개 나눔 페이지">
+    <nav className="tc-community-pages" aria-label="공개 나눔 페이지">
       <button type="button" className="tc-secondary" disabled={page === 0} onClick={() => turnPage(page - 1)}>이전 페이지</button>
       <span>{page + 1}페이지</span>
       <button type="button" className="tc-secondary" disabled={!feed?.nextCursor || !!feedError} onClick={() => { if (!feed?.nextCursor) return; setCursors(old => [...old.slice(0, page + 1), feed.nextCursor!]); turnPage(page + 1); }}>다음 페이지</button>
       {page > 0 && <button type="button" className="tc-line-action" onClick={() => { setCursors([null]); turnPage(0); }}>최신 나눔으로</button>}
-    </nav>}
+    </nav>
     <details className="tc-community-receipts"><summary>내 제출 기록 ({records.filter(r => r.kind === kind).length})</summary><p>이 브라우저에 남은 삭제 권한으로 조회합니다. 저장소를 지우면 삭제 권한을 잃을 수 있어요.</p>
       {records.filter(r => r.kind === kind).map((r, index) => <div key={r.id}><strong>제출 {index + 1}</strong><span> · {statuses[r.id] ?? '상태를 확인해주세요'}</span><button type="button" disabled={busy} onClick={() => void receiptAction(r, 'status')}>상태 확인</button><button type="button" disabled={busy || statuses[r.id] === '삭제됨'} onClick={() => void receiptAction(r, 'delete')}>제출 철회·삭제</button></div>)}
     </details>

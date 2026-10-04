@@ -31,13 +31,13 @@ describe('independent entrance readings',()=>{
  });
 });
 describe('public disclosure uses the same event clock',()=>{
- for(const day of [5,6,7,8,9,10]) for(const [time,mode] of [['04:39:59','before'],['04:40:00','worship'],['05:49:59','worship'],['05:50:00','after']] as const) {
+ for(const day of [5,6,7,8,9,10]) for(const [time] of [['04:39:59','before'],['04:40:00','worship'],['05:49:59','worship'],['05:50:00','after']] as const) {
   it(`${day} ${time}`,()=>{
    const now=at(time,day), fresh=new Date(now).toISOString();
-   expect(publicStatusDisclosure('space',fresh,now)).toContain(mode==='worship'?'예배 중':mode==='after'?'예배 후':'공개 중');
-   expect(publicStatusDisclosure('parking',fresh,now)).toContain(mode==='worship'?'예배 중':'공개 중');
-   expect(publicSaveDisclosure('space',now).includes('20초')).toBe(mode==='before');
-   expect(publicSaveDisclosure('parking',now).includes('20초')).toBe(mode!=='worship');
+   expect(publicStatusDisclosure('space',fresh,now)).toContain('공개 중');
+   expect(publicStatusDisclosure('parking',fresh,now)).toContain('공개 중');
+   expect(publicSaveDisclosure().includes('20초')).toBe(true);
+   expect(publicSaveDisclosure().includes('20초')).toBe(true);
   });
  }
  it.each([4,11])('does not suspend on non-event day %s',day=>{

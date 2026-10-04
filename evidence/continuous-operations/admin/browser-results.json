@@ -1,0 +1,23 @@
+{
+  "browser": "Separate headless Google Chrome; fresh Playwright context; external traffic blocked",
+  "base": "http://127.0.0.1:4197",
+  "viewports": [
+    390,
+    1440,
+    320
+  ],
+  "checks": [
+    "tabs and keyboard",
+    "bounded history",
+    "parking save/public read",
+    "explicit two-item approval and double-click lock",
+    "pagination selection reset",
+    "photo load",
+    "trash/restore to pending",
+    "public excludes restored",
+    "no horizontal overflow",
+    "no browser exceptions"
+  ],
+  "writes": 4,
+  "errors": []
+}

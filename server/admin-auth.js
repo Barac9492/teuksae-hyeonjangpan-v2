@@ -116,6 +116,8 @@ function validOccupancyState(state, occupancyPercent) {
 }
 function validGuidance(body) {
   if (body.resourceId !== 'parking.dream') return body.guideFloor == null;
+  if (body.guideFloor == null) return body.occupancyPercent != null || ['checking','closed','full'].includes(body.state);
+  // Compatibility for an already-open legacy floor form during DB-first rollout.
   if (body.occupancyPercent != null) return false;
   return body.state === 'available'
     ? Number.isInteger(body.guideFloor) && body.guideFloor >= 1 && body.guideFloor <= 5
@@ -201,7 +203,7 @@ async function operations(req, res, cfg, session, fetcher) {
     const args = { p_session_id: session.tokenId, p_resource_id: body.resourceId, p_state: body.state, p_expected_version: body.expectedVersion, p_request_id: body.requestId };
     let data;
     try {
-      data = await rpc(cfg, 'ops_set_resource_state', { ...args, p_occupancy_percent: body.occupancyPercent ?? null, ...(body.resourceId === 'parking.dream' ? { p_guide_floor: body.guideFloor } : {}) }, fetcher);
+      data = await rpc(cfg, 'ops_set_resource_state', { ...args, p_occupancy_percent: body.occupancyPercent ?? null, ...(body.resourceId === 'parking.dream' ? { p_guide_floor: body.guideFloor ?? null } : {}) }, fetcher);
     } catch (error) {
       // Missing RPC signature is a definite non-execution. Never retry ambiguous
       // network/server failures or silently drop a requested operator estimate.

@@ -8,7 +8,7 @@ import {handleCommunity} from '../../server/community.js';
 const {PGlite}=await import(process.env.PGLITE_MODULE || '@electric-sql/pglite');
 const db=new PGlite(),dir=new URL('../../supabase/migrations/',import.meta.url);
 await db.exec(`create role anon;create role authenticated;create role service_role;create schema storage;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);create table storage.objects(id uuid primary key,bucket_id text,name text);`);
-for(const f of (await readdir(dir)).filter(f=>/^(00[2-9]|01[01])_/.test(f)||f.endsWith('_church_feedback_guidance_and_pages.sql')||f.endsWith('_admin_tabs_recoverable_trash.sql')||f.endsWith('_moderation_audit_attribution.sql')||f.endsWith('_reviewed_prayer_masking.sql')||f.endsWith('_photo_private_archive.sql')).sort())await db.exec(await readFile(new URL(f,dir),'utf8'));
+for(const f of (await readdir(dir)).filter(f=>/^(00[2-9]|01[01])_/.test(f)||f.endsWith('_church_feedback_guidance_and_pages.sql') || f.endsWith('_continuous_operations_capacity.sql')||f.endsWith('_admin_tabs_recoverable_trash.sql')||f.endsWith('_moderation_audit_attribution.sql')||f.endsWith('_reviewed_prayer_masking.sql')||f.endsWith('_photo_private_archive.sql')).sort())await db.exec(await readFile(new URL(f,dir),'utf8'));
 const rpc=async(name,args=[])=>(await db.query(`select public.${name}(${args.map((_,i)=>`$${i+1}`).join(',')}) result`,args)).rows[0].result;
 const session=randomUUID(),role=process.env.QA_ROLE || 'superadmin';
 await db.query("insert into ops_accounts(username,role,display_label,active) values('LOCALQA',$1,'로컬 검증',true)",[role]);

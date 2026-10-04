@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "checks": [
+    "initial mobile game visibility",
+    "exact worship guidance",
+    "one Dream lot",
+    "Songrim ordering and retired inputs absent",
+    "admin save to public within 20s",
+    "last saved full state retained after ten minutes with timestamp and neutral tone",
+    "timer pause/resume/reset/completion/tab switch",
+    "12/12/11 pagination with no duplicate cards",
+    "current-page refresh and scroll retention",
+    "composer preservation",
+    "offline/online recovery",
+    "desktop two-column photo/prayer grid",
+    "320px overflow",
+    "no browser exceptions"
+  ],
+  "screenshots": 7,
+  "productionRequests": 0
+}

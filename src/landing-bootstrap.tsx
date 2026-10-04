@@ -12,5 +12,5 @@ export function bootstrap(): void {
     if (document.readyState === 'complete') register();
     else window.addEventListener('load', register, { once: true });
   }
-  createRoot(root).render(<StrictMode><RuntimeProvider pauseDuringWorship><CompanionApp /></RuntimeProvider></StrictMode>);
+  createRoot(root).render(<StrictMode><RuntimeProvider publicDayBoundaries><CompanionApp /></RuntimeProvider></StrictMode>);
 }

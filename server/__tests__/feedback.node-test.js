@@ -27,3 +27,14 @@ test('paginated feed passes validated cursor to approved-only RPC and preserves 
   const rejected=res();let calls=0;await handleCommunity('public',{method:'GET',url:'/api/community?kind=prayer&page=1&'+query,headers:{}},rejected,env,async()=>{calls++;throw Error('unexpected');});assert.equal(rejected.statusCode,400);assert.equal(calls,0);
  }
 });
+
+test('new Dream and sanctuary 4F percentages use all canonical steps and fail closed against an older RPC',async()=>{
+ for(const resourceId of ['parking.dream','space.songrim.f4'])for(let percent=0;percent<=100;percent+=10){
+  const state=percent===100?'full':percent>=70?'busy':'available';let mutation;
+  const reply=res();await handleAdmin('operations',{method:'POST',url:'/api/admin/operations',headers:{cookie,origin:env.ADMIN_ALLOWED_ORIGIN,'content-type':'application/json'},body:{resourceId,state,occupancyPercent:percent,expectedVersion:0,requestId:sid}},reply,env,now,async(url,init)=>({ok:true,json:async()=>url.endsWith('ops_get_session')?{username:'TEST',credentialVersion:1,role:'superadmin'}:(mutation=JSON.parse(init.body),{resource:{id:resourceId}})}));
+  assert.equal(reply.statusCode,200);assert.equal(mutation.p_occupancy_percent,percent);if(resourceId==='parking.dream')assert.equal(mutation.p_guide_floor,null);
+ }
+ let writes=0;const reply=res();
+ await handleAdmin('operations',{method:'POST',url:'/api/admin/operations',headers:{cookie,origin:env.ADMIN_ALLOWED_ORIGIN,'content-type':'application/json'},body:{resourceId:'parking.dream',state:'busy',occupancyPercent:70,expectedVersion:0,requestId:sid}},reply,env,now,async url=>url.endsWith('ops_get_session')?{ok:true,json:async()=>({username:'TEST',credentialVersion:1,role:'parking'})}:(writes++,{ok:false,status:404,json:async()=>({code:'PGRST202'})}));
+ assert.equal(reply.statusCode,503);assert.equal(writes,1,'never retries by dropping the manual estimate');
+});

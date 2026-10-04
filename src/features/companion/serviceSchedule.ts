@@ -10,13 +10,13 @@ export function servicePeriod(now = Date.now()) {
   const day = Number(date.slice(8));
   const eventDay = date.startsWith('2026-10-') && DAYS.includes(day) ? day : null;
   const mode: ServiceMode = eventDay === null ? 'outside' : now < at(day, '04:40:00') ? 'before' : now < at(day, '05:50:00') ? 'worship' : 'after';
-  return { mode, eventDay, key: `${date}:${mode}`, nextChange: boundaries.find(time => time > now) ?? Infinity };
+  return { mode, eventDay, date, key: `${date}:${mode}`, nextChange: boundaries.find(time => time > now) ?? Infinity };
 }
 
 /** Check at dispatch AND after decoding: transports can ignore AbortSignal. */
 export function canPublishPublicRequest(startedAt: number, now = Date.now()) {
   const period = servicePeriod(now);
-  return period.mode !== 'worship' && servicePeriod(startedAt).key === period.key;
+  return now >= startedAt && servicePeriod(startedAt).date === period.date;
 }
 
 /** Exact boundary timeout plus resume/clock-change checks. No fetches here. */
