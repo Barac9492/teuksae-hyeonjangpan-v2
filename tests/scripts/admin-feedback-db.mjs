@@ -53,4 +53,26 @@ for(const role of ['anon','authenticated'])assert.equal((await query("select has
 assert.ok((await query("select relrowsecurity r from pg_class where oid='community_v2_items'::regclass"))[0].r);
 assert.ok((await query("select proconfig from pg_proc where oid='community_v2(text,jsonb)'::regprocedure"))[0].proconfig.includes('search_path=""'));
 for(const change of ["revoked_at=now()","expires_at=now()-interval '1 second'"]){await db.query(`update ops_sessions set ${change} where id=$1`,[session]);await assert.rejects(()=>rpc('adminList',{session,status:'trashed'}));await db.query("update ops_sessions set revoked_at=null,expires_at=now()+interval '1 day' where id=$1",[session]);}
+// Admission and kind-scoped pagination above 100: preserve per-IP/token abuse budgets.
+await db.exec('truncate community_v2_items,community_v2_audit,community_v2_rates');
+for(const kind of ['prayer','photo']) {
+ const expected=[];
+ for(let n=1;n<=107;n++) {
+  const hash=(n+(kind==='photo'?1000:0)).toString(16).padStart(64,'0');
+  const item={id:randomUUID(),kind,text:'Synthetic volume',eventDay:0,tokenHash:hash,payloadHash,ipHash:hash};
+  assert.equal((await rpc('submit',item)).status,'pending');
+  if(kind==='photo')assert.equal((await rpc('finish',item)).status,'pending');
+  expected.push(item.id);
+ }
+ let cursor;const seen=[];
+ do {
+  const page=await rpc('adminList',{session,kind,status:'pending',...cursor?{cursor}:{}});
+  assert.ok(page.items.length<=20);
+  seen.push(...page.items.map(item=>item.id));cursor=page.nextCursor;
+  assert.ok(seen.length<=107,'cursor must terminate');
+ }while(cursor);
+ assert.deepEqual([...seen].sort(),expected.sort());
+}
+assert.equal((await rpc('list',{kind:'photo'})).photoCountToday,107);
+console.log('PASS 107 prayer + 107 photo submissions in one day, every item reachable through 20-row pages');
 await db.close();console.log('PASS migrated trash/restore, privacy, CAS replay, actor audit, role/session authorization, bound pagination and rollback checks');
