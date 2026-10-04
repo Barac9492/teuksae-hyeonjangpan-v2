@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CommunityModeration } from '../features/admin/CommunityModeration';
 import { AdminApp } from '../features/admin';
 const response=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status});
-const prayer={id:'prayer-1',kind:'prayer',text:'로컬 기도',createdAt:'2026-10-05T00:00:00Z',eventDay:0,status:'pending',version:3};
+const prayer={id:'prayer-1',kind:'prayer',text:'로컬 기도',createdAt:'2026-10-05T00:00:00Z',eventDay:0,status:'pending',version:3,masking:{supported:true,required:false,held:false,publicText:'로컬 기도',policyVersion:'test-policy',matches:[]}};
 const photo={...prayer,id:'photo-1',kind:'photo',text:'로컬 사진',photoUrl:'/api/community/photo?id=photo-1'};
 type Row=typeof prayer & {photoUrl?:string};
 function setup(items: unknown[]=[prayer],options:{get?:()=>Promise<Response>;post?:(body:Record<string,unknown>)=>Promise<Response>;trash?:boolean;kind?:'photo'|'prayer'}={}){

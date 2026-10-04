@@ -10,8 +10,8 @@ const {PGlite}=await import(process.env.PGLITE_MODULE || '@electric-sql/pglite')
 const db=new PGlite(),dir=new URL('../../supabase/migrations/',import.meta.url);
 let checks=0;const ok=(c,l)=>{assert.ok(c,l);checks++;console.log(`PASS ${l}`);};
 await db.exec(`create role anon;create role authenticated;create role service_role;create schema storage;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);create table storage.objects(id uuid primary key,bucket_id text,name text);`);
-const files=(await readdir(dir)).filter(f=>/^(00[2-9]|01[01])_/.test(f)||/_(church_feedback_guidance_and_pages|admin_tabs_recoverable_trash|moderation_audit_attribution)\.sql$/.test(f)).sort();
-ok(files.at(-1).endsWith('_moderation_audit_attribution.sql'),'attribution migration applies last');
+const files=(await readdir(dir)).filter(f=>/^(00[2-9]|01[01])_/.test(f)||/_(church_feedback_guidance_and_pages|admin_tabs_recoverable_trash|moderation_audit_attribution|reviewed_prayer_masking)\.sql$/.test(f)).sort();
+ok(files.at(-1).endsWith('_reviewed_prayer_masking.sql'),'masking migration applies after attribution');
 for(const f of files)await db.exec(await readFile(new URL(f,dir),'utf8'));
 const call=async(action,args)=>(await db.query('select public.community_v2($1,$2) r',[action,JSON.stringify(args)])).rows[0].r;
 const mkSession=async(username,role,name,label)=>{const id=randomUUID();

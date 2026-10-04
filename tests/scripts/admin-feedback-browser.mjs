@@ -31,4 +31,19 @@ await page.getByRole('tab',{name:'현황판',exact:true}).click();await page.scr
 await page.getByRole('tab',{name:'안내',exact:true}).click();await page.getByRole('heading',{name:'현장 운영 안내'}).waitFor();await page.getByRole('tab',{name:'안내',exact:true}).focus();await page.keyboard.press('ArrowRight');assert.equal(await page.getByRole('tab',{name:'기도카드 승인',exact:true}).getAttribute('aria-selected'),'true');
 await page.setViewportSize({width:320,height:640});for(const name of ['현황판','주차','안내','기도카드 승인','사진 승인','휴지통','변경 기록','계정 관리']){await page.getByRole('tab',{name,exact:true}).click();assert.equal(await page.locator('body').evaluate(e=>e.scrollWidth<=innerWidth),true,`320px overflow: ${name}`);}
 await page.getByRole('tab',{name:'기도카드 승인',exact:true}).click();await page.screenshot({path:out+'narrow-prayer-review.png'});
-assert.deepEqual(errors,[]);await writeFile(out+'browser-results.json',JSON.stringify({browser:'Separate headless Google Chrome; fresh Playwright context; external traffic blocked',base,viewports:[390,1440,320],checks:['tabs and keyboard','bounded history','parking save/public read','explicit two-item approval and double-click lock','pagination selection reset','photo load','trash/restore to pending','public excludes restored','no horizontal overflow','no browser exceptions'],writes:posts.length,errors},null,2));await browser.close();console.log('PASS mobile/desktop/narrow browser QA; screenshots at '+out);
+assert.deepEqual(errors,[]);await writeFile(out+'browser-results.json',JSON.stringify({browser:'Separate headless Google Chrome; fresh Playwright context; external traffic blocked',base,viewports:[390,1440,320],checks:['tabs and keyboard','bounded history','parking save/public read','explicit two-item approval and double-click lock','pagination selection reset','photo load','trash/restore to pending','public excludes restored','no horizontal overflow','no browser exceptions'],writes:posts.length,errors},null,2));// New separate track: real SQL + HTTP enforcement, synthetic rows only.
+await page.getByRole('tab',{name:'기도카드 승인',exact:true}).click();
+await page.getByRole('button',{name:'별도 검토 · 가림 게시'}).click();
+await page.getByRole('article',{name:'기도 aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'}).waitFor();
+assert.equal(await page.locator('.community-moderation__item').count(),2);
+assert.equal(await page.getByRole('button',{name:'선택 공개 승인',exact:true}).count(),0);
+const rejected=await context.request.post(base+'/api/admin/community',{data:{id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1',decision:'approved',expectedVersion:0}});assert.equal(rejected.status(),409);
+const row=page.getByRole('article',{name:'기도 aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'});assert.equal(await row.locator('mark').count(),2);
+await row.getByRole('button',{name:'가림 처리본 게시',exact:true}).click();
+assert.equal(await page.getByLabel('게시할 가림 처리본').textContent(),'**예방과 ** 중단을 위한 합성 기도');
+await page.getByRole('button',{name:'확인 후 가림 처리본 게시'}).click();await page.getByText('1개 중 1개 완료.',{exact:true}).waitFor();
+const maskedPublic=(await (await context.request.get(base+'/api/community?kind=prayer')).json()).items;
+assert.equal(maskedPublic.find(x=>x.id==='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1').text,'**예방과 ** 중단을 위한 합성 기도');
+assert.ok(!maskedPublic.some(x=>x.id==='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2'));
+assert.equal(errors.length,0);console.log('PASS separate review, generic bypass rejection, exact masked publication, old approval hold');
+await browser.close();console.log('PASS mobile/desktop/narrow browser QA; screenshots at '+out);

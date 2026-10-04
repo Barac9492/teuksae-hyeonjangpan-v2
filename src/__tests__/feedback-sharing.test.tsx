@@ -18,7 +18,7 @@ it('offers all-visitor public prayer posting instead of recipient sharing', asyn
   expect(screen.getByRole('checkbox', { name: /함께 나누기 · 공개/ })).toBeChecked();
   expect(screen.queryByRole('heading', { name: '앱에 들어온 모든 분께 공개하기' })).not.toBeInTheDocument();
   await user.click(screen.getByRole('button', { name: /입력 내용 미리보기/ }));
-  const dialog = screen.getByRole('dialog', { name: '내 기도 제목 미리보기' });
+  const dialog = screen.getByRole('dialog', { name: '내 원문 미리보기' });
   expect(within(dialog).queryByRole('button', { name: '기도제목 공유 메뉴 열기' })).not.toBeInTheDocument();
   expect(within(dialog).getByText(/앱에 들어온 모든 분이 볼 수/)).toBeVisible();
   expect(share).not.toHaveBeenCalled();

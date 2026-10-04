@@ -1,11 +1,12 @@
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
+import { PRAYER_MASK_VERSION, prayerMask, adminPrayerItem } from './prayer-masking.js';
 import { PNG } from 'pngjs';
 import { readSession } from './admin-auth.js';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const TOKEN = /^[A-Za-z0-9_-]{32,128}$/;
 const BUCKET = 'community-photos-v2';
 const MAX = 3 * 1024 * 1024;
-const ADMIN_STATUSES = ['all','pending','approved','rejected','trashed'];
+const ADMIN_STATUSES = ['all','pending','approved','rejected','trashed','mask_review'];
 // Preserve PostgreSQL microseconds in cursor timestamps; Date.toISOString would
 // round them and skip same-millisecond rows at a page boundary.
 const CURSOR_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[+-]\d{2}:\d{2})$/;
@@ -15,7 +16,7 @@ function validAdminCursor(cursor, status, kind = 'all') {
   return cursor && typeof cursor === 'object' && !Array.isArray(cursor)
     && Object.keys(cursor).length === (kind === 'all' ? 5 : 6) && (cursor.kind ?? 'all') === kind
     && cursor.v === 1 && cursor.status === status && [0,1].includes(cursor.priority)
-    && (status === 'all' || cursor.priority === (status === 'pending' ? 0 : 1))
+    && (status === 'all' || cursor.priority === (['pending','mask_review'].includes(status) ? 0 : 1))
     && typeof cursor.id === 'string' && UUID.test(cursor.id) && typeof cursor.createdAt === 'string'
     && CURSOR_TIME.test(cursor.createdAt) && Number.isFinite(Date.parse(cursor.createdAt));
 }
@@ -51,13 +52,18 @@ function reply(res, status, body) {
   res.setHeader('Vary', 'Cookie, Origin');
   res.end(JSON.stringify(body));
 }
-// All-date rehearsal availability: public community feed items and photo counts are no longer
-// filtered by calendar eligibility. RPC moderation status (pending/approved/rejected/deleted)
-// remains the sole authority over visibility; this stays a defensive shallow copy so callers
-// can keep composing it without accidentally sharing references with the RPC response.
+// Public serialization is an allowlist. Originals and review metadata never cross it.
 export function filterPublicCommunity(body) {
   if (!body || typeof body !== 'object') return body;
-  return { ...body };
+  if (!Array.isArray(body.items)) {
+    return Object.fromEntries(['id','status','version','photoCountToday','today','deleted','publicationHeld'].filter(key => Object.hasOwn(body,key)).map(key => [key,body[key]]));
+  }
+  const items = body.items.filter(item => item?.kind !== 'prayer' ||
+    (body.maskingPolicyVersion === PRAYER_MASK_VERSION && typeof item.text === 'string' && !prayerMask(item.text).required));
+  return { enabled:body.enabled, items:items.map(item => Object.fromEntries(
+    ['id','kind','text','createdAt','eventDay',...(item.kind === 'photo' ? ['photoUrl'] : [])].filter(key => Object.hasOwn(item,key)).map(key => [key,item[key]])
+  )), photoCountToday:body.photoCountToday, today:body.today,
+  ...(Object.hasOwn(body,'nextCursor') ? {nextCursor:body.nextCursor == null ? null : {createdAt:body.nextCursor.createdAt,id:body.nextCursor.id}} : {}) };
 }
 async function body(req) {
   if (!/^application\/json(?:\s*;|$)/i.test(req.headers?.['content-type'] || '')) throw fail(415, 'JSON 요청이 필요합니다.');
@@ -98,7 +104,7 @@ export async function handleCommunity(route, req, res, env = process.env, fetche
     async function moderator() { const token = readSession(req,cfg,now); if (!token) throw fail(401,'관리자 로그인이 필요합니다.'); const session = await rpc('ops_get_session',{p_session_id:token.id}); if (session.username !== token.username || session.credentialVersion !== token.credentialVersion || session.role !== 'superadmin') throw fail(403,'최고 관리자 권한이 필요합니다.'); return token.id; }
     const call = (action,args = {},scope = false) => rpc('community_v2',{p_action:action,p_args:args},scope);
     async function cleanup(data, scope = false) { if (data.cleanupPath) { const response = await fetcher(`${cfg.supabaseUrl}/storage/v1/object/${bucketFor(scope)}`, { method:'DELETE',headers,body:JSON.stringify({prefixes:[data.cleanupPath]}) }); if (!response.ok) throw fail(503,'삭제 처리 중입니다. 다시 시도해주세요.'); } const clean = {...data}; delete clean.cleanupPath; delete clean.path; delete clean.ready; return clean; }
-    function checked(data) { const statuses = { conflict:409, payload_mismatch:409, limited:429, missing:404, forbidden:403 }; if (statuses[data.status]) throw fail(statuses[data.status], '요청을 처리하지 못했습니다. 잠시 후 확인해주세요.'); return data; }
+    function checked(data) { const statuses = { conflict:409, preview_changed:409, mask_review_required:409, payload_mismatch:409, limited:429, missing:404, forbidden:403 }; if (statuses[data.status]) throw fail(statuses[data.status], '요청을 처리하지 못했습니다. 잠시 후 확인해주세요.'); return data; }
     if (route === 'cleanup') {
       let cleaned = 0, failed = 0;
       // Rehearsal tombstones remain eligible after the automatic event cutover.
@@ -156,11 +162,17 @@ export async function handleCommunity(route, req, res, env = process.env, fetche
         // Old API callers can ignore this field. Never expose the SQL cursor as
         // an object: browsers treat this bounded opaque token as a page pointer.
         const nextCursor = data.nextCursor == null ? null : Buffer.from(JSON.stringify(data.nextCursor)).toString('base64url');
-        return reply(res,200,{...data, nextCursor, items:data.items.filter(item => item?.status !== 'deleted')});
+        return reply(res,200,{...data, nextCursor, items:data.items.filter(item => item?.status !== 'deleted').map(item => adminPrayerItem(item, data.maskingPolicyVersion === PRAYER_MASK_VERSION))});
       }
       const b = await body(req);
-      if (!UUID.test(b.id || '') || !['approved','rejected','deleted','trashed','restored'].includes(b.decision) || !Number.isSafeInteger(b.expectedVersion) || b.expectedVersion < 0) throw fail(400,'검토 요청을 확인해주세요.');
-      return reply(res,200,await cleanup(checked(await call('moderate',{...b,session}))));
+      if (!UUID.test(b.id || '') || !['approved','masked_approved','rejected','deleted','trashed','restored'].includes(b.decision) || !Number.isSafeInteger(b.expectedVersion) || b.expectedVersion < 0) throw fail(400,'검토 요청을 확인해주세요.');
+      if (['approved','masked_approved'].includes(b.decision)) {
+        const policy = await call('maskPolicy');
+        if (policy.version !== PRAYER_MASK_VERSION) throw fail(503,'가림 정책 DB 업데이트가 필요합니다.');
+      }
+      if (b.decision === 'masked_approved' && (b.maskPolicyVersion !== PRAYER_MASK_VERSION || typeof b.reviewedPublicText !== 'string' || b.reviewedPublicText.length > 600)) throw fail(409,'가림 미리보기를 새로 확인해주세요.');
+      return reply(res,200,await cleanup(checked(await call('moderate',{id:b.id,decision:b.decision,expectedVersion:b.expectedVersion,session,
+        ...(b.decision === 'masked_approved' ? {maskPolicyVersion:b.maskPolicyVersion,reviewedPublicText:b.reviewedPublicText} : {})}))));
     }
     if (req.method === 'GET') {
       const kind = url.searchParams.get('kind');

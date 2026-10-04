@@ -2,17 +2,25 @@ import { requestWithDeadline } from '../../lib/requestDeadline';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import './CommunityModeration.css';
 
+type Masking = { required: boolean; supported: boolean; held: boolean; publicText: string; policyVersion: string; matches: {start:number;end:number;term:string}[] };
 type Item = {
   id: string; kind: 'prayer' | 'photo' | 'reflection'; text: string; createdAt: string;
-  eventDay: string | number | null; status: 'pending' | 'approved' | 'rejected' | 'trashed'; version: number; photoUrl?: string;
+  eventDay: string | number | null; status: 'pending' | 'approved' | 'rejected' | 'trashed'; version: number; photoUrl?: string; masking?: Masking;
 };
-type Decision = 'approved' | 'rejected' | 'deleted' | 'trashed' | 'restored';
-type Filter = 'all' | 'pending' | 'approved' | 'rejected' | 'trashed';
+type Decision = 'masked_approved' | 'approved' | 'rejected' | 'deleted' | 'trashed' | 'restored';
+type Filter = 'mask_review' | 'all' | 'pending' | 'approved' | 'rejected' | 'trashed';
 const endpoint = '/api/admin/community';
 const statusLabel = { pending: '검토 대기', approved: '공개 중', rejected: '비공개', trashed: '휴지통' };
 const kindName = (kind: Item['kind']) => kind === 'photo' ? '사진' : kind === 'reflection' ? '묵상' : '기도';
 // Text is shown in full on the card itself; only photos need an explicit open + loaded image.
 const isText = (item: Item) => item.kind !== 'photo';
+const reviewStatus = (item: Item) => item.masking?.held ? 'pending' : item.status;
+function originalText(item: Item) {
+  if (!item.masking?.matches.length) return item.text;
+  let end = 0;
+  const parts = item.masking.matches.map((match, index) => { const before = item.text.slice(end,match.start); end = match.end; return <span key={index}>{before}<mark>{item.text.slice(match.start,match.end)}</mark></span>; });
+  return <>{parts}{item.text.slice(end)}</>;
+}
 const groupOrder = ['pending', 'approved', 'rejected', 'trashed'] as const;
 const timestamp = (value: string) => Number.isFinite(Date.parse(value))
   ? new Intl.DateTimeFormat('ko-KR', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Seoul' }).format(new Date(value))
@@ -22,12 +30,24 @@ function photoSource(value?: string) {
   try { const url = new URL(value, window.location.origin); return url.origin === window.location.origin && ['http:', 'https:'].includes(url.protocol) ? url.href : undefined; }
   catch { return undefined; }
 }
+function validMasking(value: unknown, text: string): value is Masking {
+  if (!value || typeof value !== 'object') return false;
+  const m = value as Masking;
+  if (typeof m.required !== 'boolean' || typeof m.supported !== 'boolean' || typeof m.held !== 'boolean' || typeof m.publicText !== 'string' || typeof m.policyVersion !== 'string' || !Array.isArray(m.matches)) return false;
+  let end = 0;
+  for (const match of m.matches) {
+    if (!Number.isInteger(match.start) || !Number.isInteger(match.end) || match.start < end || match.end <= match.start || match.end > text.length || text.slice(match.start,match.end) !== match.term) return false;
+    end = match.end;
+  }
+  return m.required === (m.matches.length > 0);
+}
 function validItem(value: unknown): value is Item {
   if (!value || typeof value !== 'object') return false;
   const x = value as Record<string, unknown>;
   return typeof x.id === 'string' && ['prayer', 'photo', 'reflection'].includes(String(x.kind)) && typeof x.text === 'string'
     && typeof x.createdAt === 'string' && (x.eventDay === null || ['string', 'number'].includes(typeof x.eventDay))
     && ['pending', 'approved', 'rejected', 'trashed'].includes(String(x.status)) && Number.isInteger(x.version) && Number(x.version) >= 0
+    && (x.masking === undefined || validMasking(x.masking, x.text as string))
     && (x.photoUrl === undefined || typeof x.photoUrl === 'string');
 }
 function reviewItems(body: Record<string, unknown>): Item[] {
@@ -116,11 +136,13 @@ export function CommunityModeration({ kind, trash = false }: { kind?: 'prayer' |
   const allExpanded = photoItems.length > 0 && photoItems.every(item => opened[item.id]);
   // Rejected photos have no stored image left to inspect; opening the row is the whole review.
   const contentRendered = (item: Item) => isText(item) || !!opened[item.id] && (item.status === 'rejected' && !photoSource(item.photoUrl) || !!photoSource(item.photoUrl) && !!loadedImages[item.id] && !brokenImages[item.id]);
-  const displayedPending = (items ?? []).filter(item => item.status === 'pending' && contentRendered(item));
-  const canApprove = (item: Item) => item.status === 'pending' && contentRendered(item) && (item.kind === 'photo' || !!item.text.trim());
+  const canApprove = (item: Item) => reviewStatus(item) === 'pending' && contentRendered(item) && (item.kind === 'photo' || !!item.text.trim())
+    && (item.kind !== 'prayer' || item.masking?.supported === true && !item.masking.required && !item.masking.held);
+  const canMaskApprove = (item: Item) => reviewStatus(item) === 'pending' && item.masking?.supported === true && (item.masking.required || item.masking.held);
+  const displayedPending = (items ?? []).filter(canApprove);
   const chosenContentRendered = chosen.every(contentRendered);
   const run = async (decision: Decision) => {
-    if (lock.current || error || confirmation !== decision || !chosen.length || decision === 'approved' && !chosen.every(canApprove) || ['trashed','deleted'].includes(decision) && !chosenContentRendered) return;
+    if (lock.current || error || confirmation !== decision || !chosen.length || decision === 'approved' && !chosen.every(canApprove) || decision === 'masked_approved' && (chosen.length !== 1 || !chosen.every(canMaskApprove)) || ['trashed','deleted'].includes(decision) && !chosenContentRendered) return;
     lock.current = true; const epoch = ++generation.current;
     const controller = new AbortController(); operation.current = controller;
     setBusy(true); setNotice(''); setConfirmation(null); setResults([]); setProgress({ completed: 0, total: chosen.length });
@@ -129,8 +151,8 @@ export function CommunityModeration({ kind, trash = false }: { kind?: 'prayer' |
     for (const item of chosen) {
       if (!active.current || epoch !== generation.current) break;
       try {
-        const body = await request({ method: 'POST', signal: controller.signal, headers: {'Content-Type':'application/json'}, body: JSON.stringify({id:item.id, decision, expectedVersion:item.version}) });
-        const expected = decision === 'restored' ? 'pending' : decision;
+        const body = await request({ method: 'POST', signal: controller.signal, headers: {'Content-Type':'application/json'}, body: JSON.stringify({id:item.id, decision, expectedVersion:item.version,...(decision === 'masked_approved' ? {maskPolicyVersion:item.masking!.policyVersion,reviewedPublicText:item.masking!.publicText} : {})}) });
+        const expected = decision === 'restored' ? 'pending' : decision === 'masked_approved' ? 'approved' : decision;
         if (body.id !== item.id || body.status !== expected || !Number.isInteger(body.version) || Number(body.version) <= item.version) throw new Error('처리 응답을 확인할 수 없습니다.');
         succeeded++; outcomes.push({id:item.id, message:'완료'});
         if (active.current) setItems(old => old?.filter(x => x.id !== item.id) ?? null);
@@ -158,7 +180,7 @@ export function CommunityModeration({ kind, trash = false }: { kind?: 'prayer' |
   const title = trash ? '휴지통' : kind === 'photo' ? '사진 승인' : '기도카드 승인';
   const subject = kind === 'photo' ? '사진' : kind === 'prayer' ? '기도' : '내용';
   const counts = { pending: 0, approved: 0, rejected: 0, trashed: 0 };
-  for (const item of items ?? []) counts[item.status]++;
+  for (const item of items ?? []) counts[reviewStatus(item)]++;
   const groupTitle = (status: Item['status']) => ({ pending: `확정이 필요한 ${subject} · 검토 대기`, approved: `확정되어 공개 중인 ${subject}`, rejected: `비공개 처리한 ${subject}`, trashed: `휴지통의 ${subject}` }[status]);
   const toggleSelect = (item: Item, checked: boolean) => { setSelected(old => { const next = { ...old }; if (checked) next[item.id] = item.version; else delete next[item.id]; return next; }); setConfirmation(null); };
   const renderItem = (item: Item) => {
@@ -166,13 +188,21 @@ export function CommunityModeration({ kind, trash = false }: { kind?: 'prayer' |
     const selectable = isText(item) || !!opened[item.id];
     const checkbox = <input type="checkbox" aria-label={`${item.id} 선택`} checked={selected[item.id] === item.version} disabled={busy || !selectable} onChange={e => toggleSelect(item, e.target.checked)} />;
     const meta = <p className="community-moderation__meta"><time dateTime={item.createdAt}>{timestamp(item.createdAt)}</time> · 한국 시간 · 버전 {item.version}</p>;
-    const className = `community-moderation__item community-moderation__item--${item.status}${isText(item) ? ' community-moderation__item--text' : ''}${selected[item.id] === item.version ? ' community-moderation__item--selected' : ''}`;
+    const className = `community-moderation__item community-moderation__item--${reviewStatus(item)}${isText(item) ? ' community-moderation__item--text' : ''}${selected[item.id] === item.version ? ' community-moderation__item--selected' : ''}`;
     // Compact text card: checkbox beside the full text so a page can be read and picked in one pass.
     if (isText(item)) return <article key={item.id} className={className} aria-label={`${kindName(item.kind)} ${item.id}`}>
       <label className="community-moderation__pick">{checkbox}<span className="community-moderation__sr">선택</span></label>
       <div className="community-moderation__body">
-        <h4>{kindName(item.kind)} · {statusLabel[item.status]}</h4>{meta}
-        <p className="community-moderation__text">{item.text || '남아 있는 내용이 없습니다.'}</p>
+        <h4>{kindName(item.kind)} · {item.masking?.held ? '공개 보류 · 가림 재검토 필요' : statusLabel[item.status]}</h4>{meta}
+        {item.kind === 'prayer' && <strong className="community-moderation__label">작성 원문</strong>}
+        <p className="community-moderation__text">{originalText(item) || '남아 있는 내용이 없습니다.'}</p>
+        {item.kind === 'prayer' && !item.masking?.supported && <p role="status">가림 정책 업데이트 후 승인할 수 있습니다.</p>}
+        {item.masking?.supported && (item.masking.required || item.masking.held) && <div className="community-moderation__mask-preview">
+          <strong>공개 표시 미리보기</strong><p className="community-moderation__text">{item.masking.publicText}</p>
+          <p>강조한 표현만 **로 표시합니다. 원문은 보관됩니다. 일반 일괄 승인에서는 제외됩니다.</p>
+          {canMaskApprove(item) && <button type="button" className="ta-admin__primary" disabled={busy} onClick={() => {setSelected({[item.id]:item.version});setConfirmation('masked_approved');}}>가림 처리본 게시</button>}
+        </div>}
+        {item.masking?.held && !item.masking.required && <p>정책이 변경되어 공개를 보류했습니다. 원문과 미리보기를 확인한 뒤 별도 게시 동작으로 확정해주세요.</p>}
       </div>
     </article>;
     return <article key={item.id} className={className} aria-label={`${kindName(item.kind)} ${item.id}`}>
@@ -188,8 +218,10 @@ export function CommunityModeration({ kind, trash = false }: { kind?: 'prayer' |
   };
   return <section className="community-moderation" aria-labelledby="community-review-heading" aria-busy={busy}>
     <div className="community-moderation__header"><h2 id="community-review-heading">{title}</h2><button type="button" className="ta-admin__secondary" disabled={busy} onClick={() => void load(filter)}>검토 목록 새로고침</button></div>
-    {!trash && <label>검토 상태<select aria-label="검토 상태" value={filter} disabled={busy} onChange={e => void load(e.target.value as Filter)}><option value="all">전체 (검토 대기 먼저)</option><option value="pending">검토 대기</option><option value="approved">공개 중</option><option value="rejected">비공개</option></select></label>}
-    <p>{trash ? '휴지통 항목은 공개되지 않습니다. 복원하면 검토 대기로 돌아가며, 다시 승인해야 공개됩니다. 이전 영구 삭제·비공개 처리로 지운 내용은 복원할 수 없습니다.' : `여러 개 승인: ${kind === 'prayer' ? '① 내용 읽기' : '① 내용 펼치기(사진)'} → ② 확인한 항목 선택 → ③ 선택 공개 승인. 선택은 현재 페이지에만 적용되며 탭·페이지·필터·새로고침 시 해제됩니다.`}</p>
+    {!trash && kind === 'prayer' && <div role="group" aria-label="기도 검토 트랙" className="community-moderation__actions"><button type="button" className="ta-admin__secondary" aria-pressed={filter !== 'mask_review'} disabled={busy} onClick={() => void load('all')}>일반 검토</button><button type="button" className="ta-admin__secondary" aria-pressed={filter === 'mask_review'} disabled={busy} onClick={() => void load('mask_review')}>별도 검토 · 가림 게시</button></div>}
+    {filter === 'mask_review' && <p>지정 표현이 있거나 가림 정책이 바뀐 기도입니다. 검토 전까지 공개되지 않습니다. 원문과 공개 표시를 확인한 뒤 한 건씩 게시해주세요.</p>}
+    {!trash && filter !== 'mask_review' && <label>검토 상태<select aria-label="검토 상태" value={filter} disabled={busy} onChange={e => void load(e.target.value as Filter)}><option value="all">전체 (검토 대기 먼저)</option><option value="pending">검토 대기</option><option value="approved">공개 중</option><option value="rejected">비공개</option></select></label>}
+    <p>{trash ? '휴지통 항목은 공개되지 않습니다. 복원하면 검토 대기로 돌아가며, 다시 승인해야 공개됩니다. 이전 영구 삭제·비공개 처리로 지운 내용은 복원할 수 없습니다.' : filter === 'mask_review' ? '각 게시물의 원문과 공개 표시를 확인한 뒤 ‘가림 처리본 게시’를 눌러주세요. 체크박스는 휴지통 이동·삭제 선택에만 사용합니다.' : `여러 개 승인: ${kind === 'prayer' ? '① 내용 읽기' : '① 내용 펼치기(사진)'} → ② 확인한 항목 선택 → ③ 선택 공개 승인. 선택은 현재 페이지에만 적용되며 탭·페이지·필터·새로고침 시 해제됩니다.`}</p>
     {!trash && <details className="community-moderation__warning"><summary>공개·개인정보 검토 안내</summary><p>공개 승인한 기도·묵상·사진은 로그인 없이 누구나 인터넷에서 볼 수 있으며 복사·저장될 수 있습니다. 사진 속 얼굴, 특히 아동·청소년의 공개 동의와 보호자 동의를 확인하세요. 기도 내용에 이름·연락처·건강 등 민감한 정보가 없는지 확인하세요. 기도카드 목록에는 묵상 나눔도 포함됩니다.</p></details>}
     {!trash && !trashSupported && items && <p role="status">휴지통 기능은 DB 업데이트 후 사용할 수 있습니다.</p>}
     {error && <p role="alert" className="ta-admin__alert">{error}</p>}{notice && <p role="status">{notice}</p>}
@@ -198,7 +230,7 @@ export function CommunityModeration({ kind, trash = false }: { kind?: 'prayer' |
     {items?.length === 0 && <p>현재 검토 목록에 게시물이 없습니다.</p>}
     {!!items?.length && <div className="community-moderation__batch"><strong>현재 페이지 {items.length}개 · 선택 {chosen.length}개</strong><div className="community-moderation__actions">
       {photoItems.length > 0 && <button type="button" className="ta-admin__secondary" disabled={busy} onClick={() => { if (allExpanded) { setOpened({}); setSelected(old => Object.fromEntries(Object.entries(old).filter(([id]) => !photoItems.some(item => item.id === id)))); } else setOpened(Object.fromEntries(photoItems.map(item => [item.id, true]))); setConfirmation(null); }}>{allExpanded ? '현재 페이지 내용 모두 접기' : '현재 페이지 내용 모두 펼치기'}</button>}
-      <button type="button" className="ta-admin__secondary" disabled={busy || displayedPending.length === 0} onClick={() => { setSelected(Object.fromEntries(displayedPending.map(item => [item.id, item.version]))); setConfirmation(null); }}>{photoItems.length > 0 ? '펼친 검토 대기 항목 모두 선택' : '검토 대기 항목 모두 선택'}</button>
+      {filter !== 'mask_review' && <button type="button" className="ta-admin__secondary" disabled={busy || displayedPending.length === 0} onClick={() => { setSelected(Object.fromEntries(displayedPending.map(item => [item.id, item.version]))); setConfirmation(null); }}>{photoItems.length > 0 ? '펼친 검토 대기 항목 모두 선택' : '검토 대기 항목 모두 선택'}</button>}
 
       {!trash && <button className="ta-admin__secondary" disabled={busy || !trashSupported || !chosen.length || !chosenContentRendered || !chosen.every(x => ['pending','approved'].includes(x.status))} onClick={() => setConfirmation('trashed')}>선택 휴지통으로 이동</button>}
       {trash && <button className="ta-admin__primary" disabled={busy || !chosen.length} onClick={() => setConfirmation('restored')}>선택 복원</button>}
@@ -207,22 +239,22 @@ export function CommunityModeration({ kind, trash = false }: { kind?: 'prayer' |
 
     {!!items?.length && !trash && <p className="community-moderation__summary">현재 페이지: 확정 필요 {counts.pending} · 공개 중 {counts.approved} · 비공개 {counts.rejected}</p>}
     {items && groupOrder.map(status => {
-      const group = items.filter(item => item.status === status);
-      const alwaysShow = status === 'pending' && !trash && (filter === 'all' || filter === 'pending');
+      const group = items.filter(item => reviewStatus(item) === status);
+      const alwaysShow = status === 'pending' && !trash && (filter === 'all' || filter === 'pending' || filter === 'mask_review');
       if (!group.length && !alwaysShow) return null;
       const headingId = `${idPrefix}-group-${status}`;
       return <section key={status} className={`community-moderation__group community-moderation__group--${status}`} aria-labelledby={headingId}>
-        <h3 id={headingId}>{groupTitle(status)} <span className="community-moderation__count">{group.length}개</span></h3>
+        <h3 id={headingId}>{filter === 'mask_review' && status === 'pending' ? '가림 확인이 필요한 기도 · 별도 검토' : groupTitle(status)} <span className="community-moderation__count">{group.length}개</span></h3>
         {status === 'approved' && <p className="community-moderation__group-note">확정되어 지금 앱에 공개된 내용입니다. 문제가 있으면 선택해 휴지통으로 옮기세요.</p>}
         {!group.length && <p className="community-moderation__empty">지금 확정할 {subject}{subject === '기도' ? '가' : '이'} 없습니다.</p>}
         {!!group.length && <div className={`community-moderation__grid${kind === 'prayer' ? ' community-moderation__grid--list' : ''}`}>{group.map(renderItem)}</div>}
       </section>;
     })}
-    {!!items?.length && !trash && <div className="community-moderation__approve-bar" aria-label="일괄 승인 도구">
+    {!!items?.length && !trash && filter !== 'mask_review' && <div className="community-moderation__approve-bar" aria-label="일괄 승인 도구">
       <strong>{chosen.length}개 선택됨</strong>
       {!trash && <button className="ta-admin__primary" disabled={busy || !chosen.length || !chosen.every(canApprove)} onClick={() => setConfirmation('approved')}>선택 공개 승인</button>}
     </div>}
-    {confirmation && <div ref={confirmationPanel} className="community-moderation__confirmation" role="region" aria-label="선택 항목 확인"><p><strong>{chosen.length}개를 {confirmation === 'approved' ? '인터넷에 공개합니다. 개인정보와 얼굴·아동·보호자의 공개 동의를 모두 확인했나요?' : confirmation === 'restored' ? '검토 대기로 복원합니다. 자동 공개되지 않습니다.' : confirmation === 'deleted' ? '영구 삭제합니다. 내용과 사진은 제거되며 복원할 수 없습니다. 이미 저장된 사본은 회수할 수 없습니다.' : '휴지통으로 옮깁니다. 공개를 중단하고 복원용 내용을 보관합니다.'}</strong></p><button className="ta-admin__primary" disabled={busy} onClick={() => void run(confirmation)}>확인 후 {confirmation === 'approved' ? '일괄 공개 승인' : confirmation === 'restored' ? '복원' : confirmation === 'deleted' ? '영구 삭제' : '휴지통 이동'}</button><button className="ta-admin__secondary" disabled={busy} onClick={() => setConfirmation(null)}>취소</button></div>}
+    {confirmation && <div ref={confirmationPanel} className="community-moderation__confirmation" role="region" aria-label="선택 항목 확인"><p><strong>{chosen.length}개를 {confirmation === 'masked_approved' ? '아래 가림 처리본 그대로 공개합니다. 원문과 가림 표시를 확인했나요?' : confirmation === 'approved' ? '인터넷에 공개합니다. 개인정보와 얼굴·아동·보호자의 공개 동의를 모두 확인했나요?' : confirmation === 'restored' ? '검토 대기로 복원합니다. 자동 공개되지 않습니다.' : confirmation === 'deleted' ? '영구 삭제합니다. 내용과 사진은 제거되며 복원할 수 없습니다. 이미 저장된 사본은 회수할 수 없습니다.' : '휴지통으로 옮깁니다. 공개를 중단하고 복원용 내용을 보관합니다.'}</strong></p>{confirmation === 'masked_approved' && chosen.length === 1 && <p className="community-moderation__text" aria-label="게시할 가림 처리본">{chosen[0].masking?.publicText}</p>}<button className="ta-admin__primary" disabled={busy} onClick={() => void run(confirmation)}>확인 후 {confirmation === 'masked_approved' ? '가림 처리본 게시' : confirmation === 'approved' ? '일괄 공개 승인' : confirmation === 'restored' ? '복원' : confirmation === 'deleted' ? '영구 삭제' : '휴지통 이동'}</button><button className="ta-admin__secondary" disabled={busy} onClick={() => setConfirmation(null)}>취소</button></div>}
     {items && <p className="community-moderation__page-note">현재 페이지 {items.length}개 · {nextCursor ? '다음 페이지에 항목이 더 있습니다. 100개가 넘어도 계속 검토할 수 있습니다.' : '마지막 페이지입니다.'}</p>}
     {items && <div className="community-moderation__actions community-moderation__pages">{isLaterPage && <button className="ta-admin__secondary" disabled={busy} onClick={() => void load(filter)}>첫 페이지로</button>}{nextCursor && <button className="ta-admin__secondary" disabled={busy} onClick={() => void load(filter, nextCursor)}>다음 페이지</button>}</div>}
   </section>;
