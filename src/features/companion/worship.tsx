@@ -143,7 +143,7 @@ export function WakePlanner({ venue, day = null }: { venue: Venue; day?: number 
         <span className="tc-wake__peek">{wake}</span>
       </summary>
       <div className="tc-wake__body">
-        <p className="tc-wake__warning">이 기능은 기상 시간을 계산할 뿐, 알람을 설정하거나 울리지 않습니다. 아래 시간을 참고해 휴대폰 시계 앱에서 알람을 직접 설정해주세요.</p>
+        <p className="tc-wake__warning">계산한 시간을 참고해 휴대폰 시계 앱에서 알람을 직접 설정해주세요.</p>
         <div className="tc-wake__result" aria-live="polite">
           <span>일어날 시간</span>
           <strong>{wake}</strong>

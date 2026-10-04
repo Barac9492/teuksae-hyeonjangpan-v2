@@ -153,7 +153,7 @@ export function liveStage(operations: Operations): number | null {
 export function LiveNotice({ enabled, offline, confirmed, guidance = false }: { enabled: boolean; offline: boolean; confirmed: boolean; guidance?: boolean }) {
   if (offline) return <div className="tc-live-notice tc-live-notice--offline" role="status"><strong>연결 확인 중</strong><span>마지막 안내를 실제 현황으로 표시하지 않습니다.</span></div>;
   if (!enabled || !confirmed) return <div className="tc-live-notice" role="status"><strong>현장팀 확인 전</strong><span>현재 표시된 장소에 최근 확인된 현황이 없습니다.</span></div>;
-  return <div className="tc-live-notice tc-live-notice--active"><strong>현장팀 확인 현황</strong><details><summary aria-label="현황 안내 자세히 보기">ⓘ 현황 안내</summary><p>{guidance ? '현재 안내 층과 전체 만차 여부는 현장 주차팀이 직접 확인한 정보입니다. 주차 여유 대수나 자동 감지 결과가 아닙니다.' : '최근 10분 안에 현장팀이 확인한 항목만 현재 현황으로 표시합니다. 사용률은 운영자 추정이며 실측 수용률이 아닙니다. 초록 0~60% · 주황 70~90% · 빨강 100% · 회색 확인 필요'}</p></details></div>;
+  return <div className="tc-live-notice tc-live-notice--active"><strong>현장팀 확인 현황</strong><details><summary aria-label="현황 안내 자세히 보기">ⓘ 현황 안내</summary><p>{guidance ? '주차팀이 안내하는 층과 전체 만차 여부입니다.' : '사용률은 현장팀의 추정치입니다. 10분이 지난 정보는 ‘확인 필요’로 표시합니다. 초록 0~60% · 주황 70~90% · 빨강 100% · 회색 확인 필요'}</p></details></div>;
 }
 
 function StatusList({ items }: { items: FloorItem[] }) {
@@ -175,12 +175,10 @@ export function LiveParkingPanel({ venue, setVenue, operations, art }: { venue: 
       <div className="tc-section tc-section--topless">
         <VenueSwitch venue={venue} onChange={setVenue} label="주차 장소" />
         <ParkingNotice venue={venue} day={noticeServiceDay(operations.now)} />
-        <p className="tc-panel-note">현장 주차팀이 저장한 안내입니다. 화면이 열려 있으면 20초마다 자동 확인하며, 앱으로 돌아오거나 연결이 복구되면 바로 확인합니다. 마지막 현장 확인이 10분을 넘으면 확인 필요로 표시합니다.</p>
-        {venue === 'dream' && <p className="tc-panel-note">드림센터 전체를 하나의 주차장으로 안내합니다. 표시된 층은 주차팀이 현재 안내하는 층입니다. 층이 차면 담당자가 안내 층을 변경합니다. 실제 이동은 현장 안내를 따라주세요.</p>}
+        {venue === 'dream' && <p className="tc-panel-note">드림센터는 표시된 층으로 안내합니다. 이동은 현장 주차요원의 안내를 따라주세요.</p>}
         <LiveNotice guidance={venue === 'dream'} enabled={operations.enabled} offline={operations.offline} confirmed={hasFreshDisplayedResource(ids, operations)} />
         <StatusList items={items} />
         {venue === 'songrim' && <div className="tc-quiet"><strong>학교 출입과 예배당 입장은 달라요.</strong><p>학교 문이 열려 차량이 들어가도 본당·체육관은 아직 닫혀 있을 수 있습니다.</p></div>}
-        <p className="tc-panel-note">실제와 조금 차이가 있을 수 있습니다.</p>
         <p className="tc-safety"><span aria-hidden="true">🚗</span> 운전 중 화면을 조작하지 마세요. 동승자가 확인하거나 안전하게 정차한 뒤 이용해주세요.</p>
       </div>
     </section>

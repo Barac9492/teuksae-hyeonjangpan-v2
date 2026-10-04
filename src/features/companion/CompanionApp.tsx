@@ -123,8 +123,7 @@ export function CompanionApp() {
       : dayForContent !== null && venue === 'songrim' && <button type="button" onClick={goToSnack}><span aria-hidden="true">☕</span>오병이어 챌린지</button>}
   </>;
   const worshipAfter = <>
-    <p className="tc-panel-note">{isPreview ? '현황은 모두 디자인 검토용 예시입니다. 운영 시스템과 연결되지 않았고 실제 현장 상태를 뜻하지 않습니다.' : '현장팀이 확인한 공개 안내만 표시합니다.'}</p>
-    <p className="tc-panel-note">실제와 조금 차이가 있을 수 있습니다.</p>
+    {isPreview && <p className="tc-panel-note">현황은 모두 디자인 검토용 예시입니다. 운영 시스템과 연결되지 않았고 실제 현장 상태를 뜻하지 않습니다.</p>}
     {isPreview && venue === 'songrim' && stage === 0 && !stale && (
       <button className="tc-snack-teaser" type="button" onClick={goToSnack}>
         <span><small>학교 밖 대기 장소 · 오병이어 챌린지 안내</small><strong>{eventDay === 0 ? '10월 5일부터 함께해요' : '10월 6일부터, 원하는 분들이 자율적으로 나눠요'}</strong></span>

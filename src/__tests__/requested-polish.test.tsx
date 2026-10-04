@@ -16,7 +16,7 @@ it('hides Calvary and does not let its fresh update confirm the public Songrim p
  expect(screen.queryByText(/갈보리/)).not.toBeInTheDocument();
  expect(screen.queryByText('현장팀 확인 현황')).not.toBeInTheDocument();
  expect(screen.getByText('확인 필요')).toBeInTheDocument();
- expect(screen.getByText('실제와 조금 차이가 있을 수 있습니다.')).toBeInTheDocument();
+ expect(screen.queryByText('실제와 조금 차이가 있을 수 있습니다.')).not.toBeInTheDocument();
 });
 it('simplifies the read-screen prayer call to action without introductory encouragement', () => {
  render(<PrayerPanel onPreview={()=>{}}/>);

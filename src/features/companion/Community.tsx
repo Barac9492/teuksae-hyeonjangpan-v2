@@ -201,7 +201,6 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
     {kind !== 'photo' && composer}
     {storageFailed && <p role="alert">{storageWarning}</p>}
     {message && <p role="status">{message}</p>}
-    <p className="tc-footnote">최신순으로 한 페이지에 12건씩 표시합니다. 30초마다 현재 페이지를 자동 확인하며, 화면 복귀·연결 복구 시 바로 확인합니다.</p>
     {feed && !feedError && (visibleItems.length ? <ul className="tc-community-wall">{visibleItems.map(item => <li key={item.id}>{kind === 'photo' && safePhotoUrl(item.photoUrl) && <a href={safePhotoUrl(item.photoUrl)!} target="_blank" rel="noopener noreferrer"><img src={safePhotoUrl(item.photoUrl)!} alt="공개 동의 후 승인된 새벽 사진" loading="lazy" /></a>}{kind === 'reflection' && item.eventDay !== null && <strong>10월 {item.eventDay + 5}일 묵상</strong>}<p>{item.text}</p></li>)}</ul> : <p className="tc-community-empty">아직 승인되어 공개된 {kind === 'photo' ? '사진이' : kind === 'reflection' ? '묵상이' : '기도제목이'} 없어요. 접수한 내용은 검수 후 보입니다.</p>)}
     <nav className="tc-community-pages" aria-label="공개 나눔 페이지">
       <button type="button" className="tc-secondary" disabled={page === 0} onClick={() => turnPage(page - 1)}>이전 페이지</button>

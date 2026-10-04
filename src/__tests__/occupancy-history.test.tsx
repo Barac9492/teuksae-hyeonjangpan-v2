@@ -11,7 +11,7 @@ function mock(percent: unknown, updatedAt=new Date().toISOString(), state='busy'
   vi.spyOn(globalThis,'fetch').mockResolvedValue(new Response(JSON.stringify({enabled:true,resources:[{id:'parking.songrim',category:'parking',state,version:2,updatedAt,occupancyPercent:percent,lastFullAt:'2026-10-04T19:00:00Z'}]})));
 }
 it('displays an explicit operator estimate for Songrim without exposing raw history metadata, and never a hidden Calvary banner',async()=>{
- mock(70);render(<Harness/>);expect(await screen.findByText('70% · 혼잡')).toHaveClass('tc-status-value--warn');expect(screen.getByText('송림주차장')).toBeVisible();expect(screen.getByText(/최근 10분 안에 현장팀이 확인한 항목만 현재 현황으로 표시합니다/)).toBeInTheDocument();expect(screen.queryByText(/각 항목은 마지막 확인 시각 기준입니다/)).not.toBeInTheDocument();expect(screen.queryByText(/갈보리/)).not.toBeInTheDocument();expect(screen.queryByText(/최근 만차·만석 기록/)).not.toBeInTheDocument();
+ mock(70);render(<Harness/>);expect(await screen.findByText('70% · 혼잡')).toHaveClass('tc-status-value--warn');expect(screen.getByText('송림주차장')).toBeVisible();expect(screen.getByText(/사용률은 현장팀의 추정치입니다. 10분이 지난 정보는 ‘확인 필요’로 표시합니다/)).toBeInTheDocument();expect(screen.queryByText(/각 항목은 마지막 확인 시각 기준입니다/)).not.toBeInTheDocument();expect(screen.queryByText(/갈보리/)).not.toBeInTheDocument();expect(screen.queryByText(/최근 만차·만석 기록/)).not.toBeInTheDocument();
 });
 it('uses green at 0%',async()=>{
  mock(0,new Date().toISOString(),'available');render(<Harness/>);expect(await screen.findByText('0% · 이용 가능')).toHaveClass('tc-status-value--good');
