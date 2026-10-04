@@ -56,9 +56,9 @@ describe('Companion independent regression review', () => {
     await user.click(screen.getByRole('tab', { name: '주차' }));
     expect(screen.getByRole('heading', { name: '모든 주차 공간이 만차예요' })).toBeVisible();
     await user.click(screen.getByRole('button', { name: '서현 · 드림센터' }));
-    expect(screen.getByRole('heading', { name: '현재 안내하는 층을 확인해요' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: '전체 주차장의 사용률을 확인해요' })).toBeVisible();
     expect(screen.queryByRole('heading', { name: '모든 주차 공간이 만차예요' })).not.toBeInTheDocument();
-    expect(screen.getByText('B2층으로 안내 중')).toBeVisible();
+    expect(screen.getByText('50% · 이용 가능')).toBeVisible();
   });
 
   it('retains photo preview across tabs and rejects photos over 8MB before creating an object URL', async () => {

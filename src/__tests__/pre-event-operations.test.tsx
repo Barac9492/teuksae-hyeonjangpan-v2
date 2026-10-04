@@ -22,11 +22,11 @@ it('shows ordinary dated operations before the event without a separate inspecti
  expect(screen.queryByText(/갈보리/)).not.toBeInTheDocument();
  expect(liveStage(ops)).toBe(3);
 });
-it('retains a prior-day value across midnight without claiming a current stage', () => {
+it('retains a prior-day value across midnight with the last confirmed stage and dated disclosure', () => {
  const ops = operations('2026-10-05T00:00:00+09:00');
  render(<LiveParkingPanel venue="songrim" setVenue={()=>{}} operations={ops}/>);
  expect(screen.getAllByText('100% · 만차').length).toBeGreaterThan(0);
- expect(liveStage(ops)).toBeNull();
+ expect(liveStage(ops)).toBe(3);
  expect(screen.getByText(/마지막 확인 10. 4./)).toBeVisible();
 });
 it('does not hide live status after the official event end date, since date-based hiding was removed', () => {
@@ -54,7 +54,7 @@ it('retains a neutral last-known value while offline', () => {
  expect(screen.getByText('100% · 만차')).toHaveClass('tc-status-value--neutral');
  expect(screen.getByText(/마지막 확인 .*한국/)).toBeVisible();
  expect(screen.queryByText(/갈보리/)).not.toBeInTheDocument();
- expect(liveStage(ops)).toBeNull();
+ expect(liveStage(ops)).toBe(3);
 });
 it('does not present a future timestamp as a confirmed reading', () => {
  const ops = operations('2026-10-04T23:58:00+09:00');

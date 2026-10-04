@@ -64,7 +64,7 @@ it('loads bounded pages, keeps selected page on refresh, retains composer and pa
  await user.click(screen.getByRole('button',{name:'이전 페이지'}));fail=false;
  act(()=>window.dispatchEvent(new Event('online')));await screen.findByText('new 11');
 });
-it('shows Songrim first, removes retired inputs and writes one Dream guidance with a stable version',async()=>{
+it('shows Songrim first, removes retired inputs and writes one Dream occupancy with a stable version',async()=>{
  const session={authenticated:true,username:'LOCAL',role:'parking',displayName:'검증',sessionId:'S-LOCAL',expiresAt:'2030-01-01T00:00:00Z',capabilities:{liveOperations:true}};
  let resources=[{id:'parking.calvary',label:'갈보리',category:'parking',state:'checking',version:0,updatedAt:null},{id:'parking.dream.b1',label:'드림 B1',category:'parking',state:'checking',version:0,updatedAt:null},{id:'parking.dream',label:'드림센터 주차장',category:'parking',state:'checking',version:2,updatedAt:null,guideFloor:null,occupancyPercent:null},{id:'parking.songrim',label:'송림주차장',category:'parking',state:'checking',version:0,updatedAt:null}];
  const writes:Record<string,unknown>[]=[];
@@ -73,24 +73,24 @@ it('shows Songrim first, removes retired inputs and writes one Dream guidance wi
   if(init?.method==='POST'){const body=JSON.parse(String(init.body));writes.push(body);resources=resources.map(r=>r.id===body.resourceId?{...r,...body,version:r.version+1}:r);return response({resource:resources.find(r=>r.id===body.resourceId)});}
   return response({resources,history:[],canManageAccounts:false});
  });
- const user=userEvent.setup();render(<AdminApp/>);await screen.findByLabelText('드림센터 현재 주차 안내');
+ const user=userEvent.setup();render(<AdminApp/>);await screen.findByLabelText('드림센터 주차장 사용률·상태');
  expect(screen.queryByText('갈보리')).not.toBeInTheDocument();expect(screen.queryByText('드림 B1')).not.toBeInTheDocument();
  expect(document.querySelector('.ta-admin__resource h3')).toHaveTextContent('송림주차장');
- expect(screen.getByLabelText('드림센터 현재 주차 안내')).toHaveValue('unselected');
+ expect(screen.getByLabelText('드림센터 주차장 사용률·상태')).toHaveValue('unselected');
  expect(within(screen.getByRole('heading',{name:'드림센터 주차장'}).closest('article')!).getByRole('button',{name:/현황 확인|상태 저장/})).toBeDisabled();
- await user.selectOptions(screen.getByLabelText('드림센터 현재 주차 안내'),'2');
+ await user.selectOptions(screen.getByLabelText('드림센터 주차장 사용률·상태'),'70');
  const card=screen.getByRole('heading',{name:'드림센터 주차장'}).closest('article')!;
  const save=within(card).getByRole('button',{name:/현황 확인|상태 저장/});act(()=>{save.click();save.click();});
- await waitFor(()=>expect(writes).toHaveLength(1));expect(writes[0]).toMatchObject({resourceId:'parking.dream',guideFloor:2,state:'available',expectedVersion:2,occupancyPercent:null});
+ await waitFor(()=>expect(writes).toHaveLength(1));expect(writes[0]).toMatchObject({resourceId:'parking.dream',guideFloor:null,state:'busy',expectedVersion:2,occupancyPercent:70});
 });
 
 it.each([
- ['available',2,0,'B2층으로 안내 중'],
- ['full',null,0,'전체 만차'],
+ ['available',2,0,'사용률 확인 전'],
+ ['full',null,0,'만차'],
  ['closed',null,0,'닫힘'],
  ['available',6,0,'확인 필요'],
- ['available',null,0,'확인 필요'],
- ['available',2,11*60000,'B2층으로 안내 중'],
+ ['available',null,0,'사용률 확인 전'],
+ ['available',2,11*60000,'사용률 확인 전'],
  ['available',2,-60000,'확인 필요'],
 ] as const)('Dream guidance preserves old valid values and rejects invalid values for state=%s floor=%s age=%s',async(state,guideFloor,age,text)=>{
  vi.spyOn(Date,'now').mockReturnValue(Date.parse('2026-10-06T04:10:00+09:00'));

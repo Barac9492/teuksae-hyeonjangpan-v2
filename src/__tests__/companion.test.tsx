@@ -65,7 +65,7 @@ describe('CompanionApp', () => {
     expect(screen.getByText('11층')).toBeVisible();
     await chooseTab(user, '주차');
     expect(screen.getByText('드림센터 주차장')).toBeVisible();
-    expect(screen.getByText('B2층으로 안내 중')).toBeVisible();
+    expect(screen.getByText('50% · 이용 가능')).toBeVisible();
   });
 
   it('fails closed for stale status and can preview all parking full without a live claim', async () => {

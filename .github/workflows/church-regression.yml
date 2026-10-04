@@ -41,6 +41,7 @@ jobs:
           npm run test:moderation-audit-sql
           npm run test:prayer-masking-sql
           npm run test:photo-archive-sql
+          npm run test:continuous-operations-sql
       - name: Verify mobile and desktop interactions
         run: |
           test -x "$CHROME_PATH"

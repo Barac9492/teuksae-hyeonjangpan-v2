@@ -17,9 +17,9 @@ describe('Asia/Seoul service boundaries', () => {
     expect(servicePeriod(at(6,'00:00:00'))).toMatchObject({eventDay:6,mode:'before'});
     for (const date of ['2026-10-04T04:40:00+09:00','2026-10-11T04:40:00+09:00','2027-10-05T04:40:00+09:00']) expect(servicePeriod(Date.parse(date)).mode).toBe('outside');
   });
-  it('rejects responses across worship, whole suspended services, midnight, and backward clock changes', () => {
-    expect(canPublishPublicRequest(at(5,'04:39:59'),at(5,'04:40:00'))).toBe(false);
-    expect(canPublishPublicRequest(at(5,'04:39:59'),at(5,'05:50:00'))).toBe(false);
+  it('allows service boundaries but rejects cross-day and backward-clock responses', () => {
+    expect(canPublishPublicRequest(at(5,'04:39:59'),at(5,'04:40:00'))).toBe(true);
+    expect(canPublishPublicRequest(at(5,'04:39:59'),at(5,'05:50:00'))).toBe(true);
     expect(canPublishPublicRequest(at(5,'23:59:59'),at(6,'00:00:00'))).toBe(false);
     expect(canPublishPublicRequest(at(5,'05:50:00'),at(5,'04:39:59'))).toBe(false);
     expect(canPublishPublicRequest(at(5,'05:50:00'),at(5,'05:50:01'))).toBe(true);

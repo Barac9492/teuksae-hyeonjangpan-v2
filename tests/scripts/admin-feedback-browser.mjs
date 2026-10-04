@@ -10,9 +10,9 @@ const page=await context.newPage(),errors=[],posts=[];page.on('pageerror',e=>err
 await page.goto(base+'/admin');await page.getByRole('heading',{name:'현장 확인부터 시작하세요'}).waitFor();
 assert.equal(await page.locator('body').evaluate(e=>e.scrollWidth<=innerWidth),true);
 await page.screenshot({path:out+'mobile-dashboard.png'});
-await page.getByRole('tab',{name:'주차',exact:true}).click();await page.getByLabel('드림센터 현재 주차 안내').selectOption('5');
-await page.getByLabel('드림센터 현재 주차 안내').locator('..').locator('..').getByRole('button',{name:/현황 확인|상태 저장/}).click();await page.getByText(/저장했습니다/).waitFor();
-assert.equal((await (await context.request.get(base+'/api/status')).json()).resources.find(r=>r.id==='parking.dream').guideFloor,5);
+await page.getByRole('tab',{name:'주차',exact:true}).click();await page.getByLabel('드림센터 주차장 사용률·상태').selectOption('90');
+await page.getByLabel('드림센터 주차장 사용률·상태').locator('..').locator('..').getByRole('button',{name:/현황 확인|상태 저장/}).click();await page.getByText(/저장했습니다/).waitFor();
+assert.equal((await (await context.request.get(base+'/api/status')).json()).resources.find(r=>r.id==='parking.dream').occupancyPercent,90);
 await page.screenshot({path:out+'mobile-parking.png',fullPage:true});
 await page.getByRole('tab',{name:'변경 기록',exact:true}).click();assert.equal(await page.locator('.ta-admin__history p').count(),10);await page.getByRole('button',{name:'다음 기록'}).click();assert.equal(await page.locator('.ta-admin__history p').count(),10);await page.screenshot({path:out+'mobile-history.png'});
 await page.getByRole('tab',{name:'기도카드 승인',exact:true}).click();await page.locator('.community-moderation__item').first().waitFor();assert.equal(await page.locator('.community-moderation__item').count(),20);assert.equal(await page.getByRole('checkbox').count(),20);assert.equal(await page.getByRole('checkbox').first().isDisabled(),false);await page.getByRole('region',{name:/확정이 필요한 기도/}).waitFor();

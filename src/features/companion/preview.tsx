@@ -36,6 +36,7 @@ export function PreviewWorshipStatus({ venue, stage, stale }: { venue: Venue; st
     <div className="tc-status-list">
       <StatusRow name="학교 출입" value={stage === 0 ? '개방 전' : '개방'} tone={stage === 0 ? 'neutral' : 'good'} />
       <StatusRow name="본당" extra="1·2층 통합 안내" value={stage < 3 ? '입장 전' : stage === 3 ? '입장 중' : '입장 마감'} tone={stage === 4 ? 'stop' : stage === 3 ? 'good' : 'neutral'} />
+      <StatusRow name="본당 4층" value="사용률 확인 전" tone="neutral" />
       <StatusRow name="체육관" value={stage < 2 ? '개방 전' : stage === 4 ? '혼잡' : '개방 · 여유'} tone={stage < 2 ? 'neutral' : stage === 4 ? 'warn' : 'good'} />
     </div>
   </>;
@@ -48,7 +49,7 @@ export function PreviewParkingPanel({ venue, setVenue, stage, stale, allFull, go
   else if (closed) body = <><StatusLead tone="neutral" label="송림본당 주차 · 디자인 예시" title="아직 차량이 들어갈 수 없어요">학교 출입문 개방 전입니다. 주차 공간이 있어도 진입할 수 없어요.</StatusLead><div className="tc-status-list"><StatusRow name="학교 차량 출입" value="진입 전" /><StatusRow name="주차 공간" value="개방 후 안내" /></div></>;
   else if (allFull) body = <><StatusLead tone="red" label={`${venue === 'songrim' ? '송림본당' : '드림센터'} 주차 · 디자인 예시`} title="모든 주차 공간이 만차예요">추가 진입은 현장 주차요원의 안내를 따라주세요.</StatusLead><div className="tc-quiet"><strong>대체 주차 장소는 확인 중입니다.</strong><p>교회가 확인한 장소·이용 시간·진입 방법이 정해지면 안내합니다. 임의 주차는 피해주세요.</p></div></>;
   else if (venue === 'songrim') body = <><StatusLead tone="amber" label="송림본당 주차 · 디자인 예시" title="교내 주차장이 혼잡해요">학교 안에서는 대기줄과 보행자 동선을 주의해주세요.</StatusLead><div className="tc-status-list"><StatusRow name="학교 차량 출입" value="진입 가능" tone="good" /><StatusRow name="주차 공간" value="혼잡" tone="warn" /></div></>;
-  else body = <><StatusLead label="드림센터 주차 · 디자인 예시" title="현재 안내하는 층을 확인해요">실제 이동할 층은 주차요원의 안내를 따라주세요.</StatusLead><StatusRow name="드림센터 주차장" extra="디자인 예시 · 주차팀이 직접 선택한 안내 층" value="B2층으로 안내 중" tone="good" /></>;
+  else body = <><StatusLead label="드림센터 주차 · 디자인 예시" title="전체 주차장의 사용률을 확인해요">실제 이동할 층은 주차요원의 안내를 따라주세요.</StatusLead><StatusRow name="드림센터 주차장" extra="디자인 예시 · 주차팀의 추정 사용률" value="50% · 이용 가능" tone="good" /></>;
   return (
     <section id="tc-panel-parking" className="tc-panel" role="tabpanel" aria-labelledby="tc-tab-parking">
       <PageHeading eyebrow="도착하기 전에" title="주차 안내" art={art}>진입 가능 여부와 주차 공간을 확인해요.</PageHeading>

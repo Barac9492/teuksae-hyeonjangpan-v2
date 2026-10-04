@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'teuksae-companion-install-20260928';
+const CACHE_VERSION = 'teuksae-companion-continuous-20261005';
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const ASSET_CACHE = `${CACHE_VERSION}-assets`;
 

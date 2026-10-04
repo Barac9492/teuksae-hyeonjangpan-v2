@@ -151,7 +151,7 @@ export function CompanionApp() {
           : operations.offline ? <div className="tc-live-banner" data-offline="true" role="status">오프라인 · 최신 현황을 확인할 수 없습니다.</div> : null}
         {(mode === 'worship' || mode === 'after') && <div className="tc-service-banner" role="status" aria-live="polite" data-service-mode={mode}>
           <strong>{mode === 'worship' ? '예배 중' : '예배 후'}</strong>
-          <span>{mode === 'worship' ? '04:40–05:50 · 정보 갱신을 잠시 멈춥니다.' : '귀가·아침 식사와 나눔을 안내합니다.'}</span>
+          <span>{mode === 'worship' ? '04:40–05:50 · 현황과 나눔은 계속 이용할 수 있습니다.' : '현황과 나눔을 계속 확인하고 귀가 안내도 이용하세요.'}</span>
         </div>}
         <main id={mainId} ref={mainRef} tabIndex={-1}>
           <div hidden={tab !== 'worship'}>

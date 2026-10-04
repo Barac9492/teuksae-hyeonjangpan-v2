@@ -3,16 +3,16 @@ import { servicePeriod, watchServiceClock } from './serviceSchedule';
 export function foregroundPolling(load: (signal: AbortSignal) => Promise<void>, interval: number, onOffline?: () => void, immediate = true, supersedeOnVisible = false, policy?: { publicSchedule: boolean; onPeriodChange?: () => void }) {
   let stopped = false;
   let active: AbortController | null = null;
-  let periodKey = servicePeriod().key;
+  let periodKey = servicePeriod().date;
   const syncPeriod = () => {
     if (!policy?.publicSchedule) return true;
     const period = servicePeriod();
-    if (period.key !== periodKey) {
-      periodKey = period.key;
+    if (period.date !== periodKey) {
+      periodKey = period.date;
       active?.abort(); active = null;
       policy.onPeriodChange?.();
     }
-    return period.mode !== 'worship';
+    return true;
   };
   const refresh = async () => {
     if (stopped) return;

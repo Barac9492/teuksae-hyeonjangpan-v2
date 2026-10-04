@@ -76,7 +76,7 @@ describe('public companion live operations', () => {
     await user.click(screen.getByRole('tab', { name: '주차' }));
     expect(screen.getByText('드림센터 주차장')).toBeVisible();
     expect(screen.queryByText('B5')).not.toBeInTheDocument();
-    expect(within(screen.getByRole('tabpanel', { name: '주차' })).getByText('전체 만차')).toBeVisible();
+    expect(within(screen.getByRole('tabpanel', { name: '주차' })).getByText('만차')).toBeVisible();
   });
 
   it.each(['2026-10-04T14:59:59Z', '2026-10-06T00:00:00Z', '2026-10-05T18:00:00Z'])('does not claim a confirmed live banner for invalid freshness %s', async (updatedAt) => {

@@ -1,0 +1,59 @@
+{
+  "base": "http://127.0.0.1:4196",
+  "externalTraffic": "blocked",
+  "data": "synthetic route fixtures only",
+  "checks": [
+    {
+      "width": 320,
+      "syntheticWrites": 2,
+      "checks": [
+        "last confirmed time",
+        "old saved values retained with neutral last-record label",
+        "previous-day attribution",
+        "offline/failure/resume retains saved parking",
+        "no horizontal overflow",
+        "warning focus",
+        "cancel keeps draft",
+        "double click one write",
+        "unsaved 4F draft retained through polling and both time boundaries",
+        "independent 4F percentage saved",
+        "04:40 and 05:50 admin/public agreement"
+      ]
+    },
+    {
+      "width": 390,
+      "syntheticWrites": 2,
+      "checks": [
+        "last confirmed time",
+        "old saved values retained with neutral last-record label",
+        "previous-day attribution",
+        "offline/failure/resume retains saved parking",
+        "no horizontal overflow",
+        "warning focus",
+        "cancel keeps draft",
+        "double click one write",
+        "unsaved 4F draft retained through polling and both time boundaries",
+        "independent 4F percentage saved",
+        "04:40 and 05:50 admin/public agreement"
+      ]
+    },
+    {
+      "width": 1440,
+      "syntheticWrites": 2,
+      "checks": [
+        "last confirmed time",
+        "old saved values retained with neutral last-record label",
+        "previous-day attribution",
+        "offline/failure/resume retains saved parking",
+        "no horizontal overflow",
+        "warning focus",
+        "cancel keeps draft",
+        "double click one write",
+        "unsaved 4F draft retained through polling and both time boundaries",
+        "independent 4F percentage saved",
+        "04:40 and 05:50 admin/public agreement"
+      ]
+    }
+  ],
+  "errors": []
+}

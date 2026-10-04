@@ -6,7 +6,7 @@ import type { Runtime } from './runtime';
 import './rehearsal.css';
 import { foregroundPolling } from '../companion/polling';
 
-export function RuntimeProvider({ children, pauseDuringWorship = false }: { children: ReactNode; pauseDuringWorship?: boolean }) {
+export function RuntimeProvider({ children, publicDayBoundaries = false }: { children: ReactNode; publicDayBoundaries?: boolean }) {
   const [runtime, setRuntime] = useState<Omit<Runtime, 'eventDay' | 'setEventDay'> | null>(null);
   const [eventDay, setEventDay] = useState(0);
   useEffect(() => {
@@ -16,13 +16,13 @@ export function RuntimeProvider({ children, pauseDuringWorship = false }: { chil
       try {
         const response = await fetch('/api/status', { cache: 'no-store', credentials: 'same-origin', signal });
         const body: unknown = await response.json();
-        if (signal.aborted || (pauseDuringWorship && !canPublishPublicRequest(startedAt))) return;
+        if (signal.aborted || (publicDayBoundaries && !canPublishPublicRequest(startedAt))) return;
         if (!response.ok || !body || typeof body !== 'object' || !('enabled' in body) || typeof body.enabled !== 'boolean' || !('resources' in body) || !Array.isArray(body.resources)) throw new Error('Invalid runtime');
         const { enabled, resources } = body;
         setRuntime(current => ({ rehearsal: false, managed: true, status: { enabled, resources: enabled ? resources : current?.status?.resources ?? [] }, offline: false, lastSync: Date.now() }));
-      } catch { if ((!pauseDuringWorship || canPublishPublicRequest(startedAt)) && (!signal.aborted || signal.reason?.message === 'timeout')) markOffline(); }
-    }, 20000, markOffline, true, false, { publicSchedule: pauseDuringWorship });
+      } catch { if ((!publicDayBoundaries || canPublishPublicRequest(startedAt)) && (!signal.aborted || signal.reason?.message === 'timeout')) markOffline(); }
+    }, 20000, markOffline, true, false, { publicSchedule: publicDayBoundaries });
     return polling.stop;
-  }, [pauseDuringWorship]);
+  }, [publicDayBoundaries]);
   return <RuntimeContext.Provider value={{ rehearsal: false, managed: true, status: null, offline: !navigator.onLine, lastSync: null, ...runtime, eventDay, setEventDay }}>{children}</RuntimeContext.Provider>;
 }

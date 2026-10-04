@@ -1,0 +1,33 @@
+{
+  "verifiedAtUTC": "2026-10-04T22:40:43Z",
+  "baseCommit": "097413ad4716d0cba889acf0b5e4b72021bedf3f",
+  "frontend": {
+    "files": 56,
+    "passed": 641
+  },
+  "server": {
+    "passed": 98
+  },
+  "migrationChecks": 180,
+  "otherSQL": {
+    "feedback": "pass",
+    "adminFeedback": "pass",
+    "community": 233,
+    "moderationAudit": 30,
+    "prayerMasking": 36,
+    "photoArchive": 77
+  },
+  "lint": "pass",
+  "build": "pass",
+  "swSyntax": "pass",
+  "diffCheck": "pass",
+  "browserViewports": [
+    320,
+    390,
+    1440
+  ],
+  "productionWrites": 0,
+  "remoteMigrationApplied": false,
+  "deploymentPerformed": false,
+  "liveAdminComparison": "unverified; authenticated session unavailable"
+}

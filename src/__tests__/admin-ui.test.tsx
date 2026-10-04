@@ -116,7 +116,7 @@ it.each(['superadmin','parking','space'] as const)('shows the full read-only pub
  for(const name of ['송림본당 개방 단계','본당1·2층','체육관','드림센터 11층','드림센터 7층','드림센터 3층','송림주차장','드림센터 주차장'])expect(within(table).getByRole('rowheader',{name})).toBeVisible();
  expect(within(table).getByText('공개 중(최근 확인)')).toBeVisible();
  expect(within(table).getAllByText('확인 기록 없음')).toHaveLength(7);
- expect(within(table).getByText('B2층으로 안내 중')).toBeVisible();
+ expect(within(table).getByText('사용률 확인 전')).toBeVisible();
  if(role==='parking')expect(screen.getByRole('button',{name:'주차 현황 입력하기'})).toBeVisible();
  else expect(screen.getByRole('button',{name:'예배 공간 현황 입력으로 이동'})).toBeVisible();
  if(role==='superadmin')expect(screen.getByRole('button',{name:'주차 현황 입력하기'})).toBeVisible();
