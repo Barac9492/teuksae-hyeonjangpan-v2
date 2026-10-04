@@ -93,7 +93,7 @@ const stale = (value: string | null) => !!value && (!Number.isFinite(new Date(va
 const choices = (r: Resource) => r.id === 'space.songrim.access' ? ['checking', 'closed', 'school_open', 'gym_open', 'hall_open', 'hall_closed'] : normal;
 const label = (r: Resource, state: string) => { if (state === 'checking')
     return '현장 확인 전'; if (r.id === 'space.songrim.access')
-    return ({ closed: '학교 개방 전', school_open: '학교만 개방', gym_open: '체육관 먼저 개방', hall_open: '본당 입장 중', hall_closed: '본당 입장 마감' }[state] ?? state); if (state === 'closed')
+    return ({ closed: '교문 개방 전', school_open: '교문 개방', gym_open: '체육관 먼저 개방', hall_open: '본당 입장 중', hall_closed: '본당 입장 마감' }[state] ?? state); if (state === 'closed')
     return r.category === 'parking' ? '이용 불가' : '미개방'; if (state === 'available')
     return '이용 가능'; if (state === 'busy')
     return '혼잡'; if (state === 'full')

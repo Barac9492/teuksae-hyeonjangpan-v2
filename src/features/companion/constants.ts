@@ -15,7 +15,7 @@ export const venueNames: Record<Venue, { area: string; name: string; short: stri
 };
 
 
-export const stageNames = ['학교 개방 전', '학교만 개방', '체육관 먼저 개방', '본당 입장 중', '본당 입장 마감'] as const;
+export const stageNames = ['교문 개방 전', '교문 개방', '체육관 먼저 개방', '본당 입장 중', '본당 입장 마감'] as const;
 export const trailLabels = ['입장 전', '학교 안', '체육관', '본당 입장', '마감'] as const;
 
 export const VERSE = ['폐하시고 다윗을 왕으로 세우시고', '증언하여 이르시되', '내가 이새의 아들 다윗을 만나니', '내 마음에 맞는 사람이라', '내 뜻을 다 이루리라 하시더니'];
