@@ -1,4 +1,10 @@
 import '@testing-library/jest-dom/vitest';
+import { beforeEach, vi } from 'vitest';
+
+// Scheduling tests set their own clock; unrelated tests must not follow live worship hours.
+const anchorDefaultClock = () => { vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-10-01T12:00:00+09:00')); };
+anchorDefaultClock(); // Also anchor fixtures declared at module scope.
+beforeEach(anchorDefaultClock);
 
 class MemoryStorage implements Storage {
   private readonly values = new Map<string, string>();

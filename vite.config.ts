@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: 'jsdom',
+    fakeTimers: { now: Date.parse('2026-10-01T12:00:00+09:00') },
     environmentOptions: {
       jsdom: {
         url: 'http://localhost/',

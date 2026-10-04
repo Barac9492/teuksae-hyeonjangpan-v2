@@ -1,3 +1,4 @@
+import { hasConfirmedStatus, isFreshStatus, lastConfirmedText } from './statusPresentation';
 import { canPublishPublicRequest, servicePeriod } from './serviceSchedule';
 import type { ServiceMode } from './serviceSchedule';
 import { useServiceClock } from './useServiceClock';
@@ -35,9 +36,8 @@ type Freshness = 'fresh' | 'unconfirmed' | 'stale' | 'invalid' | 'future' | 'off
 // Public reads pause during the scheduled services. Outside that window,
 // finite/not-future timestamp checks still determine whether a reading is current.
 const REFRESH_MS = 20_000;
-const FRESH_MS = 10 * 60_000;
 const defaults: LiveResource[] = [
-  { id: 'space.songrim.access', label: '학교 출입', category: 'space', state: 'checking', version: 0, updatedAt: null },
+  { id: 'space.songrim.access', label: '송림 입장 단계', category: 'space', state: 'checking', version: 0, updatedAt: null },
   { id: 'space.songrim.hall', label: '본당 1·2층', category: 'space', state: 'checking', version: 0, updatedAt: null },
   { id: 'space.songrim.gym', label: '체육관', category: 'space', state: 'checking', version: 0, updatedAt: null },
   { id: 'space.dream.f3', label: '3층', category: 'space', state: 'checking', version: 0, updatedAt: null },
@@ -75,7 +75,7 @@ function freshness(updatedAt: string | null, now: number, offline: boolean, enab
   const time = Date.parse(updatedAt);
   if (!Number.isFinite(time)) return 'invalid';
   if (time > now) return 'future';
-  return now - time <= FRESH_MS ? 'fresh' : 'stale';
+  return isFreshStatus(updatedAt, now) ? 'fresh' : 'stale';
 }
 function stateText(resource: LiveResource): string {
   if (resource.state === 'full') return resource.category === 'parking' ? '만차' : '입장 마감';
@@ -108,12 +108,13 @@ export function useLiveOperations(active = true) {
         const resources = (body as { resources: unknown[] }).resources.map(validResource).filter((item): item is LiveResource => item !== null);
         setResponse({ enabled: true, resources }); setOffline(false); setLastSync(Date.now());
       } catch { if (canPublishPublicRequest(startedAt) && (!signal.aborted || signal.reason?.message === 'timeout')) setOffline(true); }
-    }, REFRESH_MS, () => setOffline(true), true, false, { publicSchedule: true, onPeriodChange: () => { setResponse(null); setLastSync(null); } });
+    }, REFRESH_MS, () => setOffline(true), true, false, { publicSchedule: true });
     return polling.stop;
   }, [active, runtime.managed]);
   const sourceResponse = useMemo(() => runtime.managed ? { enabled: runtime.status?.enabled === true, resources: (runtime.status?.resources ?? []).map(validResource).filter((r): r is LiveResource => r !== null) } : response, [runtime.managed, runtime.status, response]);
   const syncTime = runtime.managed ? runtime.lastSync : lastSync;
-  const effectiveResponse = syncTime != null && canPublishPublicRequest(syncTime, now) ? sourceResponse : null;
+  // Keep accepted operational readings across service/day boundaries; display mode still overrides them.
+  const effectiveResponse = sourceResponse;
   const effectiveOffline = runtime.managed ? runtime.offline : offline;
   const resources = useMemo(() => { const remote = new Map((effectiveResponse?.resources ?? []).map((resource) => [resource.id, resource])); return defaults.map((fallback) => remote.get(fallback.id) ?? fallback); }, [effectiveResponse]);
   const effectiveNow = Math.max(now, syncTime ?? now);
@@ -134,9 +135,10 @@ function liveItem(id: string, operations: Operations): FloorItem {
   const resource = (operations.resources.find((item) => item.id === id) ?? byId.get(id)!);
   const status = freshness(resource.updatedAt, operations.now, operations.offline, operations.enabled);
   const capacity = hasOccupancySchema(resource);
-  const value = status !== 'fresh' ? '확인 필요' : resource.id === 'parking.dream' ? resource.state === 'available' && resource.guideFloor != null ? `B${resource.guideFloor}층으로 안내 중` : resource.state === 'full' ? '전체 만차' : stateText(resource) : capacity ? resource.state === 'closed' ? stateText(resource) : resource.occupancyPercent == null ? '사용률 확인 전' : `${resource.occupancyPercent}% · ${stateText(resource)}` : stateText(resource);
+  const recorded = hasConfirmedStatus(resource.updatedAt, operations.now);
+  const value = !recorded ? '확인 필요' : resource.id === 'parking.dream' ? resource.state === 'available' && resource.guideFloor != null ? `B${resource.guideFloor}층으로 안내 중` : resource.state === 'full' ? '전체 만차' : stateText(resource) : capacity ? resource.state === 'closed' || resource.state === 'full' && resource.occupancyPercent == null ? stateText(resource) : resource.occupancyPercent == null ? '사용률 확인 전' : `${resource.occupancyPercent}% · ${stateText(resource)}` : stateText(resource);
   const tone = status !== 'fresh' ? 'neutral' : capacity ? resource.state === 'closed' ? stateTone(resource.state) : resource.occupancyPercent == null ? 'neutral' : occupancyTone(resource.occupancyPercent) : stateTone(resource.state);
-  return { key: id, label: resource.label, value, tone };
+  return { key: id, label: resource.label, value, tone, sub: lastConfirmedText(resource.updatedAt, operations.now, status !== 'fresh') };
 }
 
 /** Songrim's current step, only when the access value is fresh. */
@@ -150,10 +152,15 @@ export function liveStage(operations: Operations): number | null {
   return index === -1 ? null : index;
 }
 
-export function LiveNotice({ enabled, offline, confirmed, guidance = false }: { enabled: boolean; offline: boolean; confirmed: boolean; guidance?: boolean }) {
-  if (offline) return <div className="tc-live-notice tc-live-notice--offline" role="status"><strong>연결 확인 중</strong><span>마지막 안내를 실제 현황으로 표시하지 않습니다.</span></div>;
-  if (!enabled || !confirmed) return <div className="tc-live-notice" role="status"><strong>현장팀 확인 전</strong><span>현재 표시된 장소에 최근 확인된 현황이 없습니다.</span></div>;
-  return <div className="tc-live-notice tc-live-notice--active"><strong>현장팀 확인 현황</strong><details><summary aria-label="현황 안내 자세히 보기">ⓘ 현황 안내</summary><p>{guidance ? '주차팀이 안내하는 층과 전체 만차 여부입니다.' : '사용률은 현장팀의 추정치입니다. 10분이 지난 정보는 ‘확인 필요’로 표시합니다. 초록 0~60% · 주황 70~90% · 빨강 100% · 회색 확인 필요'}</p></details></div>;
+export function LiveNotice({ enabled, offline, confirmed, recorded = false, guidance = false }: { enabled: boolean; offline: boolean; confirmed: boolean; recorded?: boolean; guidance?: boolean }) {
+  if (offline || !enabled && recorded) return <div className="tc-live-notice tc-live-notice--offline" role="status"><strong>연결 확인 중</strong><span>{recorded ? '마지막 저장값을 표시합니다. 최신 상태는 다시 연결한 뒤 확인합니다.' : '아직 불러온 현황이 없습니다.'}</span></div>;
+  if (!confirmed && recorded) return <div className="tc-live-notice" role="status"><strong>마지막 확인 기록</strong><span>마지막 저장값입니다. 각 항목의 확인 시각을 확인해주세요.</span></div>;
+  if (!enabled || !confirmed) return <div className="tc-live-notice" role="status"><strong>현장팀 확인 전</strong><span>아직 확인된 현황이 없습니다.</span></div>;
+  return <div className="tc-live-notice tc-live-notice--active"><strong>현장팀 확인 현황</strong><details><summary aria-label="현황 안내 자세히 보기">ⓘ 현황 안내</summary><p>{guidance ? '주차팀이 마지막으로 안내한 층과 전체 만차 여부입니다. 확인 시각을 함께 확인해주세요.' : '사용률은 현장팀의 추정치입니다. 마지막 저장값과 확인 시각을 함께 표시합니다. 초록 0~60% · 주황 70~90% · 빨강 100% · 회색 마지막 기록 또는 확인 전'}</p></details></div>;
+}
+
+function hasRecordedDisplayedResource(ids: string[], operations: Operations) {
+  return operations.resources.some(resource => ids.includes(resource.id) && hasConfirmedStatus(resource.updatedAt, operations.now));
 }
 
 function StatusList({ items }: { items: FloorItem[] }) {
@@ -164,7 +171,7 @@ export function LiveWorshipStatus({ venue, operations }: { venue: Venue; operati
   if (operations.mode === 'after') return <div className="tc-quiet"><strong>예배 후</strong><p>귀가 동선과 주차 출차 안내를 확인해주세요.</p><ParkingNotice venue={venue} day={noticeServiceDay(operations.now)} /></div>;
   const ids = venue === 'songrim' ? ['space.songrim.access', 'space.songrim.hall', 'space.songrim.gym'] : ['space.dream.f11', 'space.dream.f7', 'space.dream.f3'];
   const items = ids.map((id) => liveItem(id, operations));
-  return <>{operations.mode === 'worship' ? <p className="tc-quiet">예배 중 · 현황 갱신을 잠시 멈춥니다.</p> : <LiveNotice enabled={operations.enabled} offline={operations.offline} confirmed={hasFreshDisplayedResource(ids, operations)} />}{venue === 'songrim' ? <StatusList items={items} /> : <FloorStack items={items} variant="above" />}</>;
+  return <>{operations.mode === 'worship' ? <p className="tc-quiet">예배 중 · 현황 갱신을 잠시 멈춥니다.</p> : <LiveNotice enabled={operations.enabled} offline={operations.offline} confirmed={hasFreshDisplayedResource(ids, operations)} recorded={hasRecordedDisplayedResource(ids, operations)} />}{venue === 'songrim' ? <StatusList items={items} /> : <FloorStack items={items} variant="above" />}</>;
 }
 
 export function LiveParkingPanel({ venue, setVenue, operations, art }: { venue: Venue; setVenue: (venue: Venue) => void; operations: Operations; art?: ReactNode }) {
@@ -177,7 +184,7 @@ export function LiveParkingPanel({ venue, setVenue, operations, art }: { venue: 
         <VenueSwitch venue={venue} onChange={setVenue} label="주차 장소" />
         <ParkingNotice venue={venue} day={noticeServiceDay(operations.now)} />
         {venue === 'dream' && operations.mode !== 'worship' && <p className="tc-panel-note">드림센터는 표시된 층으로 안내합니다. 이동은 현장 주차요원의 안내를 따라주세요.</p>}
-        {operations.mode === 'worship' ? <p className="tc-quiet">예배 중 · 현황 갱신을 잠시 멈춥니다.</p> : <LiveNotice guidance={venue === 'dream'} enabled={operations.enabled} offline={operations.offline} confirmed={hasFreshDisplayedResource(ids, operations)} />}
+        {operations.mode === 'worship' ? <p className="tc-quiet">예배 중 · 현황 갱신을 잠시 멈춥니다.</p> : <LiveNotice guidance={venue === 'dream'} enabled={operations.enabled} offline={operations.offline} confirmed={hasFreshDisplayedResource(ids, operations)} recorded={hasRecordedDisplayedResource(ids, operations)} />}
         <StatusList items={items} />
         {venue === 'songrim' && <div className="tc-quiet"><strong>학교 출입과 예배당 입장은 달라요.</strong><p>학교 문이 열려 차량이 들어가도 본당·체육관은 아직 닫혀 있을 수 있습니다.</p></div>}
         <p className="tc-safety"><span aria-hidden="true">🚗</span> 운전 중 화면을 조작하지 마세요. 동승자가 확인하거나 안전하게 정차한 뒤 이용해주세요.</p>

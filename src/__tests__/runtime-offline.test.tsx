@@ -43,7 +43,7 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe('production runtime offline safety', () => {
-  it('immediately removes current live claims in the production wrapper on disconnect', async () => {
+  it('retains the last reading neutrally and removes live claims on disconnect', async () => {
     vi.stubGlobal('fetch', vi.fn(async (url: string) => {
       if (url === '/api/status') return response(status());
       if (url.startsWith('/api/community?')) return response({ enabled: true, items: [], photoCountToday: 0 });
@@ -55,7 +55,8 @@ describe('production runtime offline safety', () => {
     expect(screen.getByText('현장팀 확인 현황')).toBeVisible();
     const confirmed = snapshot();
     disconnect();
-    expect(screen.queryByText('이용 가능')).not.toBeInTheDocument();
+    expect(screen.getByText('이용 가능')).toHaveClass('tc-status-value--neutral');
+    expect(screen.getByText('마지막 확인 04:10 (한국) · 마지막 기록')).toBeVisible();
     expect(screen.queryByText('현장팀 확인 현황')).not.toBeInTheDocument();
     expect(within(screen.getByRole('tabpanel', { name: '예배' })).getByText('연결 확인 중')).toBeVisible();
     expect(snapshot()).toMatchObject({ offline: true, status: confirmed.status, lastSync: confirmed.lastSync });
