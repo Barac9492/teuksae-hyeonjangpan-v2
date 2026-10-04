@@ -6,7 +6,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 const TOKEN = /^[A-Za-z0-9_-]{32,128}$/;
 const BUCKET = 'community-photos-v2';
 const MAX = 3 * 1024 * 1024;
-const ADMIN_STATUSES = ['all','pending','approved','rejected','trashed','mask_review'];
+const ADMIN_STATUSES = ['all','pending','approved','rejected','trashed','mask_review','archived'];
 // Preserve PostgreSQL microseconds in cursor timestamps; Date.toISOString would
 // round them and skip same-millisecond rows at a page boundary.
 const CURSOR_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[+-]\d{2}:\d{2})$/;
@@ -131,15 +131,16 @@ export async function handleCommunity(route, req, res, env = process.env, fetche
       }
       checked(data);
       // Photo visibility is governed entirely by the RPC's moderation status (pending/approved/
-      // rejected/deleted), not by public date eligibility. A pending item already required a
+      // rejected/deleted/trashed/archived), not by public date eligibility. A pending item already required a
       // revalidated moderator session above.
       const response = await fetcher(`${cfg.supabaseUrl}/storage/v1/object/authenticated/${bucketFor()}/${data.path}`,{headers});
       if (!response.ok) throw fail(503,'사진을 읽지 못했습니다.');
+      const bytes = Buffer.from(await response.arrayBuffer());
       // Recheck moderation visibility after storage read (second check), in case status changed
       // (e.g. approval revoked) between the first check and the storage fetch.
       checked(await call('photo',{id,session}));
 
-      res.statusCode=200; res.setHeader('Content-Type','image/png'); res.setHeader('Cache-Control','private, no-store'); res.setHeader('X-Content-Type-Options','nosniff'); res.setHeader('Vary','Cookie, Origin'); return res.end(Buffer.from(await response.arrayBuffer()));
+      res.statusCode=200; res.setHeader('Content-Type','image/png'); res.setHeader('Cache-Control','private, no-store'); res.setHeader('X-Content-Type-Options','nosniff'); res.setHeader('Vary','Cookie, Origin'); return res.end(bytes);
     }
     if (route === 'admin') {
       const session = await moderator();
@@ -154,18 +155,18 @@ export async function handleCommunity(route, req, res, env = process.env, fetche
       if (req.method === 'GET') {
         const args = adminPageArgs(url.searchParams);
         const data = await call('adminList',{session,...args});
-        if ((args.kind && data.kind !== args.kind) || (args.status === 'trashed' && !data.trashSupported)) throw fail(503,'검토 목록 DB 업데이트가 필요합니다.');
+        if ((args.kind && data.kind !== args.kind) || (args.status === 'trashed' && !data.trashSupported) || (args.status === 'archived' && data.archiveSupported !== true)) throw fail(503,'검토 목록 DB 업데이트가 필요합니다.');
         // A pre-011 RPC ignores these arguments. Do not silently claim a filter
         // or next page was applied if the database has not been migrated yet.
         if (data.nextCursor === undefined && (args.status !== 'all' || args.cursor)) throw fail(503,'검토 목록 업데이트가 필요합니다. 잠시 후 다시 시도해주세요.');
-        if (!Array.isArray(data.items) || data.items.length > (args.kind || args.status === 'trashed' ? 20 : 100) || (data.nextCursor != null && !validAdminCursor(data.nextCursor,args.status,args.kind))) throw fail(503,'검토 목록을 확인하지 못했습니다.');
+        if (!Array.isArray(data.items) || data.items.length > (args.kind || ['trashed','archived'].includes(args.status) ? 20 : 100) || (data.nextCursor != null && !validAdminCursor(data.nextCursor,args.status,args.kind))) throw fail(503,'검토 목록을 확인하지 못했습니다.');
         // Old API callers can ignore this field. Never expose the SQL cursor as
         // an object: browsers treat this bounded opaque token as a page pointer.
         const nextCursor = data.nextCursor == null ? null : Buffer.from(JSON.stringify(data.nextCursor)).toString('base64url');
         return reply(res,200,{...data, nextCursor, items:data.items.filter(item => item?.status !== 'deleted').map(item => adminPrayerItem(item, data.maskingPolicyVersion === PRAYER_MASK_VERSION))});
       }
       const b = await body(req);
-      if (!UUID.test(b.id || '') || !['approved','masked_approved','rejected','deleted','trashed','restored'].includes(b.decision) || !Number.isSafeInteger(b.expectedVersion) || b.expectedVersion < 0) throw fail(400,'검토 요청을 확인해주세요.');
+      if (!UUID.test(b.id || '') || !['approved','masked_approved','rejected','deleted','trashed','restored','archived','unarchived'].includes(b.decision) || !Number.isSafeInteger(b.expectedVersion) || b.expectedVersion < 0) throw fail(400,'검토 요청을 확인해주세요.');
       if (['approved','masked_approved'].includes(b.decision)) {
         const policy = await call('maskPolicy');
         if (policy.version !== PRAYER_MASK_VERSION) throw fail(503,'가림 정책 DB 업데이트가 필요합니다.');

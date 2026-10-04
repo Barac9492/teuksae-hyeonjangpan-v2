@@ -40,6 +40,7 @@ jobs:
           npm run test:community-sql
           npm run test:moderation-audit-sql
           npm run test:prayer-masking-sql
+          npm run test:photo-archive-sql
       - name: Verify mobile and desktop interactions
         run: |
           test -x "$CHROME_PATH"
@@ -63,3 +64,4 @@ jobs:
           done
           node tests/scripts/admin-feedback-browser.mjs
           node tests/scripts/entrance-browser.mjs
+          node tests/scripts/photo-archive-browser.mjs

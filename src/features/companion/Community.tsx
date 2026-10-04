@@ -6,7 +6,7 @@ import { foregroundPolling } from './polling';
 import type { FeedCursor, CommunityFeed, CommunityKind, Receipt } from './communityClient';
 import './community.css';
 const storageWarning = '삭제 기록을 이 기기에 저장하지 못했어요. 이 화면에서는 확인·삭제할 수 있지만 새로고침하거나 닫으면 삭제 권한을 잃을 수 있어요. 먼저 내 제출 기록에서 확인하거나 삭제해주세요.';
-const statusLabels: Record<string, string> = { pending: '검수 대기', approved: '공개 중', rejected: '반려', deleted: '삭제됨', trashed: '관리자 보관 중 (비공개)' };
+const statusLabels: Record<string, string> = { pending: '검수 대기', approved: '공개 중', rejected: '반려', deleted: '삭제됨', trashed: '휴지통 (비공개)', archived: '관리자 비공개 보관 중' };
 
 export function Community({ kind, text, eventDay = null, file, payloadKey, showComposer = true, defaultPublic = false }: {
   kind: CommunityKind; text: string; eventDay?: number | null; file?: File | null; payloadKey: string; showComposer?: boolean; defaultPublic?: boolean;
@@ -157,7 +157,7 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
       if (!status) throw new Error('처리 결과를 확인하지 못했어요. 다시 확인해주세요.');
       // A pending status may still need an exact-byte retry to finish uploading.
       // Approved/terminal results and confirmed withdrawal no longer need pixels.
-      if (record.kind === 'photo' && (['approved', 'rejected', 'deleted', 'trashed'].includes(String(result.status)) || (action === 'delete' && result.deleted === true))) {
+      if (record.kind === 'photo' && (['approved', 'rejected', 'deleted', 'trashed', 'archived'].includes(String(result.status)) || (action === 'delete' && result.deleted === true))) {
         const resolvedKeys = finishSubmissionForReceipt(record.id);
         // A confirmed old request is no longer an uncertain retry. Require a
         // new choice before submitting it again, but never reset another draft.
@@ -167,7 +167,7 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
       if (action === 'delete') { setMessage('서버의 제출 기록 삭제 결과를 확인했어요. 외부에 저장된 사본은 회수할 수 없어요.'); void refresh(true); }
       else {
         setMessage('서버에 접수했어요. 내 제출 기록에서 현재 상태를 확인할 수 있어요.');
-        if (result.status === 'deleted' || result.status === 'rejected' || result.status === 'trashed') { invalidateFeed(); void refresh(true); }
+        if (result.status === 'deleted' || result.status === 'rejected' || result.status === 'trashed' || result.status === 'archived') { invalidateFeed(); void refresh(true); }
       }
     } catch (error) {
       if (isCurrent()) {
