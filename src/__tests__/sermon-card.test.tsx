@@ -17,8 +17,33 @@ afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); });
 it('only exposes reviewed, non-future content and keeps the last available sermon after the event', () => {
   expect(availableSermon(5, Date.parse('2026-10-04T14:59:59Z'))).toBeUndefined();
   expect(availableSermon(5, Date.parse('2026-10-04T15:00:00Z'))?.title).toBe('다윗의 중심');
-  for (const day of [6, 7, 8, 9, 10]) expect(availableSermon(day, Date.parse('2027-01-01'))).toBeUndefined();
-  expect(latestSermonDay(Date.parse('2027-01-01'))).toBe(5);
+  for (const day of [7, 8, 9, 10]) expect(availableSermon(day, Date.parse('2027-01-01'))).toBeUndefined();
+  expect(latestSermonDay(Date.parse('2027-01-01'))).toBe(6);
+});
+
+it('opens the second-day sermon only from 2026-10-06 KST and keeps day one unchanged', () => {
+  expect(availableSermon(6, Date.parse('2026-10-05T14:59:59Z'))).toBeUndefined();
+  expect(latestSermonDay(Date.parse('2026-10-05T14:59:59Z'))).toBe(5);
+  expect(availableSermon(6, Date.parse('2026-10-05T15:00:00Z'))?.title).toBe('하나님은 사람을 어떻게 준비시키시는가?');
+  expect(latestSermonDay(Date.parse('2026-10-05T15:00:00Z'))).toBe(6);
+  expect(availableSermon(5, Date.parse('2026-10-06T12:00:00+09:00'))?.reflectionTitle).toBe('하나님이 보시는 중심');
+  expect(sermons[0].points).toEqual(['하나님을 사랑하는 마음', '하나님을 신뢰하는 마음']);
+});
+
+it('shows the second-day card by default on 10월 6일 and links the sourced prayer segment', async () => {
+  vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-10-06T12:00:00+09:00'));
+  render(<CompanionApp />);
+  expect(screen.getByRole('heading', { name: '하나님이 원하셨던 훈련' })).toBeVisible();
+  for (const point of ['내면을 먼저 변화시켜 주심', '섬김의 훈련', '기다림과 인내를 배우게 하심']) expect(screen.getByText(point)).toBeVisible();
+  expect(document.querySelector('.tc-sermon__questions')).not.toHaveAttribute('open');
+  expect(document.querySelector('.tc-sermon__prayer-excerpt')).toHaveTextContent(sermons[1].prayerExcerpt.text);
+  fireEvent.click(screen.getByText('말씀에서 나눈 기도 제목'));
+  expect(screen.getByRole('link', { name: /말씀 44:33–44:50/ })).toHaveAttribute('href', 'https://www.youtube.com/watch?v=zERW09HgidI&t=2673s');
+  expect(screen.getByRole('link', { name: /설교 다시 듣기/ })).toHaveAttribute('href', 'https://www.youtube.com/watch?v=zERW09HgidI');
+  fireEvent.click(screen.getByRole('button', { name: '10월 5일 말씀 묵상' }));
+  expect(screen.getByRole('heading', { name: '하나님이 보시는 중심' })).toBeVisible();
+  expect(screen.getByRole('button', { name: '10월 7일 말씀 미등록' })).toBeVisible();
+  expect(requests.every(request => request.method === 'GET')).toBe(true);
 });
 
 it('selects dates without inventing later sermons and keeps the sourced prayer folded and guidance before the card', async () => {
