@@ -2,6 +2,7 @@ import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 import { PRAYER_MASK_VERSION, PUBLIC_REVIEW_VERSION, validPublicPrayer, prayerMask, adminPrayerItem } from './prayer-masking.js';
 import { PNG } from 'pngjs';
 import { readSession } from './admin-auth.js';
+const PRAYER_BOARDS = ['general','adults','youth'];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const TOKEN = /^[A-Za-z0-9_-]{32,128}$/;
 const BUCKET = 'community-photos-v2';
@@ -61,8 +62,9 @@ export function filterPublicCommunity(body) {
   const items = body.items.filter(item => item?.kind !== 'prayer' ||
     (body.maskingPolicyVersion === PRAYER_MASK_VERSION && typeof item.text === 'string' && !prayerMask(item.text).required));
   return { enabled:body.enabled, items:items.map(item => Object.fromEntries(
-    ['id','kind','text','createdAt','eventDay',...(item.kind === 'photo' ? ['photoUrl'] : [])].filter(key => Object.hasOwn(item,key)).map(key => [key,item[key]])
+    ['id','kind','text','createdAt','eventDay',...(item.kind === 'prayer' ? ['prayerBoard'] : []),...(item.kind === 'photo' ? ['photoUrl'] : [])].filter(key => Object.hasOwn(item,key)).map(key => [key,item[key]])
   )), photoCountToday:body.photoCountToday, today:body.today,
+  ...(body.boardVersion === 'prayer-boards-v1' && PRAYER_BOARDS.includes(body.prayerBoard) ? { boardVersion: body.boardVersion, prayerBoard: body.prayerBoard } : {}),
   ...(Object.hasOwn(body,'nextCursor') ? {nextCursor:body.nextCursor == null ? null : {createdAt:body.nextCursor.createdAt,id:body.nextCursor.id}} : {}) };
 }
 async function body(req) {
@@ -196,10 +198,17 @@ export async function handleCommunity(route, req, res, env = process.env, fetche
     }
     if (req.method === 'GET') {
       const kind = url.searchParams.get('kind');
-      if (!['prayer','photo','reflection'].includes(kind)) throw fail(400,'종류를 확인해주세요.');
-      if (url.searchParams.get('page') !== '1') return reply(res,200,publicView(await call('list',{kind})));
+      if (!['prayer','photo','reflection'].includes(kind) || url.searchParams.getAll('kind').length !== 1) throw fail(400,'종류를 확인해주세요.');
+      const board = url.searchParams.get('board') ?? 'general';
+      if (!PRAYER_BOARDS.includes(board) || url.searchParams.getAll('board').length > 1 || (kind !== 'prayer' && url.searchParams.has('board'))) throw fail(400,'게시판을 확인해주세요.');
+      if (!url.searchParams.has('board') && url.searchParams.get('page') !== '1') return reply(res,200,publicView(await call('list',{kind})));
       const beforeAt = url.searchParams.get('beforeAt'), beforeId = url.searchParams.get('beforeId');
       if ((beforeAt === null) !== (beforeId === null) || (beforeAt !== null && (!/^\d{4}-\d{2}-\d{2}T[0-9:.]+(?:Z|[+-]\d{2}:\d{2})$/.test(beforeAt) || !Number.isFinite(Date.parse(beforeAt)) || !UUID.test(beforeId)))) throw fail(400,'페이지를 확인해주세요.');
+      if (kind === 'prayer' && url.searchParams.has('board')) {
+        const data = await rpc('community_prayer_page',{p_board:board,p_before_at:beforeAt,p_before_id:beforeId});
+        if (data.prayerBoard !== board || data.boardVersion !== 'prayer-boards-v1') throw fail(503,'기도 게시판 DB 업데이트가 필요합니다.');
+        return reply(res,200,publicView(data));
+      }
       return reply(res,200,publicView(await rpc('community_public_page',{p_kind:kind,p_before_at:beforeAt,p_before_id:beforeId})));
     }
     const b = await body(req);
@@ -209,11 +218,17 @@ export async function handleCommunity(route, req, res, env = process.env, fetche
     const ipHash = createHmac('sha256',cfg.sessionSecret).update(`community-ip:${ip}`).digest('hex');
     checked(await call('preflight',{ipHash}));
     if (!UUID.test(b.requestId || '') || !['prayer','photo','reflection'].includes(b.kind) || typeof b.text !== 'string' || b.text.trim().length > ({ prayer: 600, photo: 40, reflection: 1000 })[b.kind] || ((b.kind === 'prayer' || b.kind === 'reflection') && !b.text.trim()) || b.consent !== true || !TOKEN.test(b.deleteToken || '') || !(b.eventDay === null || (Number.isInteger(b.eventDay) && b.eventDay >= 0 && b.eventDay <= 5)) || ((b.kind === 'prayer' || b.kind === 'reflection') && b.imageBase64 !== undefined)) throw fail(400,'내용과 공개 동의를 확인해주세요.');
+    const prayerBoard = b.prayerBoard ?? 'general';
+    if (!PRAYER_BOARDS.includes(prayerBoard) || (b.kind !== 'prayer' && b.prayerBoard !== undefined)) throw fail(400,'게시판을 확인해주세요.');
+    if (b.kind === 'prayer' && prayerBoard !== 'general') {
+      const policy = await call('boardPolicy');
+      if (policy.version !== 'prayer-boards-v1') throw fail(503,'기도 게시판 DB 업데이트가 필요합니다.');
+    }
     const image = b.kind === 'photo' ? sanitizePng(b.imageBase64) : null;
     const tokenHash = hash(b.deleteToken);
-    const payloadHash = hash(JSON.stringify([b.kind,b.text.trim(),b.eventDay,true,image ? hash(image) : null]));
+    const payloadHash = hash(JSON.stringify([b.kind,b.text.trim(),b.eventDay,true,image ? hash(image) : null,...(b.kind === 'prayer' && prayerBoard !== 'general' ? [prayerBoard] : [])]));
 
-    const data = checked(await call('submit',{id:b.requestId.toLowerCase(),kind:b.kind,text:b.text.trim(),eventDay:b.eventDay,tokenHash,payloadHash,ipHash}));
+    const data = checked(await call('submit',{id:b.requestId.toLowerCase(),kind:b.kind,...(b.kind === 'prayer' ? {prayerBoard} : {}),text:b.text.trim(),eventDay:b.eventDay,tokenHash,payloadHash,ipHash}));
     if (image && !data.ready && data.status === 'pending') {
       const response = await fetcher(`${cfg.supabaseUrl}/storage/v1/object/${bucketFor()}/${data.path}`,{method:'POST',headers:{...headers,'Content-Type':'image/png','x-upsert':'false'},body:image});
       if (!response.ok && response.status !== 409) { let problem; try { problem=await response.json(); } catch { /* fail closed */ } if (problem?.statusCode !== '409' && problem?.error !== 'Duplicate') throw fail(503,'사진 전송을 완료하지 못했습니다. 같은 요청으로 다시 시도해주세요.'); }

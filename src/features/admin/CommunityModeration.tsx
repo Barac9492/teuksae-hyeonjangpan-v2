@@ -1,11 +1,12 @@
 import { requestWithDeadline } from '../../lib/requestDeadline';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import './CommunityModeration.css';
+import { prayerBoards, type PrayerBoard } from '../companion/prayerBoards';
 import { PrayerPublicationEditor } from './PrayerPublicationEditor';
 
 type Masking = { editingSupported?:boolean; sourceHash?:string; terms?:string[]; required: boolean; supported: boolean; held: boolean; publicText: string; policyVersion: string; matches: {start:number;end:number;term:string}[] };
 type Item = {
-  id: string; kind: 'prayer' | 'photo' | 'reflection'; text: string; createdAt: string;
+  prayerBoard?: PrayerBoard; id: string; kind: 'prayer' | 'photo' | 'reflection'; text: string; createdAt: string;
   eventDay: string | number | null; status: 'pending' | 'approved' | 'rejected' | 'trashed' | 'archived'; version: number; photoUrl?: string; publicationMode?:'auto'|'manual'|null; reviewedPublicText?:string|null; masking?: Masking;
 };
 type Decision = 'approved' | 'rejected' | 'deleted' | 'trashed' | 'restored' | 'archived' | 'unarchived';
@@ -49,6 +50,7 @@ function validItem(value: unknown): value is Item {
   return typeof x.id === 'string' && ['prayer', 'photo', 'reflection'].includes(String(x.kind)) && typeof x.text === 'string'
     && typeof x.createdAt === 'string' && (x.eventDay === null || ['string', 'number'].includes(typeof x.eventDay))
     && ['pending', 'approved', 'rejected', 'trashed', 'archived'].includes(String(x.status)) && Number.isInteger(x.version) && Number(x.version) >= 0
+    && (x.prayerBoard === undefined || Object.hasOwn(prayerBoards, String(x.prayerBoard)))
     && (x.status !== 'archived' || x.kind === 'photo')
     && (x.masking === undefined || validMasking(x.masking, x.text as string))
     && (x.photoUrl === undefined || typeof x.photoUrl === 'string');
@@ -201,6 +203,7 @@ export function CommunityModeration({ kind, trash = false }: { kind?: 'prayer' |
       <label className="community-moderation__pick">{checkbox}<span className="community-moderation__sr">선택</span></label>
       <div className="community-moderation__body">
         <h4>{kindName(item.kind)} · {item.masking?.held ? '공개 보류 · 가림 재검토 필요' : statusLabel[item.status]}</h4>{meta}
+        {item.kind === 'prayer' && <p className="community-moderation__board">게시판 · {prayerBoards[item.prayerBoard ?? 'general'].title}</p>}
         {item.kind === 'prayer' && <strong className="community-moderation__label">작성 원문</strong>}
         <p className="community-moderation__text">{originalText(item) || '남아 있는 내용이 없습니다.'}</p>
         {item.kind === 'prayer' && !item.masking?.supported && <p role="status">가림 정책 업데이트 후 승인할 수 있습니다.</p>}

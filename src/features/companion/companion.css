@@ -635,3 +635,22 @@ body { background: #fbfbfa; }
 .tc-prayer-clock > summary { min-height: 48px; padding: 12px 14px; font-size: 14px; color: var(--ink-soft); cursor: pointer; }
 .tc-prayer-clock .tc-prayer-timer { margin-top: 0; border: 0; border-radius: 0 0 12px 12px; }
 #tc-panel-prayer .tc-community { margin-top: 20px; padding-top: 18px; }
+
+/* Special prayer boards: full titles remain readable even at 320px. */
+.tc-blessing-boards { display:grid; gap:12px; padding:0 24px 28px; }
+.tc-companion .tc-blessing-card { display:flex; flex-direction:column; align-items:flex-start; gap:10px; width:100%; padding:22px; text-align:left; border:1px solid #d8ac8b; border-radius:18px; color:#533524; background:#f8e6d6; cursor:pointer; box-shadow:0 4px 0 #ead2bd; }
+.tc-companion .tc-blessing-card--youth { color:#304d48; background:#e4efea; border-color:#a4c1b5; box-shadow:0 4px 0 #cadbd3; }
+.tc-blessing-card__eyebrow { display:flex; justify-content:space-between; width:100%; font-size:11px; font-weight:700; letter-spacing:.08em; }
+.tc-blessing-card__eyebrow span { font-size:22px; line-height:1; }
+.tc-blessing-card strong { font-size:22px; line-height:1.45; word-break:keep-all; overflow-wrap:anywhere; max-width:100%; }
+.tc-blessing-card__description { font-size:13px; line-height:1.65; word-break:keep-all; }
+.tc-blessing-card__action { display:flex; width:100%; justify-content:space-between; align-items:center; margin-top:2px; padding-top:12px; border-top:1px solid currentColor; font-size:13px; font-weight:700; }
+.tc-blessing-card:hover { filter:brightness(.98); }
+.tc-blessing-card:focus-visible { outline:3px solid #9d5527; outline-offset:4px; }
+.tc-prayer-general-label { font-size:12px; color:#6d6057; border-top:1px solid #ded8d0; padding-top:24px; margin-top:0; }
+.tc-board-heading { margin:20px 24px 26px; padding:22px; border-radius:18px; background:#f8e6d6; color:#533524; }
+.tc-board-heading--youth { background:#e4efea; color:#304d48; }
+.tc-board-heading h1 { font-size:26px; line-height:1.45; word-break:keep-all; overflow-wrap:anywhere; }
+.tc-board-heading p { font-size:13px; line-height:1.7; word-break:keep-all; }
+@media (min-width:760px) { .tc-blessing-boards { grid-template-columns:1fr 1fr; } }
+@media (max-width:359px) { .tc-blessing-boards { padding-left:18px; padding-right:18px; } .tc-companion .tc-blessing-card { padding:18px; } .tc-blessing-card strong { font-size:20px; } }

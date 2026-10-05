@@ -40,6 +40,7 @@ jobs:
           npm run test:community-sql
           npm run test:moderation-audit-sql
           npm run test:prayer-masking-sql
+          npm run test:prayer-boards-sql
           npm run test:photo-archive-sql
           npm run test:continuous-operations-sql
       - name: Verify mobile and desktop interactions
@@ -68,3 +69,4 @@ jobs:
           node tests/scripts/admin-feedback-browser.mjs
           node tests/scripts/entrance-browser.mjs
           node tests/scripts/photo-archive-browser.mjs
+          node tests/scripts/prayer-boards-browser.mjs

@@ -2,15 +2,15 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import { afterEach, expect, it, vi } from 'vitest';
 import { CompanionApp } from '../features/companion/CompanionApp';
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
-it('shows mutual prayer directions without age collection or classification and keeps snacks folded', async () => {
+it('shows blessing boards without age collection and keeps snacks folded', async () => {
   const fetcher=vi.spyOn(globalThis,'fetch').mockImplementation(async()=>new Response(JSON.stringify({enabled:true,resources:[],items:[],photoCountToday:0,today:'2026-10-05'})));
   render(<CompanionApp />);
   expect(screen.getAllByRole('tab').map(el=>el.textContent)).toEqual(['예배','기도','주차','사진']);
   expect(document.querySelector('.tc-supporting-guide')).not.toHaveAttribute('open');
   fireEvent.click(screen.getByRole('button',{name:'서로를 위한 기도'}));
   expect(screen.getByRole('heading',{name:'서로를 위해 기도해요'})).toBeVisible();
-  expect(screen.getByText('어른 세대를 위해,')).toBeVisible();
-  expect(screen.getByText('젊은 세대를 위해.')).toBeVisible();
+  expect(screen.getByRole('button', {name:/어른들을 향한 축복의 기도/})).toBeVisible();
+  expect(screen.getByRole('button', {name:/청년과 청소년들을 향한 축복의 기도/})).toBeVisible();
   expect(document.querySelector('.tc-prayer-clock')).not.toHaveAttribute('open');
   expect(screen.getByRole('heading',{name:'함께 나누는 기도'})).toBeVisible();
   fireEvent.click(within(screen.getByRole('group',{name:'기도 메뉴'})).getByRole('button',{name:'기도제목 올리기'}));

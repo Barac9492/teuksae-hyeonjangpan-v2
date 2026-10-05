@@ -1,0 +1,43 @@
+{
+  "base": "http://127.0.0.1:4396",
+  "data": "synthetic PGlite only; external browser traffic blocked",
+  "results": [
+    {
+      "width": 320,
+      "boards": 2,
+      "cancelPreviewDoNotSubmit": true,
+      "doubleClickSingleSubmit": true,
+      "pendingPrivate": true,
+      "reviewClassificationPreserved": true,
+      "autoAndManualReview": true,
+      "publicIsolation": true,
+      "loadingErrorRetryEmpty": true,
+      "noOverflow": true
+    },
+    {
+      "width": 390,
+      "boards": 2,
+      "cancelPreviewDoNotSubmit": true,
+      "doubleClickSingleSubmit": true,
+      "pendingPrivate": true,
+      "reviewClassificationPreserved": true,
+      "autoAndManualReview": true,
+      "publicIsolation": true,
+      "loadingErrorRetryEmpty": true,
+      "noOverflow": true
+    },
+    {
+      "width": 1440,
+      "boards": 2,
+      "cancelPreviewDoNotSubmit": true,
+      "doubleClickSingleSubmit": true,
+      "pendingPrivate": true,
+      "reviewClassificationPreserved": true,
+      "autoAndManualReview": true,
+      "publicIsolation": true,
+      "loadingErrorRetryEmpty": true,
+      "noOverflow": true
+    }
+  ],
+  "errors": []
+}

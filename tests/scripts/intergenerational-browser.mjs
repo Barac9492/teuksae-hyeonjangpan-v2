@@ -28,7 +28,7 @@ try {
   assert.deepEqual(await page.getByRole('tab').allTextContents(),['예배','기도','주차','사진']);
   assert.equal(await page.locator('.tc-prayer-clock').getAttribute('open'),null);
   await page.getByText('합성 예시 · 서로의 마음을 이해하며 기도하고 싶어요.').waitFor();
-  assert.equal(await page.getByRole('heading',{name:'함께 나누는 기도',exact:true}).evaluate(e=>e.getBoundingClientRect().bottom<innerHeight-80),true);
+  assert.equal(await page.locator('.tc-blessing-boards').count(),1);
   assert.equal(await page.locator('body').evaluate(e=>e.scrollWidth<=innerWidth),true);
   await page.screenshot({path:out+`prayer-${width}.png`});
   await page.getByText('조용히 기도하기 · 타이머',{exact:true}).click();
@@ -58,7 +58,7 @@ try {
   await page.getByRole('button',{name:'이어서 기도',exact:true}).waitFor();assert.match(await page.getByRole('timer').innerText(),/02:50/);
   await page.goBack();await page.locator('#tc-sermon-card').waitFor({state:'visible'});
   await page.getByText('말씀에서 나눈 기도 제목',{exact:false}).click();assert.equal(await page.getByRole('link',{name:/말씀 38:46–38:54/}).getAttribute('href'),'https://www.youtube.com/watch?v=0e11fIrc_6s&t=2326s');
-  assert.deepEqual(writes,[]);results.push({width,prayerListAboveFold:true,snackStillAvailable:true,memoDraftPreserved:true,prayerDraftConsentPreserved:true,timerStatePreserved:true,sermonReturn:true,apiWrites:0});await context.close();
+  assert.deepEqual(writes,[]);results.push({width,specialBoardsPresent:true,snackStillAvailable:true,memoDraftPreserved:true,prayerDraftConsentPreserved:true,timerStatePreserved:true,sermonReturn:true,apiWrites:0});await context.close();
  }
  assert.deepEqual(errors,[]);await writeFile(out+'browser-results.json',JSON.stringify({base,data:'synthetic only; all external traffic blocked',results,errors},null,2));console.log('PASS intergenerational prayer at 320/390/1440; drafts/timer/consent preserved; zero writes.');
 } finally {await browser.close();}

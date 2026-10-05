@@ -1,0 +1,37 @@
+{
+  "base": "http://127.0.0.1:4396",
+  "data": "synthetic only; all external traffic blocked",
+  "results": [
+    {
+      "width": 320,
+      "specialBoardsPresent": true,
+      "snackStillAvailable": true,
+      "memoDraftPreserved": true,
+      "prayerDraftConsentPreserved": true,
+      "timerStatePreserved": true,
+      "sermonReturn": true,
+      "apiWrites": 0
+    },
+    {
+      "width": 390,
+      "specialBoardsPresent": true,
+      "snackStillAvailable": true,
+      "memoDraftPreserved": true,
+      "prayerDraftConsentPreserved": true,
+      "timerStatePreserved": true,
+      "sermonReturn": true,
+      "apiWrites": 0
+    },
+    {
+      "width": 1440,
+      "specialBoardsPresent": true,
+      "snackStillAvailable": true,
+      "memoDraftPreserved": true,
+      "prayerDraftConsentPreserved": true,
+      "timerStatePreserved": true,
+      "sermonReturn": true,
+      "apiWrites": 0
+    }
+  ],
+  "errors": []
+}
