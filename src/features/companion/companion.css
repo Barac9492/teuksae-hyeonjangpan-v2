@@ -604,8 +604,7 @@ body { background: #fbfbfa; }
 .tc-sermon__questions summary { min-height: 48px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 14px; font-weight: 600; list-style: none; }
 .tc-sermon__questions summary::-webkit-details-marker { display: none; }
 .tc-sermon__questions[open] summary > span { transform: rotate(45deg); }
-.tc-sermon__questions ol { list-style: decimal; padding: 0 4px 14px 22px; font-size: 15px; line-height: 1.8; }
-.tc-sermon__questions li + li { margin-top: 10px; }
+.tc-sermon__prayer-excerpt { padding: 0 4px 8px; font-size: 15px; line-height: 1.8; }
 .tc-sermon__actions { display: grid; gap: 10px; }
 .tc-sermon__actions :is(.tc-primary, .tc-secondary) { margin: 0; font-size: 15px; min-height: 48px; }
 .tc-sermon__video { display: flex; justify-content: center; align-items: center; gap: 10px; min-height: 48px; margin-top: 6px; font-size: 14px; color: var(--ink-soft); text-underline-offset: 4px; }

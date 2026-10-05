@@ -1,4 +1,4 @@
-/** Reviewed source metadata and user-provided summary, not a sermon transcript. */
+/** Summary points are user-provided; the prayer excerpt is verified against the video captions. */
 export const sermons = [{
   day: 5,
   date: '2026-10-05',
@@ -8,7 +8,11 @@ export const sermons = [{
   videoUrl: 'https://www.youtube.com/watch?v=0e11fIrc_6s',
   reflectionTitle: '하나님이 보시는 중심',
   points: ['하나님을 사랑하는 마음', '하나님을 신뢰하는 마음'],
-  questions: ['오늘 하나님께 먼저 여쭙고 싶은 일은 무엇인가요?', '학교·집·일터에서 하나님을 사랑하고 신뢰하는 마음으로 할 수 있는 작은 일은 무엇인가요?'],
+  prayerExcerpt: {
+    text: '마음의 중심에 하나님을 사랑하는 마음 하나님을 신뢰하는 마음이 자리잡게 하여 주시옵소서',
+    startSeconds: 2326,
+    timeLabel: '38:46–38:54',
+  },
 }] as const;
 
 export function availableSermon(day: number, now: number) {
