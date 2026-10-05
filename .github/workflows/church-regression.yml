@@ -53,6 +53,7 @@ jobs:
             sleep 1
           done
           node tests/scripts/feedback-browser.mjs
+          node tests/scripts/sermon-card-browser.mjs
       - name: Verify administrator tabs and moderation
         run: |
           test -x "$CHROME_PATH"

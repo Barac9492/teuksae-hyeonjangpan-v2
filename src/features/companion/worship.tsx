@@ -1,3 +1,6 @@
+import { SermonCard } from './SermonCard';
+import type { SermonPrayerAction } from './SermonCard';
+import { availableSermon, latestSermonDay } from './sermons';
 import { servicePeriod } from './serviceSchedule';
 import type { ServiceMode } from './serviceSchedule';
 import { InstallCard } from './InstallCard';
@@ -27,7 +30,7 @@ export function WorshipHero({ crownImage }: { crownImage: string }) {
 }
 
 /** Six little suns for the six dawns, plus a gentle countdown. */
-export function DawnJourney({ now, previewDay }: { now: number; previewDay: number | null }) {
+export function DawnJourney({ now, previewDay, selectedDay, onSelectDay }: { now: number; previewDay: number | null; selectedDay?: number; onSelectDay?: (day: number) => void }) {
   const phase = dawnPhase(now);
   const service = servicePeriod(now);
   const done = previewDay !== null ? previewDay : service.mode === 'worship' ? service.eventDay! - 5 : phase.doneCount;
@@ -63,14 +66,18 @@ export function DawnJourney({ now, previewDay }: { now: number; previewDay: numb
           const state = index === nextIndex ? 'next' : index < done ? 'done' : 'later';
           return (
             <li key={day} data-state={state} aria-current={state === 'next' ? 'step' : undefined}>
+              <button type="button" className="tc-journey__date" aria-label={`10월 ${day}일 말씀${availableSermon(day, now) ? ' 묵상' : ' 미등록'}`} aria-pressed={selectedDay === day} aria-controls="tc-sermon-card" onClick={() => onSelectDay?.(day)}>
               <span className="tc-journey__orb"><Sun size={state === 'next' ? 20 : 14} /></span>
               <b>{day}</b>
               <small>{WEEKDAYS[index]}</small>
+              <span className="tc-journey__available">{availableSermon(day, now) ? '말씀' : '—'}</span>
+              </button>
               <span className="tc-visually-hidden">{state === 'done' ? '지난 새벽' : state === 'next' ? '다가오는 새벽' : '남은 새벽'}</span>
             </li>
           );
         })}
       </ol>
+      <p className="tc-journey__hint">날짜를 누르면 그날의 말씀을 볼 수 있어요.</p>
     </section>
   );
 }
@@ -186,7 +193,8 @@ export function VerseCard() {
   );
 }
 
-export function WorshipPanel({ crownImage, venue, setVenue, now, previewDay, stage, children, actions, after }: {
+export function WorshipPanel({ crownImage, venue, setVenue, now, previewDay, stage, children, actions, after, onSermonPray }: {
+  onSermonPray?: (action: SermonPrayerAction) => void;
   mode?: ServiceMode;
   crownImage: string;
   venue: Venue;
@@ -198,6 +206,12 @@ export function WorshipPanel({ crownImage, venue, setVenue, now, previewDay, sta
   actions: ReactNode;
   after?: ReactNode;
 }) {
+  const [chosenDay, setChosenDay] = useState<number | null>(null);
+  const selectedDay = chosenDay ?? latestSermonDay(now);
+  const selectSermonDay = (day: number) => {
+    setChosenDay(day);
+    requestAnimationFrame(() => document.getElementById('tc-sermon-card')?.focus());
+  };
   return (
     <section id="tc-panel-worship" className="tc-panel" role="tabpanel" aria-labelledby="tc-tab-worship">
       <WorshipHero crownImage={crownImage} />
@@ -206,7 +220,7 @@ export function WorshipPanel({ crownImage, venue, setVenue, now, previewDay, sta
         <a href="https://the-shepherd-king.vercel.app/" target="_blank" rel="noopener noreferrer" aria-label="다윗 게임 열기 (새 탭)"><span><small>예배 전후, 잠깐의 여유에</small><strong>다윗 게임 · 목동에서 왕이 되기까지</strong></span><span aria-hidden="true">↗</span></a>
       </div>
       <InstallCard />
-      <DawnJourney now={now} previewDay={previewDay} />
+      <DawnJourney now={now} previewDay={previewDay} selectedDay={selectedDay} onSelectDay={selectSermonDay} />
       <OfficialNotice />
       <div className="tc-section">
         <h2 className="tc-section-title">지금 예배 공간은</h2>
@@ -218,6 +232,7 @@ export function WorshipPanel({ crownImage, venue, setVenue, now, previewDay, sta
         {after}
       </div>
       <div className="tc-section">
+        <SermonCard day={selectedDay} now={now} onPray={onSermonPray} />
         <WakePlanner venue={venue} day={previewDay === null ? noticeServiceDay(now) : SERVICE_DAYS[previewDay] ?? null} />
 
         <VerseCard />

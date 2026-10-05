@@ -1,0 +1,49 @@
+
+> teuksae-app-v1@1.0.0 test
+> vitest run --reporter=dot
+
+
+ RUN  v3.2.7 /Users/ethancho/Documents/Codex/2026-10-05/task-4/sermon-card
+
+···············································································································································································································································································································································································································stderr | src/__tests__/prayer-card-layout.test.ts
+Error: Not implemented: navigation (except hash changes)
+    at module.exports (/Users/ethancho/Documents/Codex/2026-10-05/task-4/sermon-card/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at navigateFetch (/Users/ethancho/Documents/Codex/2026-10-05/task-4/sermon-card/node_modules/jsdom/lib/jsdom/living/window/navigation.js:77:3)
+    at exports.navigate (/Users/ethancho/Documents/Codex/2026-10-05/task-4/sermon-card/node_modules/jsdom/lib/jsdom/living/window/navigation.js:55:3)
+    at Timeout._onTimeout (/Users/ethancho/Documents/Codex/2026-10-05/task-4/sermon-card/node_modules/jsdom/lib/jsdom/living/nodes/HTMLHyperlinkElementUtils-impl.js:80:7)
+    at listOnTimeout (node:internal/timers:585:17)
+    at processTimers (node:internal/timers:521:7) undefined
+
+stderr | src/__tests__/prayer-card-layout.test.ts
+Error: Not implemented: navigation (except hash changes)
+    at module.exports (/Users/ethancho/Documents/Codex/2026-10-05/task-4/sermon-card/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at navigateFetch (/Users/ethancho/Documents/Codex/2026-10-05/task-4/sermon-card/node_modules/jsdom/lib/jsdom/living/window/navigation.js:77:3)
+    at exports.navigate (/Users/ethancho/Documents/Codex/2026-10-05/task-4/sermon-card/node_modules/jsdom/lib/jsdom/living/window/navigation.js:55:3)
+    at Timeout._onTimeout (/Users/ethancho/Documents/Codex/2026-10-05/task-4/sermon-card/node_modules/jsdom/lib/jsdom/living/nodes/HTMLHyperlinkElementUtils-impl.js:80:7)
+    at listOnTimeout (node:internal/timers:585:17)
+    at processTimers (node:internal/timers:521:7) undefined
+
+stderr | src/__tests__/prayer-card-layout.test.ts
+Error: Not implemented: navigation (except hash changes)
+    at module.exports (/Users/ethancho/Documents/Codex/2026-10-05/task-4/sermon-card/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at navigateFetch (/Users/ethancho/Documents/Codex/2026-10-05/task-4/sermon-card/node_modules/jsdom/lib/jsdom/living/window/navigation.js:77:3)
+    at exports.navigate (/Users/ethancho/Documents/Codex/2026-10-05/task-4/sermon-card/node_modules/jsdom/lib/jsdom/living/window/navigation.js:55:3)
+    at Timeout._onTimeout (/Users/ethancho/Documents/Codex/2026-10-05/task-4/sermon-card/node_modules/jsdom/lib/jsdom/living/nodes/HTMLHyperlinkElementUtils-impl.js:80:7)
+    at listOnTimeout (node:internal/timers:585:17)
+    at processTimers (node:internal/timers:521:7) undefined
+
+stderr | src/__tests__/prayer-card-layout.test.ts
+Error: Not implemented: navigation (except hash changes)
+    at module.exports (/Users/ethancho/Documents/Codex/2026-10-05/task-4/sermon-card/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at navigateFetch (/Users/ethancho/Documents/Codex/2026-10-05/task-4/sermon-card/node_modules/jsdom/lib/jsdom/living/window/navigation.js:77:3)
+    at exports.navigate (/Users/ethancho/Documents/Codex/2026-10-05/task-4/sermon-card/node_modules/jsdom/lib/jsdom/living/window/navigation.js:55:3)
+    at Timeout._onTimeout (/Users/ethancho/Documents/Codex/2026-10-05/task-4/sermon-card/node_modules/jsdom/lib/jsdom/living/nodes/HTMLHyperlinkElementUtils-impl.js:80:7)
+    at listOnTimeout (node:internal/timers:585:17)
+    at processTimers (node:internal/timers:521:7) undefined
+
+······················································································································································································································································
+
+ Test Files  57 passed (57)
+      Tests  645 passed (645)
+   Start at  10:31:54
+   Duration  8.31s (transform 1.16s, setup 2.81s, collect 7.66s, tests 33.36s, environment 19.14s, prepare 2.74s)
