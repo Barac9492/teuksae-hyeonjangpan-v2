@@ -29,3 +29,12 @@ test('HTTP approval fails closed before any mutation when SQL policy is absent o
   assert.equal(res.statusCode,503);assert.ok(!actions.includes('moderate'));
  }
 });
+
+test('new public review fails closed on old database capability without preview or mutation',async()=>{
+ const id='11111111-1111-4111-8111-111111111111',now=Date.now(),env={SUPABASE_URL:'https://test.supabase.co',SUPABASE_SERVICE_ROLE_KEY:'x'.repeat(40),ADMIN_SESSION_SECRET:'s'.repeat(64)};
+ const payload=Buffer.from(JSON.stringify({v:2,sid:id,sub:'ADMIN',cv:1,iat:Math.floor(now/1000),exp:Math.floor(now/1000)+SESSION_SECONDS,nonce:'n'.repeat(32)})).toString('base64url');
+ const cookie=`__Host-woori_admin=${payload}.${createHmac('sha256',env.ADMIN_SESSION_SECRET).update(payload).digest('base64url')}`;
+ const actions=[],res={setHeader(){},end(text){this.body=JSON.parse(text);}};
+ await handleCommunity('admin',{url:'/api/admin/community',method:'POST',headers:{origin:'https://teuksae-hyeonjangpan-v2.vercel.app','content-type':'application/json',cookie},body:{action:'publicationPreview',id,expectedVersion:0,publicationMode:'manual',reviewedPublicText:'합성 공개 문구',sourceHash:'a'.repeat(64),maskPolicyVersion:PRAYER_MASK_VERSION}},res,env,async(url,init)=>{const b=JSON.parse(init.body);actions.push(b.p_action);return {ok:true,json:async()=>url.endsWith('ops_get_session')?{username:'ADMIN',credentialVersion:1,role:'superadmin'}:{version:PRAYER_MASK_VERSION}};},now);
+ assert.equal(res.statusCode,503);assert.ok(!actions.includes('publicationPreview'));assert.ok(!actions.includes('moderate'));
+});

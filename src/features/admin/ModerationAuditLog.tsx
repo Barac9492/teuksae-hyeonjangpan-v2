@@ -12,9 +12,12 @@ type AuditEntry = {
     createdAt: string;
     kind?: string | null;
     excerpt?: string | null;
+    publicationMode?: string | null;
+    publicTextLength?:number|null;
+    publicTextChanged?:boolean|null;
 };
 
-const decisionNames: Record<string, string> = { masked_approved: '가림 처리본 게시', approved: '공개 승인', rejected: '비공개 처리', deleted: '영구 삭제', trashed: '휴지통 이동', restored: '휴지통에서 복원', archived: '사진 비공개 보관', unarchived: '보관 사진 검토 대기로 이동' };
+const decisionNames: Record<string, string> = { reviewed_approved: '공개 문구 게시', masked_approved: '가림 처리본 게시', approved: '공개 승인', rejected: '비공개 처리', deleted: '영구 삭제', trashed: '휴지통 이동', restored: '휴지통에서 복원', archived: '사진 비공개 보관', unarchived: '보관 사진 검토 대기로 이동' };
 const kindNames: Record<string, string> = { prayer: '기도카드', reflection: '기도카드', photo: '사진' };
 const when = (value: string) => { const d = new Date(value); return Number.isNaN(d.getTime()) ? '시간 확인 불가' : new Intl.DateTimeFormat('ko-KR', { dateStyle: 'short', timeStyle: 'medium', timeZone: 'Asia/Seoul' }).format(d); };
 const validEntry = (x: unknown): x is AuditEntry => !!x && typeof x === 'object' && typeof (x as AuditEntry).itemId === 'string' && typeof (x as AuditEntry).decision === 'string' && typeof (x as AuditEntry).actor === 'string' && typeof (x as AuditEntry).createdAt === 'string';
@@ -45,7 +48,7 @@ export function ModerationAuditLog() {
         {state === 'ready' && <>
             <button type="button" className="ta-admin__secondary" onClick={() => void load()}>새로고침</button>
             {items.length === 0 ? <p>승인 기록이 없습니다.</p> : <div className="ta-admin__history">{items.map(h => <p key={String(h.id)}>
-                {when(h.createdAt)} · <strong>{decisionNames[h.decision] ?? h.decision}</strong> · {kindNames[h.kind ?? ''] ?? '게시물'}{h.excerpt ? ` “${h.excerpt}${h.excerpt.length >= 60 ? '…' : ''}”` : ''} · 처리: {h.displayName ? <strong>{h.displayName}</strong> : '이름 기록 없음(기록 추가 전)'} ({h.actor}{h.actorLabel && h.actorLabel !== h.displayName ? ` · ${h.actorLabel}` : ''}){h.sessionLabel ? ` · 세션 ${h.sessionLabel}` : ''} · 게시물 {h.itemId.slice(0, 8)}
+                {when(h.createdAt)} · <strong>{decisionNames[h.decision] ?? h.decision}</strong>{h.publicationMode ? ` · ${h.publicationMode === 'manual' ? '직접 수정' : '자동 가림'} · 공개 ${h.publicTextLength ?? '?'}자 · ${h.publicTextChanged ? '원문과 다름' : '원문과 같음'}` : ''} · {kindNames[h.kind ?? ''] ?? '게시물'}{h.excerpt ? ` “${h.excerpt}${h.excerpt.length >= 60 ? '…' : ''}”` : ''} · 처리: {h.displayName ? <strong>{h.displayName}</strong> : '이름 기록 없음(기록 추가 전)'} ({h.actor}{h.actorLabel && h.actorLabel !== h.displayName ? ` · ${h.actorLabel}` : ''}){h.sessionLabel ? ` · 세션 ${h.sessionLabel}` : ''} · 게시물 {h.itemId.slice(0, 8)}
             </p>)}</div>}
         </>}
     </details>;

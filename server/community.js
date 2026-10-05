@@ -1,5 +1,5 @@
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
-import { PRAYER_MASK_VERSION, prayerMask, adminPrayerItem } from './prayer-masking.js';
+import { PRAYER_MASK_VERSION, PUBLIC_REVIEW_VERSION, validPublicPrayer, prayerMask, adminPrayerItem } from './prayer-masking.js';
 import { PNG } from 'pngjs';
 import { readSession } from './admin-auth.js';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -163,9 +163,28 @@ export async function handleCommunity(route, req, res, env = process.env, fetche
         // Old API callers can ignore this field. Never expose the SQL cursor as
         // an object: browsers treat this bounded opaque token as a page pointer.
         const nextCursor = data.nextCursor == null ? null : Buffer.from(JSON.stringify(data.nextCursor)).toString('base64url');
-        return reply(res,200,{...data, nextCursor, items:data.items.filter(item => item?.status !== 'deleted').map(item => adminPrayerItem(item, data.maskingPolicyVersion === PRAYER_MASK_VERSION))});
+        return reply(res,200,{...data, nextCursor, items:data.items.filter(item => item?.status !== 'deleted').map(item => adminPrayerItem(item, data.maskingPolicyVersion === PRAYER_MASK_VERSION, data.publicReviewVersion === PUBLIC_REVIEW_VERSION))});
       }
       const b = await body(req);
+      const reviewFields = () => ({id:b.id,expectedVersion:b.expectedVersion,publicationMode:b.publicationMode,reviewedPublicText:b.reviewedPublicText,sourceHash:b.sourceHash,maskPolicyVersion:b.maskPolicyVersion,publicReviewVersion:PUBLIC_REVIEW_VERSION});
+      const validReview = () => UUID.test(b.id || '') && Number.isSafeInteger(b.expectedVersion) && b.expectedVersion >= 0 && ['auto','manual'].includes(b.publicationMode) && validPublicPrayer(b.reviewedPublicText) && /^[0-9a-f]{64}$/.test(b.sourceHash || '') && b.maskPolicyVersion === PRAYER_MASK_VERSION;
+      const signReview = (fields,expires) => createHmac('sha256',cfg.sessionSecret).update(JSON.stringify({purpose:'prayer-publication',session,expires,...fields})).digest('hex');
+      if (b.action === 'publicationPreview') {
+        if (!validReview()) throw fail(400,'공개 문구와 지정 표현을 확인해주세요.');
+        const policy = await call('maskPolicy');
+        if (policy.version !== PRAYER_MASK_VERSION || policy.publicReviewVersion !== PUBLIC_REVIEW_VERSION) throw fail(503,'공개 문구 검토 DB 업데이트가 필요합니다.');
+        const fields = reviewFields();
+        const preview = checked(await call('publicationPreview',{session,...fields}));
+        if (Object.keys(fields).some(key => preview[key] !== fields[key])) throw fail(409,'공개 미리보기를 새로 확인해주세요.');
+        const expires = now + 10 * 60 * 1000;
+        return reply(res,200,{...fields,previewExpires:expires,previewToken:signReview(fields,expires)});
+      }
+      if (b.decision === 'reviewed_approved') {
+        if (!validReview() || !Number.isSafeInteger(b.previewExpires) || b.previewExpires <= now || b.previewExpires > now + 10 * 60 * 1000 || !/^[0-9a-f]{64}$/.test(b.previewToken || '') || !timingSafeEqual(Buffer.from(b.previewToken,'hex'),Buffer.from(signReview(reviewFields(),b.previewExpires),'hex'))) throw fail(409,'공개 미리보기를 새로 확인해주세요.');
+        const policy = await call('maskPolicy');
+        if (policy.version !== PRAYER_MASK_VERSION || policy.publicReviewVersion !== PUBLIC_REVIEW_VERSION) throw fail(503,'공개 문구 검토 DB 업데이트가 필요합니다.');
+        return reply(res,200,checked(await call('moderate',{session,decision:'reviewed_approved',...reviewFields()})));
+      }
       if (!UUID.test(b.id || '') || !['approved','masked_approved','rejected','deleted','trashed','restored','archived','unarchived'].includes(b.decision) || !Number.isSafeInteger(b.expectedVersion) || b.expectedVersion < 0) throw fail(400,'검토 요청을 확인해주세요.');
       if (['approved','masked_approved'].includes(b.decision)) {
         const policy = await call('maskPolicy');

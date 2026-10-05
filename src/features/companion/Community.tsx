@@ -195,7 +195,7 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
             {submitButton}
           </>}
       </div>
-      {kind === 'prayer' && <p className="tc-community-publish-note">어린이도 함께 보는 공간입니다. 일부 표현은 관리자가 확인한 뒤 **로 가려 공개합니다. 원문은 보관됩니다.</p>}
+      {kind === 'prayer' && <p className="tc-community-publish-note">어린이도 함께 보는 공간입니다. 관리자가 확인한 뒤 일부 표현을 **로 가리거나 공개 문구를 수정할 수 있습니다. 작성 원문은 보관됩니다.</p>}
       {compactConsent && submitButton}
       {kind === 'photo' && consentResetMessage && <p className="tc-community-publish-note" role="status">{consentResetMessage}</p>}
       {kind === 'photo' && <p className="tc-community-publish-note">관리자 검수 후 앱에 들어온 누구나 볼 수 있어요. 함께 나온 분의 동의를 확인해주세요.</p>}
