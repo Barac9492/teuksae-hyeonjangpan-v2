@@ -1,8 +1,9 @@
 import { requestWithDeadline } from '../../lib/requestDeadline';
 import { runtimeStorageKey } from '../rehearsal/runtime';
+import type { PrayerBoard } from './prayerBoards';
 export type CommunityKind = 'prayer' | 'photo' | 'reflection';
-export type Receipt = { id: string; kind: CommunityKind; token: string };
-export type CommunityItem = { id: string; kind: CommunityKind; text: string; createdAt: string; eventDay: number | null; photoUrl?: string };
+export type Receipt = { id: string; kind: CommunityKind; prayerBoard?: PrayerBoard; token: string };
+export type CommunityItem = { id: string; kind: CommunityKind; prayerBoard?: PrayerBoard; text: string; createdAt: string; eventDay: number | null; photoUrl?: string };
 export type FeedCursor = { createdAt: string; id: string };
 export type CommunityFeed = { enabled: true; items: CommunityItem[]; photoCountToday: number; today: string; nextCursor?: FeedCursor | null };
 export const RECEIPTS_KEY = 'woori-community-receipts-v1';
@@ -15,7 +16,7 @@ export function readReceipts(): Receipt[] {
   try {
     const saved: unknown = JSON.parse(localStorage.getItem(runtimeStorageKey(RECEIPTS_KEY)) ?? '[]');
     if (Array.isArray(saved)) for (const r of saved) {
-      if (r && typeof r.id === 'string' && (r.kind === 'prayer' || r.kind === 'photo' || r.kind === 'reflection') && typeof r.token === 'string' && !receipts.some(x => x.id === r.id)) receipts.push({ id: r.id, kind: r.kind, token: r.token });
+      if (r && typeof r.id === 'string' && (r.kind === 'prayer' || r.kind === 'photo' || r.kind === 'reflection') && typeof r.token === 'string' && !receipts.some(x => x.id === r.id)) receipts.push({ id: r.id, kind: r.kind, token: r.token, ...(r.kind === 'prayer' && ['adults','youth'].includes(r.prayerBoard) ? { prayerBoard: r.prayerBoard } : {}) });
     }
   } catch { /* Memory remains available when storage is disabled. */ }
   return [...receipts];
@@ -50,8 +51,9 @@ export function finishSubmissionForReceipt(id: string) {
   }
   return keys;
 }
-export async function communityRequest(body?: object, kind?: CommunityKind, options?: { signal?: AbortSignal; cursor?: FeedCursor | null }): Promise<Record<string, unknown>> {
+export async function communityRequest(body?: object, kind?: CommunityKind, options?: { signal?: AbortSignal; cursor?: FeedCursor | null; prayerBoard?: PrayerBoard }): Promise<Record<string, unknown>> {
   const params = new URLSearchParams({kind: kind ?? 'prayer', page: '1'});
+  if (kind === 'prayer' && options?.prayerBoard) params.set('board', options.prayerBoard);
   if (options?.cursor) { params.set('beforeAt', options.cursor.createdAt); params.set('beforeId', options.cursor.id); }
   return requestWithDeadline(async requestSignal => {
     const response = await fetch(body ? '/api/community' : `/api/community?${params}`, {
@@ -65,7 +67,8 @@ export async function communityRequest(body?: object, kind?: CommunityKind, opti
     return result as Record<string, unknown>;
   }, { signal: options?.signal });
 }
-export function validateFeed(value: Record<string, unknown>): CommunityFeed {
+export function validateFeed(value: Record<string, unknown>, board: PrayerBoard = 'general'): CommunityFeed {
+  if (board !== 'general' && (value.boardVersion !== 'prayer-boards-v1' || value.prayerBoard !== board)) throw new Error('이 축복기도 게시판을 준비 중이에요. 잠시 후 다시 확인해주세요.');
   if (value.enabled !== true || !Array.isArray(value.items) || value.items.length > 12 || !Number.isInteger(value.photoCountToday) || Number(value.photoCountToday) < 0 || typeof value.today !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value.today)) throw new Error('공개 나눔 정보를 확인하지 못했어요.');
   if (value.items.some(item => !item || typeof item.id !== 'string' || typeof item.text !== 'string' || !['photo', 'prayer', 'reflection'].includes(item.kind))) throw new Error('공개 나눔 정보를 확인하지 못했어요.');
   if (value.nextCursor != null && (typeof value.nextCursor !== 'object' || !('createdAt' in value.nextCursor) || typeof value.nextCursor.createdAt !== 'string' || !Number.isFinite(Date.parse(value.nextCursor.createdAt)) || !('id' in value.nextCursor) || typeof value.nextCursor.id !== 'string')) throw new Error('다음 페이지 정보를 확인하지 못했어요.');

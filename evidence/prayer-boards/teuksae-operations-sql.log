@@ -1,0 +1,5 @@
+
+> teuksae-app-v1@1.0.0 test:continuous-operations-sql
+> node tests/scripts/continuous-operations-db.mjs
+
+PASS 180 continuous-operation migration checks; in-memory synthetic PostgreSQL only

@@ -1,0 +1,73 @@
+
+> teuksae-app-v1@1.0.0 test:prayer-boards-sql
+> node tests/scripts/prayer-boards-db.mjs
+
+PASS migration preserves every existing value
+PASS all legacy content stays general
+PASS only three intended functions changed; operations and masking unchanged
+PASS RPC privileges remain service-role only
+PASS RLS stays enabled
+PASS anon cannot bypass server through table
+PASS authenticated cannot bypass server through table
+PASS general: HTTP submission pending
+PASS general: stored category
+PASS general: no publication before approval
+PASS general: identical retry creates no duplicate
+PASS general: request ID cannot move boards
+PASS general: admin receives classification
+PASS general: only visible in general when appropriate
+PASS general: only visible in adults when appropriate
+PASS general: only visible in youth when appropriate
+PASS general: trash/restore keeps board and requires fresh approval
+PASS adults: HTTP submission pending
+PASS adults: stored category
+PASS adults: no publication before approval
+PASS adults: identical retry creates no duplicate
+PASS adults: request ID cannot move boards
+PASS adults: admin receives classification
+PASS adults: only visible in general when appropriate
+PASS adults: only visible in adults when appropriate
+PASS adults: only visible in youth when appropriate
+PASS adults: trash/restore keeps board and requires fresh approval
+PASS youth: HTTP submission pending
+PASS youth: stored category
+PASS youth: no publication before approval
+PASS youth: identical retry creates no duplicate
+PASS youth: request ID cannot move boards
+PASS youth: admin receives classification
+PASS youth: only visible in general when appropriate
+PASS youth: only visible in adults when appropriate
+PASS youth: only visible in youth when appropriate
+PASS youth: trash/restore keeps board and requires fresh approval
+PASS adults: plain approval cannot bypass masking
+PASS adults: signed public preview
+PASS adults: preview alone never publishes
+PASS adults: reviewed publication
+PASS adults: automatic/manual review preserves category and original
+PASS adults: only reviewed text leaves HTTP
+PASS adults: repeated approval conflicts
+PASS adults: author withdrawal hides publication
+PASS youth: plain approval cannot bypass masking
+PASS youth: signed public preview
+PASS youth: preview alone never publishes
+PASS youth: reviewed publication
+PASS youth: automatic/manual review preserves category and original
+PASS youth: only reviewed text leaves HTTP
+PASS youth: repeated approval conflicts
+PASS youth: author withdrawal hides publication
+PASS adults: filtering before pagination, exact timestamp ties, no skips
+PASS youth: filtering before pagination, exact timestamp ties, no skips
+PASS old list API cannot mix special prayers into general
+PASS old page API remains general
+PASS invalid category rejected by HTTP
+PASS invalid category rejected by HTTP
+PASS invalid category rejected by HTTP
+PASS invalid category rejected by HTTP
+PASS invalid query rejected
+PASS invalid query rejected
+PASS invalid query rejected
+PASS unmigrated DB fails closed before special submission
+PASS SQL independently rejects invalid board
+PASS table check independently rejects invalid board
+PASS SQL independently denies unauthenticated moderator
+PASS 68 prayer-board integration assertions

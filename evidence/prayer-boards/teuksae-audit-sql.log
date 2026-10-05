@@ -1,0 +1,35 @@
+
+> teuksae-app-v1@1.0.0 test:moderation-audit-sql
+> node tests/scripts/moderation-audit-db.mjs
+
+PASS public-edit migration follows attribution, archive and continuous operations
+PASS session A approves
+PASS session B trashes
+PASS session B restores
+PASS session A rejects
+PASS session B permanently deletes
+PASS approval stores session label and entered name
+PASS trash/restore store the acting session
+PASS rejection stores the acting session
+PASS moderator permanent deletion stores the acting session
+PASS owner withdrawal stays unattributed
+PASS auditList returns attributed list
+PASS auditList excludes owner withdrawals (6 moderator rows incl. legacy)
+PASS newest first
+PASS entry carries actor, entered name, session, kind
+PASS approved excerpt is capped at 60 chars
+PASS rejected/deleted items expose no text
+PASS legacy row keeps null attribution (no inferred backfill)
+PASS non-superadmin cannot list audit (42501)
+PASS unknown session cannot list audit (42501)
+PASS missing session cannot list audit (42501)
+PASS revoked superadmin session cannot list audit (42501)
+PASS execute stays service_role only
+PASS GET ?view=audit returns attributed entries
+PASS unknown view rejected
+PASS extra params rejected
+PASS parking role forbidden over HTTP
+PASS duplicate view rejected
+PASS revoked session gets no audit over HTTP
+PASS existing adminList route unchanged
+moderation audit SQL checks: 30

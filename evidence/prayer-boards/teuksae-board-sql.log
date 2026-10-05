@@ -1,0 +1,83 @@
+
+> teuksae-app-v1@1.0.0 test:prayer-masking-sql
+> node tests/scripts/prayer-masking-db.mjs
+
+PASS upgrade leaves existing original and every prior field unchanged
+PASS upgrade changes only intended prayer/community functions; all operational RPCs preserved
+PASS existing archived photo content, status, version and receipt fields unchanged
+PASS additive edit migration preserves all legacy publication fields and availability
+PASS new and existing RPC effective privileges remain service-role only
+PASS SQL/JS parity and idempotence for 20 exact/Unicode/false-positive cases
+PASS generic approval blocked by database
+PASS arbitrary rewritten preview rejected
+PASS stale dictionary preview rejected
+PASS unauthorized original/moderation route rejected
+PASS explicit exact masked preview approved
+PASS duplicate/concurrent old version cannot approve again
+PASS stored original retained
+PASS public SQL emits reviewed masked text
+PASS audit retains review policy and existing actor attribution
+PASS ordinary unflagged approval preserved
+PASS old approved match held on both public SQL paths
+PASS separate queue contains pending and old approved held items
+PASS routine queue excludes separate-review items
+PASS admin original stays original after publication
+PASS all pages remain full/unique and exclude held originals before pagination
+PASS separate-review cursor traverses held and pending items without skipping
+PASS HTTP public legacy/page responses contain no originals or review metadata
+PASS HTTP public legacy/page responses contain no originals or review metadata
+PASS HTTP all public pages contain no raw terms and preserve pagination
+PASS HTTP generic approval bypass blocked
+PASS admin HTTP provides exact supported previews
+PASS anonymous admin read rejected
+PASS SQL independently rejects ASCII/Unicode blank public text
+PASS SQL independently rejects ASCII/Unicode blank public text
+PASS SQL independently rejects ASCII/Unicode blank public text
+PASS SQL public text validates code-point length and targeted words
+PASS SQL public text validates code-point length and targeted words
+PASS SQL public text validates code-point length and targeted words
+PASS anonymous preview denied
+PASS manual invalid/blank/overlong/raw-term draft rejected before receipt
+PASS manual invalid/blank/overlong/raw-term draft rejected before receipt
+PASS manual invalid/blank/overlong/raw-term draft rejected before receipt
+PASS manual invalid/blank/overlong/raw-term draft rejected before receipt
+PASS preview requires exact original hash
+PASS preview requires current item version
+PASS auto preview must exactly match deterministic masking
+PASS preview receipt cannot be reused by another valid moderator session
+PASS manual exact preview gets session-bound server receipt
+PASS changed/expired publication receipt rejected
+PASS changed/expired publication receipt rejected
+PASS changed/expired publication receipt rejected
+PASS changed/expired publication receipt rejected
+PASS changed/expired publication receipt rejected
+PASS changed/expired publication receipt rejected
+PASS preview and invalid requests never publish
+PASS revoked moderator cannot use valid preview
+PASS manual publish retains original and stores only separate public text
+PASS repeat/concurrent manual confirmation cannot publish twice
+PASS generic approval cannot revert a reviewed manual publication
+PASS manual reviewed text only on public legacy/page HTTP
+PASS manual reviewed text only on public legacy/page HTTP
+PASS audit records mode, output hash/length/change and one attributed decision
+PASS authorized admin original and actual public preview remain accurate
+PASS manual publication author withdrawal clears original and public draft
+PASS new automatic mode uses same exact preview-confirm contract
+PASS trash/restore clears mode and invalidates old preview
+PASS same transformed text but changed original invalidates exact source receipt
+PASS SQL independently rejects raw targeted output
+PASS SQL independently rejects mismatched original
+PASS SQL independently rejects stale policy
+PASS SQL independently rejects unauthenticated preview
+PASS changed original invalidates reviewed source even when transformed text is identical
+PASS changed policy holds prior masked approvals
+PASS old preview cannot approve under changed policy
+PASS dictionary removal cannot fall back to generic original publication
+PASS dictionary removal requires explicit exact replacement preview
+PASS trash preserved
+PASS restore clears old masked approval
+PASS restored flagged item requires explicit review again
+PASS author withdrawal removes original and derived text
+PASS scope stays prayer only
+PASS submission exact-byte idempotency stays unchanged
+PASS 78 integration assertions
