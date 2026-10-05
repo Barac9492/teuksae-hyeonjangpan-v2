@@ -1,16 +1,25 @@
-import { useState } from 'react';
+import { useImperativeHandle, useState } from 'react';
+import type { Ref } from 'react';
+import type { SermonPrayerAction } from './SermonCard';
+
 import { PageHeading } from './ui';
 import { Community } from './Community';
 import { PrayerTimer } from './PrayerTimer';
 
 type PrayerView = 'write' | 'read';
+export type PrayerPanelHandle = { open: (view: SermonPrayerAction) => void };
 
-export function PrayerPanel({ onPreview }: { onPreview: (text: string) => void }) {
+export function PrayerPanel({ onPreview, ref, onReturnToSermon }: { onPreview: (text: string) => void; ref?: Ref<PrayerPanelHandle>; onReturnToSermon?: () => void }) {
   const [view, setView] = useState<PrayerView>('read');
   const [text, setText] = useState('');
+  useImperativeHandle(ref, () => ({ open: (next) => {
+    setView(next);
+    requestAnimationFrame(() => document.getElementById(next === 'write' ? 'tc-prayer' : 'tc-prayer-timer')?.focus());
+  } }), []);
   const warmth = Math.min(1, text.length / 120);
   return (
     <section id="tc-panel-prayer" className="tc-panel" role="tabpanel" aria-labelledby="tc-tab-prayer">
+      {onReturnToSermon && <div className="tc-sermon-return"><button type="button" onClick={onReturnToSermon}><span aria-hidden="true">← </span>말씀으로 돌아가기</button><p>시간을 확인하고 직접 시작해주세요. 작성한 내용은 공개 버튼을 눌러야 접수돼요.</p></div>}
       <PageHeading eyebrow="하나님 앞에 내려놓는 마음" title="기도 나누기" art={<span className="tc-candle" style={{ '--warmth': warmth } as React.CSSProperties}><i /></span>}>앱을 찾은 모든 분과 기도제목을 나누고, 서로를 위해 함께 기도해요.</PageHeading>
       <div className="tc-section tc-section--topless">
         <div className="tc-subtabs" role="group" aria-label="기도 메뉴">

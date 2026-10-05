@@ -9,6 +9,8 @@ import { savePrayerCard } from './canvas';
 import { LiveParkingPanel, LiveWorshipStatus, liveStage, useLiveOperations } from './LiveOperations';
 import { PhotosPanel } from './photos';
 import { PrayerPanel } from './prayer';
+import type { PrayerPanelHandle } from './prayer';
+import type { SermonPrayerAction } from './SermonCard';
 import { PreviewParkingPanel, PreviewWorshipStatus } from './preview';
 import type { Stage } from './preview';
 import { SharingPanel } from './sharing';
@@ -72,6 +74,33 @@ export function CompanionApp() {
   const [modal, setModal] = useState<ModalState>(null);
   const [cardState, setCardState] = useState('');
   const nextStoryId = useRef(1);
+  const prayerPanelRef = useRef<PrayerPanelHandle>(null);
+  const [fromSermon, setFromSermon] = useState(false);
+  const sermonNavigation = useRef(false);
+  const focusSermon = () => requestAnimationFrame(() => document.getElementById('tc-sermon-card')?.focus());
+  useEffect(() => {
+    const onPopState = (event: PopStateEvent) => {
+      const action = event.state?.tcSermonPrayer;
+      if (sermonNavigation.current) setModal(null);
+      if (action === 'read' || action === 'write') {
+        sermonNavigation.current = true; setFromSermon(true); setTab('prayer'); prayerPanelRef.current?.open(action);
+      } else if (sermonNavigation.current) {
+        sermonNavigation.current = false; setFromSermon(false); setTab('worship'); focusSermon();
+      }
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+  const returnToSermon = () => {
+    if (sermonNavigation.current && window.history.state?.tcSermonPrayer) window.history.back();
+    else { setFromSermon(false); setTab('worship'); focusSermon(); }
+  };
+  const openSermonPrayer = (action: SermonPrayerAction) => {
+    // Same mounted panels retain the draft, consent, and all timer state.
+    if (!sermonNavigation.current) window.history.pushState({ ...window.history.state, tcSermonPrayer: action }, '');
+    else window.history.replaceState({ ...window.history.state, tcSermonPrayer: action }, '');
+    sermonNavigation.current = true; setFromSermon(true); selectTab('prayer'); prayerPanelRef.current?.open(action);
+  };
   const tabRefs = useRef<Record<TabId, HTMLButtonElement | null>>({ worship: null, parking: null, prayer: null, sharing: null, photos: null });
   const mainId = useId();
   const mainRef = useRef<HTMLElement>(null);
@@ -155,14 +184,14 @@ export function CompanionApp() {
         </div>}
         <main id={mainId} ref={mainRef} tabIndex={-1}>
           <div hidden={tab !== 'worship'}>
-            <WorshipPanel mode={mode} crownImage={crownImage} venue={venue} setVenue={setVenue} now={now} previewDay={isPreview ? eventDay : null} stage={isPreview ? (stale ? null : stage) : liveStage(operations)} actions={worshipActions} after={worshipAfter}>{worshipStatus}</WorshipPanel>
+            <WorshipPanel onSermonPray={openSermonPrayer} mode={mode} crownImage={crownImage} venue={venue} setVenue={setVenue} now={now} previewDay={isPreview ? eventDay : null} stage={isPreview ? (stale ? null : stage) : liveStage(operations)} actions={worshipActions} after={worshipAfter}>{worshipStatus}</WorshipPanel>
           </div>
           <div hidden={tab !== 'parking'}>
             {isPreview
               ? <PreviewParkingPanel venue={venue} setVenue={setVenue} stage={stage} stale={stale} allFull={parkingFull[venue]} goToWorship={() => selectTab('worship')} art={<ParkingArt />} day={eventDay + 5} />
               : <LiveParkingPanel venue={venue} setVenue={setVenue} operations={operations} art={<ParkingArt />} />}
           </div>
-          <div hidden={tab !== 'prayer'}><PrayerPanel onPreview={(text) => { setCardState(''); setModal({ type: 'prayer', text }); }} /></div>
+          <div hidden={tab !== 'prayer'}><PrayerPanel ref={prayerPanelRef} onReturnToSermon={fromSermon ? returnToSermon : undefined} onPreview={(text) => { setCardState(''); setModal({ type: 'prayer', text }); }} /></div>
           <div hidden={tab !== 'sharing'}>
             <SharingPanel eventDay={dayForContent} venue={venue} setVenue={setVenue} view={sharingView} setView={(next) => { setSharingView(next); if (mainRef.current) mainRef.current.scrollTop = 0; }} stories={visibleStories} onAddStory={addStory} onDeleteStory={(id) => setStories((current) => current.filter((story) => story.id !== id))} onHideStory={(id) => setHiddenStories((current) => new Set(current).add(id))} onMoreStories={() => setModal({ type: 'stories' })} />
           </div>

@@ -585,3 +585,33 @@ body { background: #fbfbfa; }
 .tc-service-banner { display: flex; flex-wrap: wrap; gap: 3px 12px; padding: 12px 20px; background: var(--paper-2); border-bottom: 1px solid var(--line); color: var(--ink); font-size: 13px; }
 .tc-service-banner strong { font-size: 16px; }
 .tc-service-banner span { align-self: center; }
+
+/* Date-linked reflections stay below the operational guidance. */
+.tc-companion .tc-journey__date { display: flex; flex-direction: column; align-items: center; width: 100%; min-height: 88px; gap: 2px; border-radius: 10px; padding: 4px 0; }
+.tc-journey__date[aria-pressed='true'] { background: var(--sunrise-soft); box-shadow: inset 0 0 0 1px var(--ink-soft); }
+.tc-journey__date .tc-journey__available { font-size: 11px; color: var(--ink); }
+.tc-journey__date[aria-pressed='true'] b { color: var(--ink); }
+.tc-journey__suns::before { top: 19px; }
+.tc-companion .tc-journey__hint { margin-top: 10px; font-size: 12px; color: var(--ink-soft); }
+.tc-sermon { padding: 22px 18px 10px; margin-bottom: 24px; border: 1px solid var(--line-strong); border-radius: 18px; background: var(--surface); scroll-margin-top: 16px; }
+.tc-sermon:focus { outline: 2px solid var(--ink-soft); outline-offset: 3px; }
+.tc-sermon__eyebrow { font-size: 13px; font-weight: 600; color: var(--ink-soft); }
+.tc-sermon h2 { font-size: 23px; font-weight: 600; letter-spacing: -.7px; margin: 8px 0; line-height: 1.4; }
+.tc-sermon .tc-sermon__source { font-size: 14px; color: var(--ink-soft); line-height: 1.7; margin-bottom: 14px; }
+.tc-sermon__points li { display: flex; align-items: baseline; gap: 12px; padding: 8px 0; font-size: 16px; font-weight: 600; }
+.tc-sermon__points li span { font-size: 12px; color: var(--ink-soft); font-weight: 400; }
+.tc-sermon__questions { margin: 14px 0 16px; border-top: 1px dashed var(--line-strong); border-bottom: 1px dashed var(--line-strong); }
+.tc-sermon__questions summary { min-height: 48px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 14px; font-weight: 600; list-style: none; }
+.tc-sermon__questions summary::-webkit-details-marker { display: none; }
+.tc-sermon__questions[open] summary > span { transform: rotate(45deg); }
+.tc-sermon__questions ol { list-style: decimal; padding: 0 4px 14px 22px; font-size: 15px; line-height: 1.8; }
+.tc-sermon__questions li + li { margin-top: 10px; }
+.tc-sermon__actions { display: grid; gap: 10px; }
+.tc-sermon__actions :is(.tc-primary, .tc-secondary) { margin: 0; font-size: 15px; min-height: 48px; }
+.tc-sermon__video { display: flex; justify-content: center; align-items: center; gap: 10px; min-height: 48px; margin-top: 6px; font-size: 14px; color: var(--ink-soft); text-underline-offset: 4px; }
+.tc-sermon-return { margin: 16px 24px 0; }
+.tc-sermon-return button { min-height: 44px; text-decoration: underline; text-underline-offset: 4px; }
+.tc-sermon-return p { font-size: 13px; color: var(--ink-soft); }
+@media (max-width: 360px) {
+  .tc-journey__suns { margin-left: -4px !important; margin-right: -4px !important; }
+}

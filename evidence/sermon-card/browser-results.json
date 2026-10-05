@@ -1,0 +1,54 @@
+{
+  "checks": [
+    {
+      "width": 320,
+      "noOverflow": true,
+      "dateTouchTarget": {
+        "x": 28,
+        "y": 992,
+        "width": 44,
+        "height": 101.390625
+      },
+      "timerPreserved": "02:45 paused, selected 3 minutes",
+      "draftConsentPreserved": true,
+      "browserBackForward": true,
+      "previewCancel": true,
+      "offlineReflection": true,
+      "networkWrites": 0
+    },
+    {
+      "width": 390,
+      "noOverflow": true,
+      "dateTouchTarget": {
+        "x": 32,
+        "y": 966.359375,
+        "width": 54.328125,
+        "height": 101.390625
+      },
+      "timerPreserved": "02:45 paused, selected 3 minutes",
+      "draftConsentPreserved": true,
+      "browserBackForward": true,
+      "previewCancel": true,
+      "offlineReflection": true,
+      "networkWrites": 0
+    },
+    {
+      "width": 1440,
+      "noOverflow": true,
+      "dateTouchTarget": {
+        "x": 522,
+        "y": 990.359375,
+        "width": 116,
+        "height": 101.390625
+      },
+      "timerPreserved": "02:45 paused, selected 3 minutes",
+      "draftConsentPreserved": true,
+      "browserBackForward": true,
+      "previewCancel": true,
+      "offlineReflection": true,
+      "networkWrites": 0
+    }
+  ],
+  "errors": [],
+  "data": "Synthetic local fixtures only; external traffic blocked"
+}

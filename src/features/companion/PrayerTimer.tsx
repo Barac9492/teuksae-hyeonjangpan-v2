@@ -28,7 +28,7 @@ export function PrayerTimer() {
   const update = (next: Clock) => { latest.current = next; setNow(Date.now()); setClock(next); };
   const start = () => { const current = latest.current; if (current.startedAt !== null) return; update({ elapsed: current.elapsed >= target ? 0 : current.elapsed, startedAt: Date.now() }); };
   const pause = () => { const current = latest.current; if (current.startedAt === null) return; update({ elapsed: Math.min(target, current.elapsed + Math.max(0, Date.now() - current.startedAt)), startedAt: null }); };
-  return <section className="tc-prayer-timer" aria-label="기도 타이머">
+  return <section id="tc-prayer-timer" tabIndex={-1} className="tc-prayer-timer" aria-label="기도 타이머">
     <h2>기도 타이머</h2>
     <p>정한 시간만큼 조용히 기도해요. 남은 시간이 줄어드는 타이머입니다.</p>
     <label>기도 시간<select aria-label="기도 시간" value={minutes} disabled={running || elapsed > 0} onChange={e => setMinutes(Number(e.target.value))}>{[1, 3, 5, 10, 20, 30].map(n => <option key={n} value={n}>{n}분</option>)}</select></label>
