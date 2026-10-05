@@ -23,7 +23,7 @@ it('only exposes reviewed, non-future content and keeps the last available sermo
 
 it('selects dates without inventing later sermons and keeps the sourced prayer folded and guidance before the card', async () => {
   render(<CompanionApp />);
-  expect(screen.getAllByRole('tab')).toHaveLength(5);
+  expect(screen.getAllByRole('tab')).toHaveLength(4);
   expect(screen.getByRole('heading', { name: '하나님이 보시는 중심' })).toBeVisible();
   expect(document.querySelector('.tc-sermon__questions')).not.toHaveAttribute('open');
   expect(document.querySelector('.tc-sermon__prayer-excerpt')).toHaveTextContent(sermons[0].prayerExcerpt.text);

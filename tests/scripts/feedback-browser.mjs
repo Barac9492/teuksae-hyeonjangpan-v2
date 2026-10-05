@@ -52,7 +52,7 @@ await admin.getByLabel('드림센터 주차장 사용률·상태').isEnabled();a
 console.log('full synchronized');await page.clock.fastForward(610000);await page.getByRole('tabpanel',{name:'주차'}).getByText(/마지막 확인.*마지막 기록/).first().waitFor();
 assert.equal(await page.getByRole('tabpanel',{name:'주차'}).getByText('100% · 만차',{exact:true}).count(),1);
 assert.match(await page.getByText('100% · 만차',{exact:true}).getAttribute('class'),/neutral/);
-console.log('stale passed');await page.getByRole('tab',{name:'기도',exact:true}).click();const timer=page.getByRole('region',{name:'기도 타이머'});
+console.log('stale passed');await page.getByRole('tab',{name:'기도',exact:true}).click();await page.getByText('조용히 기도하기 · 타이머',{exact:true}).click();const timer=page.getByRole('region',{name:'기도 타이머'});
 await timer.getByLabel('기도 시간',{exact:true}).selectOption('3');await timer.getByRole('button',{name:'기도 시작',exact:true}).click();
 await page.clock.runFor(10000);assert.ok((await timer.getByRole('timer').textContent()).includes('02:50'));
 await timer.getByRole('button',{name:'일시정지',exact:true}).click();await page.clock.runFor(5000);assert.ok((await timer.getByRole('timer').textContent()).includes('02:50'));

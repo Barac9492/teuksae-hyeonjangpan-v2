@@ -11,7 +11,6 @@ export function TabIcon({ tab }: { tab: TabId }) {
     worship: <><path d="M5 20V11l7-5.5 7 5.5v9" /><path d="M3 20h18M10 20v-5h4v5M12 2v4M10.2 3.7h3.6" /></>,
     parking: <><rect x="4" y="3.5" width="16" height="17" rx="4.5" /><path d="M10 16.5v-9h2.8a2.9 2.9 0 010 5.8H10" /></>,
     prayer: <><path d="M12 20.5s-7.5-4.8-7.5-10.3A4.2 4.2 0 0112 7.7a4.2 4.2 0 017.5 2.5c0 5.5-7.5 10.3-7.5 10.3z" /></>,
-    sharing: <><path d="M4.5 10.5h12v3.2a5.3 5.3 0 01-5.3 5.3h-1.4a5.3 5.3 0 01-5.3-5.3z" /><path d="M16.5 11.5h1.7a2.6 2.6 0 010 5.2h-2.3M3.5 21.5h15M8 3.5c-.8 1 .8 2-.1 3.2M12 2.5c-.8 1.2.8 2.3-.1 3.7" /></>,
     photos: <><rect x="3.5" y="5" width="17" height="14.5" rx="3" /><circle cx="12" cy="12.2" r="3.4" /><path d="M8.5 5l1.3-2h4.4l1.3 2" /></>,
   };
   return <svg className="tc-tab-icon" viewBox="0 0 24 24" aria-hidden="true">{paths[tab]}</svg>;

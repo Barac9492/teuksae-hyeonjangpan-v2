@@ -468,7 +468,7 @@ body { background: #fbfbfa; }
 
 /* ── Bottom navigation ─────────────────────────────────── */
 .tc-bottom-nav { position: relative; display: flex; flex-shrink: 0; background: color-mix(in srgb, #fff 92%, transparent); backdrop-filter: blur(12px); border-top: 1px solid var(--line); padding: 6px 8px max(10px, env(safe-area-inset-bottom)); }
-.tc-bottom-nav__sun { position: absolute; top: -1px; left: calc(8px + (100% - 16px) / 5 * var(--tab-index) + (100% - 16px) / 10 - 14px); width: 28px; height: 3px; border-radius: 0 0 3px 3px; background: var(--sunrise); box-shadow: 0 2px 10px var(--sunrise); transition: left .4s var(--ease); }
+.tc-bottom-nav__sun { position: absolute; top: -1px; left: calc(8px + (100% - 16px) / var(--tab-count, 4) * var(--tab-index) + (100% - 16px) / (var(--tab-count, 4) * 2) - 14px); width: 28px; height: 3px; border-radius: 0 0 3px 3px; background: var(--sunrise); box-shadow: 0 2px 10px var(--sunrise); transition: left .4s var(--ease); }
 .tc-bottom-nav button { flex: 1; display: flex; flex-direction: column; gap: 3px; align-items: center; justify-content: center; min-width: 0; min-height: 54px; color: #a3928f; border-radius: 14px; transition: color .2s; }
 .tc-bottom-nav button > b { font-size: 11px; font-weight: 500; }
 .tc-bottom-nav button[aria-selected='true'] { color: var(--ink); }
@@ -614,3 +614,24 @@ body { background: #fbfbfa; }
 @media (max-width: 360px) {
   .tc-journey__suns { margin-left: -4px !important; margin-right: -4px !important; }
 }
+
+/* Shared prayer first; existing snack information remains available. */
+.tc-home-shortcuts > div { flex-wrap: wrap; }
+.tc-supporting-guide { margin-top: 28px; border-top: 1px solid var(--line-strong); }
+.tc-supporting-guide > summary { min-height: 52px; display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ink-soft); cursor: pointer; }
+.tc-supporting-guide > summary::before { content: '+'; font-size: 20px; }
+.tc-supporting-guide[open] > summary::before { content: '−'; }
+.tc-supporting-guide > summary::-webkit-details-marker { display: none; }
+.tc-supporting-guide .tc-section, .tc-supporting-guide .tc-page-heading { padding-inline: 0; }
+#tc-panel-prayer .tc-page-heading { align-items: center; padding-top: 24px; padding-bottom: 20px; }
+#tc-panel-prayer .tc-page-heading h1 { font-size: 28px; font-weight: 400; letter-spacing: -1px; }
+#tc-panel-prayer .tc-page-heading__art { width: 52px; }
+#tc-panel-prayer .tc-page-heading p { font-size: 15px; color: var(--ink-soft); line-height: 1.85; margin-top: 14px; }
+.tc-generation-direction { display: block; }
+.tc-generation-direction strong { font-weight: 600; }
+#tc-panel-prayer .tc-subtabs { margin-bottom: 14px; }
+#tc-panel-prayer .tc-subtabs button { min-height: 48px; font-size: 14px; }
+.tc-prayer-clock { border: 1px solid var(--line-strong); border-radius: 12px; background: var(--surface); }
+.tc-prayer-clock > summary { min-height: 48px; padding: 12px 14px; font-size: 14px; color: var(--ink-soft); cursor: pointer; }
+.tc-prayer-clock .tc-prayer-timer { margin-top: 0; border: 0; border-radius: 0 0 12px 12px; }
+#tc-panel-prayer .tc-community { margin-top: 20px; padding-top: 18px; }

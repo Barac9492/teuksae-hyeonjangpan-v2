@@ -193,7 +193,8 @@ export function VerseCard() {
   );
 }
 
-export function WorshipPanel({ crownImage, venue, setVenue, now, previewDay, stage, children, actions, after, onSermonPray }: {
+export function WorshipPanel({ crownImage, venue, setVenue, now, previewDay, stage, children, actions, after, onSermonPray, supporting }: {
+  supporting?: ReactNode;
   onSermonPray?: (action: SermonPrayerAction) => void;
   mode?: ServiceMode;
   crownImage: string;
@@ -236,6 +237,7 @@ export function WorshipPanel({ crownImage, venue, setVenue, now, previewDay, sta
         <WakePlanner venue={venue} day={previewDay === null ? noticeServiceDay(now) : SERVICE_DAYS[previewDay] ?? null} />
 
         <VerseCard />
+        {supporting}
       </div>
     </section>
   );

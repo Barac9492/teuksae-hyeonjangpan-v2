@@ -2,9 +2,8 @@ import type { Venue } from './ui';
 
 export const tabs = [
   { id: 'worship', label: '예배' },
-  { id: 'parking', label: '주차' },
   { id: 'prayer', label: '기도' },
-  { id: 'sharing', label: '나눔' },
+  { id: 'parking', label: '주차' },
   { id: 'photos', label: '사진' },
 ] as const;
 export type TabId = (typeof tabs)[number]['id'];

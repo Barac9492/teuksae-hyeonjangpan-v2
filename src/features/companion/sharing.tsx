@@ -98,7 +98,7 @@ function StorySection({ stories, onAdd, onDelete, onHide, onMore }: { stories: S
 
 export function SharingPanel({ eventDay, stories, onAddStory, onDeleteStory, onHideStory, onMoreStories, view, setView, venue, setVenue }: { eventDay: number | null; stories: Story[]; onAddStory: (name: string, text: string) => string | null; onDeleteStory: (id: number) => void; onHideStory: (id: number) => void; onMoreStories: () => void; view: SnackView; setView: (view: SnackView) => void; venue: Venue; setVenue: (venue: Venue) => void }) {
   return (
-    <section id="tc-panel-sharing" className="tc-panel" role="tabpanel" aria-labelledby="tc-tab-sharing">
+    <section id="tc-panel-sharing" className="tc-panel" role="region" aria-label="간식 나눔·아침 식사">
       <PageHeading eyebrow="기다리는 시간도, 예배 후에도" title="함께 나눠요" art={<span className="tc-steam">{Icon.pot}</span>}>작은 간식 하나, 따뜻한 아침 한 끼.</PageHeading>
       <div className="tc-section tc-section--topless">
         <div className="tc-subtabs" role="group" aria-label="나눔 메뉴">
