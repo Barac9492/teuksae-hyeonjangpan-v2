@@ -1,7 +1,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { CompanionApp } from '../features/companion/CompanionApp';
-import { availableSermon, latestSermonDay } from '../features/companion/sermons';
+import { availableSermon, latestSermonDay, sermons } from '../features/companion/sermons';
 
 const requests: { method: string }[] = [];
 beforeEach(() => {
@@ -21,11 +21,17 @@ it('only exposes reviewed, non-future content and keeps the last available sermo
   expect(latestSermonDay(Date.parse('2027-01-01'))).toBe(5);
 });
 
-it('selects dates without inventing later sermons and keeps questions folded and guidance before the card', async () => {
+it('selects dates without inventing later sermons and keeps the sourced prayer folded and guidance before the card', async () => {
   render(<CompanionApp />);
   expect(screen.getAllByRole('tab')).toHaveLength(5);
   expect(screen.getByRole('heading', { name: '하나님이 보시는 중심' })).toBeVisible();
   expect(document.querySelector('.tc-sermon__questions')).not.toHaveAttribute('open');
+  expect(document.querySelector('.tc-sermon__prayer-excerpt')).toHaveTextContent(sermons[0].prayerExcerpt.text);
+  expect(screen.queryByText('오늘의 묵상 질문')).not.toBeInTheDocument();
+  expect(screen.queryByText('오늘 하나님께 먼저 여쭙고 싶은 일은 무엇인가요?')).not.toBeInTheDocument();
+  expect(screen.queryByText('학교·집·일터에서 하나님을 사랑하고 신뢰하는 마음으로 할 수 있는 작은 일은 무엇인가요?')).not.toBeInTheDocument();
+  fireEvent.click(screen.getByText('말씀에서 나눈 기도 제목'));
+  expect(screen.getByRole('link', { name: /말씀 38:46–38:54/ })).toHaveAttribute('href', 'https://www.youtube.com/watch?v=0e11fIrc_6s&t=2326s');
   expect(screen.getByRole('link', { name: /설교 다시 듣기/ })).toHaveAttribute('href', 'https://www.youtube.com/watch?v=0e11fIrc_6s');
   const guidance = screen.getByRole('heading', { name: '지금 예배 공간은' });
   expect(guidance.compareDocumentPosition(document.getElementById('tc-sermon-card')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

@@ -11,8 +11,9 @@ export function SermonCard({ day, now, onPray }: { day: number; now: number; onP
       <p className="tc-sermon__source">{sermon.title} · {sermon.speaker}<br />{sermon.passage}</p>
       <ul className="tc-sermon__points">{sermon.points.map((point, index) => <li key={point}><span aria-hidden="true">0{index + 1}</span>{point}</li>)}</ul>
       <details className="tc-sermon__questions" key={day}>
-        <summary>오늘의 묵상 질문 <span aria-hidden="true">＋</span></summary>
-        <ol>{sermon.questions.map(question => <li key={question}>{question}</li>)}</ol>
+        <summary>말씀에서 나눈 기도 제목 <span aria-hidden="true">＋</span></summary>
+        <blockquote className="tc-sermon__prayer-excerpt">{sermon.prayerExcerpt.text}</blockquote>
+        <a className="tc-sermon__video" href={`${sermon.videoUrl}&t=${sermon.prayerExcerpt.startSeconds}s`} target="_blank" rel="noopener noreferrer">말씀 {sermon.prayerExcerpt.timeLabel} <span className="tc-visually-hidden">구간 듣기 (새 탭)</span><span aria-hidden="true">↗</span></a>
       </details>
       {onPray && <div className="tc-sermon__actions">
         <button type="button" className="tc-primary" onClick={() => onPray('read')}>이 말씀으로 1분 기도하기</button>
