@@ -1,0 +1,71 @@
+
+> teuksae-app-v1@1.0.0 test:photo-archive-sql
+> node tests/scripts/photo-archive-db.mjs
+
+PASS migration leaves all existing stored fields unchanged
+PASS only community_v2 changes; public-page and prayer policy definitions unchanged
+PASS pending -> archived
+PASS archive retains content, stored path, consent receipt and version increments once
+PASS archived ID absent from legacy/page public lists and anonymous image RPC
+PASS superadmin retains original image access
+PASS dedicated archive list includes private admin image
+PASS routine queue excludes archive before LIMIT
+PASS owner receipt reports archived without providing image
+PASS duplicate version and direct archive approval blocked
+PASS one attributed archive audit entry
+PASS archive -> review, not approved
+PASS returned-to-review photo remains private
+PASS stale pre-archive approve/archive requests cannot overwrite review
+PASS duplicate return request has no second effect
+PASS fresh review can explicitly approve again
+PASS approved -> archived
+PASS archive retains content, stored path, consent receipt and version increments once
+PASS archived ID absent from legacy/page public lists and anonymous image RPC
+PASS superadmin retains original image access
+PASS dedicated archive list includes private admin image
+PASS routine queue excludes archive before LIMIT
+PASS owner receipt reports archived without providing image
+PASS duplicate version and direct archive approval blocked
+PASS one attributed archive audit entry
+PASS archive -> review, not approved
+PASS returned-to-review photo remains private
+PASS stale pre-archive approve/archive requests cannot overwrite review
+PASS duplicate return request has no second effect
+PASS fresh review can explicitly approve again
+PASS reject archive of prayer/pending/ready=true
+PASS reject archive of reflection/pending/ready=true
+PASS reject archive of photo/pending/ready=false
+PASS reject archive of photo/rejected/ready=false
+PASS reject archive of photo/deleted/ready=false
+PASS reject archive of photo/trashed/ready=true
+PASS anonymous image missing
+PASS revoked moderator denied archived original
+PASS archive can move to recoverable trash
+PASS trash restore returns to pending
+PASS owner withdrawal from archive queues original removal
+PASS withdrawal clears content
+PASS withdrawn archive cannot be resurrected
+PASS archive deleted preserves cleanup
+PASS archive rejected preserves cleanup
+PASS existing orphan cleanup does not delete ready archives
+PASS archive filter traverses 44 rows in bounded unique pages
+PASS archive cursor cannot cross filters
+PASS approved photos remain public
+PASS both count paths retain existing pending/approved-only rule
+PASS effective RPC grants remain service-role only
+PASS bucket remains private
+PASS community_v2_items retains RLS and no direct read grants
+PASS community_v2_audit retains RLS and no direct read grants
+PASS community_v2_rates retains RLS and no direct read grants
+PASS anonymous archived image returns HTTP404 before storage
+PASS team account returns HTTP403
+PASS superadmin receives retained synthetic bytes
+PASS private image cache contract unchanged
+PASS /api/community?kind=photo hides archives and does not cache
+PASS /api/community?kind=photo&page=1 hides archives and does not cache
+PASS archive API filter maps to actual SQL
+PASS archive committed during storage body read prevents public bytes
+PASS old-client approval cannot republish archive
+PASS new HTTP decision returns to private review
+PASS invalid owner token cannot read archive receipt
+Photo archive SQL/HTTP: 77 checks passed

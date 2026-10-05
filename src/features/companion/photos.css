@@ -1,5 +1,7 @@
 .tc-photo-field { display: grid; gap: 8px; margin: 18px 0; font-size: 13px; color: var(--ink); }
 .tc-photo-field input, .tc-photo-day-trigger { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 4px; background: #fff; color: var(--ink); font: inherit; }
+/* Keep the memo readable while typing and avoid iOS zooming the input on focus. */
+.tc-companion .tc-photo-memo-field input { font-size: 16px; }
 .tc-photo-day-trigger { display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: left; cursor: pointer; }
 .tc-photo-day-trigger:focus-visible, .tc-photo-day-options button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .tc-photo-day-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
