@@ -1,0 +1,43 @@
+
+> teuksae-app-v1@1.0.0 test:community-sql
+> node tests/scripts/community-db.mjs
+
+PASS live  list has no private deletion/upload data
+PASS live  all page is bounded to 100
+PASS cursor preserves PostgreSQL microseconds
+PASS live  all page is bounded to 100
+PASS cursor preserves PostgreSQL microseconds
+PASS live  all page is bounded to 100
+PASS cursor preserves PostgreSQL microseconds
+PASS live  all page is bounded to 100
+PASS live  pending page is bounded to 100
+PASS cursor preserves PostgreSQL microseconds
+PASS live  pending page is bounded to 100
+PASS live  approved page is bounded to 100
+PASS cursor preserves PostgreSQL microseconds
+PASS live  approved page is bounded to 100
+PASS cursor preserves PostgreSQL microseconds
+PASS live  approved page is bounded to 100
+PASS live  rejected page is bounded to 100
+PASS security definer retains empty search path
+PASS rehearsal_ list has no private deletion/upload data
+PASS rehearsal_ all page is bounded to 100
+PASS cursor preserves PostgreSQL microseconds
+PASS rehearsal_ all page is bounded to 100
+PASS cursor preserves PostgreSQL microseconds
+PASS rehearsal_ all page is bounded to 100
+PASS cursor preserves PostgreSQL microseconds
+PASS rehearsal_ all page is bounded to 100
+PASS rehearsal_ pending page is bounded to 100
+PASS cursor preserves PostgreSQL microseconds
+PASS rehearsal_ pending page is bounded to 100
+PASS rehearsal_ approved page is bounded to 100
+PASS cursor preserves PostgreSQL microseconds
+PASS rehearsal_ approved page is bounded to 100
+PASS cursor preserves PostgreSQL microseconds
+PASS rehearsal_ approved page is bounded to 100
+PASS rehearsal_ rejected page is bounded to 100
+PASS security definer retains empty search path
+PASS rehearsal global reset lock remains first
+PASS rehearsal replacement has no live table/function references
+PASS 233 community PostgreSQL/HTTP checks. Actual migrations 002..011; synthetic local data only.

@@ -1,0 +1,39 @@
+viewport 320
+before publish 320
+submitted 320
+lost response 320
+viewport 390
+before publish 390
+submitted 390
+lost response 390
+viewport 1440
+before publish 1440
+submitted 1440
+lost response 1440
+{
+  "passed": true,
+  "checks": [
+    {
+      "width": 320,
+      "duplicateRequests": 2,
+      "sameRetry": true,
+      "flow": "memo → response loss → retry → admin review → approval → public → archive → owner deletion"
+    },
+    {
+      "width": 390,
+      "duplicateRequests": 2,
+      "sameRetry": true,
+      "flow": "memo → response loss → retry → admin review → approval → public → archive → owner deletion"
+    },
+    {
+      "width": 1440,
+      "duplicateRequests": 2,
+      "sameRetry": true,
+      "flow": "memo → response loss → retry → admin review → approval → public → archive → owner deletion"
+    }
+  ],
+  "javascriptErrors": [],
+  "externalRequestsSent": 0,
+  "externalRequestsBlocked": 6,
+  "mobileKeyboard": "430px viewport + focus/Enter/16px input verified; real iOS/Android keyboard not exercised"
+}

@@ -111,7 +111,13 @@ export function PhotosPanel({ eventDay }: { eventDay: number | null }) {
             <div className="tc-polaroid-stack" aria-hidden="true"><span><i /></span><span><i /></span><span><i /><b>우리의 새벽</b></span></div>
           </div>
         )}
-        {photo && <Community kind="photo" text={cleanMemo} eventDay={day} file={readyFile} payloadKey={renderKey} />}
+        {photo && <>
+          <label className="tc-photo-field tc-photo-memo-field" htmlFor="tc-photo-memo">사진 아래 한 줄 메모 (선택, 최대 40자)
+            <input id="tc-photo-memo" value={memo} maxLength={40} enterKeyHint="done" aria-describedby="tc-photo-memo-help" placeholder="이 새벽에 기억하고 싶은 말" onChange={(e) => { setMemo(e.target.value); setMessage(''); }} />
+          </label>
+          <p id="tc-photo-memo-help" className="tc-footnote">메모 없이도 올릴 수 있어요. 메모는 사진과 함께 검토되고, 승인 후 함께 공개돼요.</p>
+          <Community kind="photo" text={cleanMemo} eventDay={day} file={readyFile} payloadKey={renderKey} />
+        </>}
         <label className={photo ? 'tc-secondary tc-upload' : 'tc-primary tc-upload'}>
           {photo ? '다른 사진 고르기' : '사진 올리기'}
           <input ref={inputRef} id="tc-photo-input" aria-label={photo ? '다른 사진 고르기' : '사진 올리기'} type="file" accept="image/jpeg,image/png,image/webp" onChange={choose} />
@@ -121,9 +127,6 @@ export function PhotosPanel({ eventDay }: { eventDay: number | null }) {
         <details className="tc-photo-extras">
           <summary>사진 꾸미기·다운로드·도장</summary>
           {photo && <>
-            <label className="tc-photo-field" htmlFor="tc-photo-memo">사진 아래 한 줄 (선택, 최대 40자)
-              <input id="tc-photo-memo" value={memo} maxLength={40} placeholder="이 새벽에 기억하고 싶은 말" onChange={(e) => { setMemo(e.target.value); setMessage(''); }} />
-            </label>
             <div className="tc-photo-actions">
               <button className="tc-secondary" type="button" disabled={!readyFile} onClick={download}>{!readyFile ? failedKey === renderKey ? '사진을 다시 선택해주세요' : '프레임 준비 중…' : '사진 다운로드'}</button>
               <button className="tc-line-action" type="button" onClick={clear}>사진·메모 지우기</button>

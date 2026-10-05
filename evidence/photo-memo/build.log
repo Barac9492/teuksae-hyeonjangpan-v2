@@ -1,0 +1,23 @@
+
+> teuksae-app-v1@1.0.0 build
+> tsc -p tsconfig.app.json --noEmit && vite build
+
+vite v6.4.3 building for production...
+transforming...
+✓ 151 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                               1.17 kB │ gzip:  0.65 kB
+dist/assets/crown-Bo5xwE7Q.jpg               31.44 kB
+dist/assets/poster-rljmloGM.jpg             122.34 kB
+dist/assets/requestDeadline-DU1ZHAA4.css      0.56 kB │ gzip:  0.26 kB
+dist/assets/admin-bootstrap-ClmKqoA3.css     10.63 kB │ gzip:  2.73 kB
+dist/assets/legacy-bootstrap-DvdwESFn.css    26.46 kB │ gzip:  5.95 kB
+dist/assets/landing-bootstrap-BlkWx3C1.css   53.40 kB │ gzip: 11.63 kB
+dist/assets/index-Cf_c5gKJ.js                 2.84 kB │ gzip:  1.45 kB
+dist/assets/requestDeadline-DYGbdNib.js       5.69 kB │ gzip:  2.58 kB
+dist/assets/admin-bootstrap-Zy4QkPY8.js      61.06 kB │ gzip: 17.83 kB
+dist/assets/landing-bootstrap-DYgaiv4G.js   106.21 kB │ gzip: 35.62 kB
+dist/assets/client-CHysikb-.js              193.84 kB │ gzip: 60.55 kB
+dist/assets/legacy-bootstrap-I3B5-E7O.js    296.39 kB │ gzip: 80.91 kB
+✓ built in 634ms
