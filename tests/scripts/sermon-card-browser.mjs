@@ -91,7 +91,7 @@ try {
     await page.goBack();
     await card.waitFor({ state: 'visible' });
     await context.setOffline(true);
-    assert.equal(await card.getByText('하나님을 사랑하는 마음').isVisible(), true);
+    assert.equal(await card.locator('.tc-sermon__points').getByText('하나님을 사랑하는 마음').isVisible(), true);
     assert.deepEqual(writes, []);
     assert.equal(await page.locator('body').evaluate(e => e.scrollWidth <= innerWidth), true);
     checks.push({ width, noOverflow: true, dateTouchTarget: size, timerPreserved: '02:45 paused, selected 3 minutes', draftConsentPreserved: true, browserBackForward: true, previewCancel: true, offlineReflection: true, networkWrites: writes.length });
