@@ -29,7 +29,7 @@ try {
     const card = page.locator('#tc-sermon-card');
     await card.getByRole('heading', { name: '하나님이 보시는 중심' }).waitFor();
     await page.screenshot({ path: out + `home-${width}.png` });
-    assert.equal(await page.getByRole('tab').count(), 5);
+    assert.equal(await page.getByRole('tab').count(), 4);
     assert.equal(await page.locator('body').evaluate(e => e.scrollWidth <= innerWidth), true);
     assert.equal(await page.locator('.tc-sermon__questions').getAttribute('open'), null);
     const size = await page.getByRole('button', { name: '10월 5일 말씀 묵상' }).boundingBox();

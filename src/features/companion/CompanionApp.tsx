@@ -101,7 +101,7 @@ export function CompanionApp() {
     else window.history.replaceState({ ...window.history.state, tcSermonPrayer: action }, '');
     sermonNavigation.current = true; setFromSermon(true); selectTab('prayer'); prayerPanelRef.current?.open(action);
   };
-  const tabRefs = useRef<Record<TabId, HTMLButtonElement | null>>({ worship: null, parking: null, prayer: null, sharing: null, photos: null });
+  const tabRefs = useRef<Record<TabId, HTMLButtonElement | null>>({ worship: null, parking: null, prayer: null, photos: null });
   const mainId = useId();
   const mainRef = useRef<HTMLElement>(null);
   const visibleStories = stories.filter((story) => !hiddenStories.has(story.id));
@@ -134,16 +134,25 @@ export function CompanionApp() {
     setStories((current) => [story, ...current]);
     return null;
   };
-  const goToSnack = () => { setSharingView('snacks'); selectTab('sharing'); };
+  const snackRef = useRef<HTMLDetailsElement>(null);
+  const goToSnack = () => {
+    setSharingView('snacks'); selectTab('worship');
+    requestAnimationFrame(() => { if (snackRef.current) { snackRef.current.open = true; snackRef.current.querySelector('summary')?.focus(); } });
+  };
+  const supporting = <details ref={snackRef} className="tc-supporting-guide">
+    <summary>간식 나눔·아침 식사 안내</summary>
+    <SharingPanel eventDay={dayForContent} venue={venue} setVenue={setVenue} view={sharingView} setView={setSharingView} stories={visibleStories} onAddStory={addStory} onDeleteStory={(id) => setStories((current) => current.filter((story) => story.id !== id))} onHideStory={(id) => setHiddenStories((current) => new Set(current).add(id))} onMoreStories={() => setModal({ type: 'stories' })} />
+  </details>;
 
   const worshipStatus = isPreview
     ? <PreviewWorshipStatus venue={venue} stage={stage} stale={stale} />
     : <LiveWorshipStatus venue={venue} operations={operations} />;
   const worshipActions = <>
     <button type="button" onClick={() => selectTab('parking')}><span aria-hidden="true">P</span>주차 안내</button>
+    <button type="button" onClick={() => selectTab('prayer')}><span aria-hidden="true">♡</span>서로를 위한 기도</button>
     {isPreview
       ? <button type="button" onClick={() => setModal({ type: 'route', venue })}><span aria-hidden="true">↝</span>{venue === 'songrim' ? '대기·입장 흐름' : '장소 안내'}</button>
-      : dayForContent !== null && venue === 'songrim' && <button type="button" onClick={goToSnack}><span aria-hidden="true">☕</span>오병이어 챌린지</button>}
+      : null}
   </>;
   const worshipAfter = <>
     {isPreview && <p className="tc-panel-note">현황은 모두 디자인 검토용 예시입니다. 운영 시스템과 연결되지 않았고 실제 현장 상태를 뜻하지 않습니다.</p>}
@@ -184,7 +193,7 @@ export function CompanionApp() {
         </div>}
         <main id={mainId} ref={mainRef} tabIndex={-1}>
           <div hidden={tab !== 'worship'}>
-            <WorshipPanel onSermonPray={openSermonPrayer} mode={mode} crownImage={crownImage} venue={venue} setVenue={setVenue} now={now} previewDay={isPreview ? eventDay : null} stage={isPreview ? (stale ? null : stage) : liveStage(operations)} actions={worshipActions} after={worshipAfter}>{worshipStatus}</WorshipPanel>
+            <WorshipPanel supporting={supporting} onSermonPray={openSermonPrayer} mode={mode} crownImage={crownImage} venue={venue} setVenue={setVenue} now={now} previewDay={isPreview ? eventDay : null} stage={isPreview ? (stale ? null : stage) : liveStage(operations)} actions={worshipActions} after={worshipAfter}>{worshipStatus}</WorshipPanel>
           </div>
           <div hidden={tab !== 'parking'}>
             {isPreview
@@ -192,12 +201,9 @@ export function CompanionApp() {
               : <LiveParkingPanel venue={venue} setVenue={setVenue} operations={operations} art={<ParkingArt />} />}
           </div>
           <div hidden={tab !== 'prayer'}><PrayerPanel ref={prayerPanelRef} onReturnToSermon={fromSermon ? returnToSermon : undefined} onPreview={(text) => { setCardState(''); setModal({ type: 'prayer', text }); }} /></div>
-          <div hidden={tab !== 'sharing'}>
-            <SharingPanel eventDay={dayForContent} venue={venue} setVenue={setVenue} view={sharingView} setView={(next) => { setSharingView(next); if (mainRef.current) mainRef.current.scrollTop = 0; }} stories={visibleStories} onAddStory={addStory} onDeleteStory={(id) => setStories((current) => current.filter((story) => story.id !== id))} onHideStory={(id) => setHiddenStories((current) => new Set(current).add(id))} onMoreStories={() => setModal({ type: 'stories' })} />
-          </div>
           <div hidden={tab !== 'photos'}><PhotosPanel eventDay={dayForContent} /></div>
         </main>
-        <nav className="tc-bottom-nav" role="tablist" aria-label="주요 메뉴" style={{ '--tab-index': tabIndex } as React.CSSProperties}>
+        <nav className="tc-bottom-nav" role="tablist" aria-label="주요 메뉴" style={{ '--tab-index': tabIndex, '--tab-count': tabs.length } as React.CSSProperties}>
           <span className="tc-bottom-nav__sun" aria-hidden="true" />
           {tabs.map((item) => (
             <button key={item.id} id={`tc-tab-${item.id}`} ref={(element) => { tabRefs.current[item.id] = element; }} type="button" role="tab" aria-controls={`tc-panel-${item.id}`} aria-selected={tab === item.id} tabIndex={tab === item.id ? 0 : -1} onClick={() => selectTab(item.id)} onKeyDown={onTabKeyDown}>

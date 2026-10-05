@@ -1,3 +1,4 @@
+import { openSnackGuide } from './helpers/openSnackGuide';
 import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
@@ -39,7 +40,7 @@ it('keeps archived reflection drafts separate and resets sharing consent on edit
 });
 it('keeps preparatory snack sharing anonymous and voluntary', async () => {
   const user = userEvent.setup(); render(<CompanionApp />);
-  await user.click(screen.getByRole('tab', { name: '나눔' }));
+  await openSnackGuide(user);
   expect(screen.getByRole('button', { name: '오병이어 챌린지' })).toBeVisible();
   expect(screen.queryByText(/청년부|피켓|바구니/)).not.toBeInTheDocument();
   expect(screen.getByText('간식을 준비하지 않으셔도 편하게 함께해 주세요.')).toBeVisible();

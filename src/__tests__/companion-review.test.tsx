@@ -1,3 +1,4 @@
+import { openSnackGuide } from './helpers/openSnackGuide';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -30,12 +31,12 @@ describe('Companion independent regression review', () => {
     const user = userEvent.setup();
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     render(<CompanionApp />);
-    await user.click(screen.getByRole('tab', { name: '나눔' }));
+    await openSnackGuide(user);
     expect(screen.queryByRole('textbox', { name: '메모' })).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /메모 작성하기/ }));
     await user.type(screen.getByRole('textbox', { name: '메모' }), '함께 기다려서 좋았습니다.');
     await user.click(screen.getByRole('tab', { name: '예배' }));
-    await user.click(screen.getByRole('tab', { name: '나눔' }));
+    await openSnackGuide(user);
     expect(screen.getByRole('textbox', { name: '메모' })).toHaveValue('함께 기다려서 좋았습니다.');
     await user.click(screen.getByRole('button', { name: /나만 보는 메모에 추가/ }));
     expect(screen.getByText('함께 기다려서 좋았습니다.')).toBeVisible();

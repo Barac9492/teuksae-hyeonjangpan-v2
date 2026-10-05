@@ -26,10 +26,11 @@ describe('continuous public use through service times',()=>{
     render(managed?<RuntimeProvider publicDayBoundaries><CompanionApp/></RuntimeProvider>:<CompanionApp/>);await flush();
     expect(screen.getByText('이용 가능')).toBeVisible();tab('기도');expect(within(screen.getByRole('tabpanel',{name:'기도'})).getByText('latest public content')).toBeVisible();
     await tick(1000);const count=fetcher.mock.calls.length;
-    for(const name of ['예배','주차','기도','나눔','사진']){
+    for(const name of ['예배','기도','주차','사진']){
       tab(name);await flush();expect(document.querySelector('[data-service-mode="worship"]')).toBeVisible();
       if(['기도','사진'].includes(name))expect(within(screen.getByRole('tabpanel',{name})).getByText('latest public content')).toBeVisible();
     }
+    tab('예배');fireEvent.click(screen.getByText('간식 나눔·아침 식사 안내',{exact:true}));expect(screen.getByRole('region',{name:'간식 나눔·아침 식사'})).toBeVisible();
     tab('주차');expect(screen.getByText('70% · 혼잡')).toBeVisible();expect(within(screen.getByRole('tabpanel',{name:'주차'})).queryByText('예배 중',{exact:true})).toBeNull();
     tab('사진');expect(screen.getByText('오늘 사진 참여 3건')).toBeVisible();
     await tick(69*60000+59000);expect(fetcher.mock.calls.length).toBeGreaterThan(count);expect(document.querySelector('[data-service-mode="worship"]')).toBeVisible();

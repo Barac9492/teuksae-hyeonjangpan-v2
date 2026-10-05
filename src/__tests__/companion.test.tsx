@@ -1,3 +1,4 @@
+import { openSnackGuide } from './helpers/openSnackGuide';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -24,19 +25,22 @@ async function openSettings(user: ReturnType<typeof userEvent.setup>) {
 }
 
 async function chooseTab(user: ReturnType<typeof userEvent.setup>, name: string) {
+  if (name === '나눔') return openSnackGuide(user);
   await user.click(screen.getByRole('tab', { name }));
 }
 
 describe('CompanionApp', () => {
-  it('has exactly five keyboard tabs and no postcard tab or panel', async () => {
+  it('has four keyboard tabs with prayer first after worship and no postcard tab or panel', async () => {
     const user = userEvent.setup();
     render(<CompanionApp />);
     const tablist = screen.getByRole('tablist', { name: '주요 메뉴' });
     const tabLabels = within(tablist).getAllByRole('tab').map((tab) => tab.textContent);
-    expect(tabLabels).toEqual(['예배', '주차', '기도', '나눔', '사진']);
+    expect(tabLabels).toEqual(['예배', '기도', '주차', '사진']);
     expect(screen.queryByText('엽서')).not.toBeInTheDocument();
     const worship = screen.getByRole('tab', { name: '예배' });
     worship.focus();
+    await user.keyboard('{ArrowRight}');
+    await waitFor(() => expect(screen.getByRole('tab', { name: '기도' })).toHaveFocus());
     await user.keyboard('{ArrowRight}');
     await waitFor(() => expect(screen.getByRole('tab', { name: '주차' })).toHaveFocus());
     expect(screen.getByRole('heading', { name: '주차 안내' })).toBeVisible();
@@ -103,7 +107,7 @@ describe('CompanionApp', () => {
     render(<CompanionApp />);
     await chooseTab(user, '나눔');
     const checkCopy = () => {
-      const panel = screen.getByRole('tabpanel', { name: '나눔' });
+      const panel = screen.getByRole('region', { name: '간식 나눔·아침 식사' });
       expect(within(panel).getByText('송림본당 · 서현')).toBeVisible();
       expect(within(panel).getByRole('heading', { name: '잠을 깨우는 소소한 간식나눔 챌린지' })).toBeVisible();
       expect(panel).not.toHaveTextContent(/함께 준비해요|체육관 세팅|3시 30분|송림본당만|작은 간식으로 마음을 나눠요|핫팩/);

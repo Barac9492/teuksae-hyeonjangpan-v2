@@ -1,0 +1,20 @@
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { afterEach, expect, it, vi } from 'vitest';
+import { CompanionApp } from '../features/companion/CompanionApp';
+afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+it('shows mutual prayer directions without age collection or classification and keeps snacks folded', async () => {
+  const fetcher=vi.spyOn(globalThis,'fetch').mockImplementation(async()=>new Response(JSON.stringify({enabled:true,resources:[],items:[],photoCountToday:0,today:'2026-10-05'})));
+  render(<CompanionApp />);
+  expect(screen.getAllByRole('tab').map(el=>el.textContent)).toEqual(['예배','기도','주차','사진']);
+  expect(document.querySelector('.tc-supporting-guide')).not.toHaveAttribute('open');
+  fireEvent.click(screen.getByRole('button',{name:'서로를 위한 기도'}));
+  expect(screen.getByRole('heading',{name:'서로를 위해 기도해요'})).toBeVisible();
+  expect(screen.getByText('어른 세대를 위해,')).toBeVisible();
+  expect(screen.getByText('젊은 세대를 위해.')).toBeVisible();
+  expect(document.querySelector('.tc-prayer-clock')).not.toHaveAttribute('open');
+  expect(screen.getByRole('heading',{name:'함께 나누는 기도'})).toBeVisible();
+  fireEvent.click(within(screen.getByRole('group',{name:'기도 메뉴'})).getByRole('button',{name:'기도제목 올리기'}));
+  expect(screen.getByLabelText('어떤 마음으로 기도하고 있나요?')).toHaveValue('');
+  expect(screen.queryByLabelText(/나이|연령|생년|기도 대상/)).not.toBeInTheDocument();
+  expect(fetcher.mock.calls.every(([,opts])=>!opts?.method || opts.method==='GET')).toBe(true);
+});

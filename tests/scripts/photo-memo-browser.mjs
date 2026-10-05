@@ -5,7 +5,7 @@ import { PNG } from 'pngjs';
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const base = process.env.BASE_URL || 'http://127.0.0.1:4197';
 assert.equal(new URL(base).hostname, '127.0.0.1');
-const out = new URL('../../evidence/photo-memo/', import.meta.url).pathname;
+const out = process.env.EVIDENCE_DIR || new URL('../../evidence/photo-memo/', import.meta.url).pathname;
 await mkdir(out, { recursive: true });
 const png = new PNG({ width: 40, height: 30 }); png.data.fill(180);
 const image = { name: 'synthetic.png', mimeType: 'image/png', buffer: PNG.sync.write(png) };
