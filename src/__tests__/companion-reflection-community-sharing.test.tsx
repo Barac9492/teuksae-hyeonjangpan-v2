@@ -60,7 +60,7 @@ describe('community sharing is open before the calendar launch date, with consen
     render(<Community kind="photo" text="사전 점검 초안" file={new File(['png'], 'before.png', { type: 'image/png' })} payloadKey="before-event" />);
     await act(async () => { await Promise.resolve(); });
 
-    expect(screen.getByText('오늘 사진 참여 3건')).toBeVisible();
+    expect(screen.queryByText(/사진 참여/)).toBeNull();
     expect(screen.getByText('사전 점검 사진')).toBeVisible();
     expect(screen.queryByText(/10월 5일부터/)).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: '앱에 들어온 모든 분께 공개하기' })).not.toBeInTheDocument();
@@ -81,7 +81,7 @@ describe('community sharing is open before the calendar launch date, with consen
     render(<Community kind="photo" text="첫날" file={new File(['png'], 'photo.png', { type: 'image/png' })} payloadKey="launch" />);
     await act(async () => { await Promise.resolve(); });
 
-    expect(screen.getByText('오늘 사진 참여 3건')).toBeVisible();
+    expect(screen.queryByText(/사진 참여/)).toBeNull();
     expect(screen.getByText('첫날 사진')).toBeVisible();
     const checkbox = screen.getByRole('checkbox', { name: '함께 나누기 · 공개' });
     expect(checkbox).not.toBeChecked();
