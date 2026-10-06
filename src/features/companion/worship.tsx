@@ -193,7 +193,7 @@ export function VerseCard() {
   );
 }
 
-export function WorshipPanel({ crownImage, venue, setVenue, now, previewDay, stage, children, actions, after, onSermonPray, supporting }: {
+export function WorshipPanel({ crownImage, venue, setVenue, now, previewDay, stage, children, actions, after, onSermonPray, supporting, mode }: {
   supporting?: ReactNode;
   onSermonPray?: (action: SermonPrayerAction) => void;
   mode?: ServiceMode;
@@ -209,12 +209,15 @@ export function WorshipPanel({ crownImage, venue, setVenue, now, previewDay, sta
 }) {
   const [chosenDay, setChosenDay] = useState<number | null>(null);
   const selectedDay = chosenDay ?? latestSermonDay(now);
+  const recapFirst = mode === 'after' && previewDay === null;
   const selectSermonDay = (day: number) => {
     setChosenDay(day);
     requestAnimationFrame(() => document.getElementById('tc-sermon-card')?.focus());
   };
   return (
     <section id="tc-panel-worship" className="tc-panel" role="tabpanel" aria-labelledby="tc-tab-worship">
+      {/* After the service, the morning's sermon recap is the first thing on the home screen. */}
+      {recapFirst && <div className="tc-section tc-section--recap"><SermonCard day={selectedDay} now={now} onPray={onSermonPray} recap /></div>}
       <WorshipHero crownImage={crownImage} />
       <div className="tc-home-shortcuts" aria-label="빠른 안내">
         <div>{actions}</div>
@@ -233,7 +236,7 @@ export function WorshipPanel({ crownImage, venue, setVenue, now, previewDay, sta
         {after}
       </div>
       <div className="tc-section">
-        <SermonCard day={selectedDay} now={now} onPray={onSermonPray} />
+        {!recapFirst && <SermonCard day={selectedDay} now={now} onPray={onSermonPray} />}
         <WakePlanner venue={venue} day={previewDay === null ? noticeServiceDay(now) : SERVICE_DAYS[previewDay] ?? null} />
 
         <VerseCard />

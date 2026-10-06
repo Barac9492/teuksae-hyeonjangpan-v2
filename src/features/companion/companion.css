@@ -654,3 +654,5 @@ body { background: #fbfbfa; }
 .tc-board-heading p { font-size:13px; line-height:1.7; word-break:keep-all; }
 @media (min-width:760px) { .tc-blessing-boards { grid-template-columns:1fr 1fr; } }
 @media (max-width:359px) { .tc-blessing-boards { padding-left:18px; padding-right:18px; } .tc-companion .tc-blessing-card { padding:18px; } .tc-blessing-card strong { font-size:20px; } }
+
+.tc-section--recap{padding-top:16px}.tc-sermon--recap{box-shadow:0 6px 24px #35291f14}

@@ -1,4 +1,4 @@
-/** Day 5 points are user-provided; day 6 title/points/reflection title and every prayer excerpt are taken from the official video's auto-captions (see docs/sermon-*-source-*.md). */
+/** Same format every day: title/passage from the official video description; reflection title, points and prayer excerpt verbatim from its Korean auto-captions (see docs/sermon-*-source-*.md). */
 export const sermons = [{
   day: 5,
   date: '2026-10-05',
@@ -6,7 +6,7 @@ export const sermons = [{
   speaker: '이찬수 목사',
   passage: '사무엘상 16:6–13',
   videoUrl: 'https://www.youtube.com/watch?v=0e11fIrc_6s',
-  reflectionTitle: '하나님이 보시는 중심',
+  reflectionTitle: '하나님이 기뻐하신 다윗의 중심',
   points: ['하나님을 사랑하는 마음', '하나님을 신뢰하는 마음'],
   prayerExcerpt: {
     text: '마음의 중심에 하나님을 사랑하는 마음 하나님을 신뢰하는 마음이 자리잡게 하여 주시옵소서',

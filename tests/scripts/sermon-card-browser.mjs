@@ -27,7 +27,7 @@ try {
     await page.clock.pauseAt(new Date('2026-10-05T12:00:00+09:00'));
     await page.goto(base);
     const card = page.locator('#tc-sermon-card');
-    await card.getByRole('heading', { name: '하나님이 보시는 중심' }).waitFor();
+    await card.getByRole('heading', { name: '하나님이 기뻐하신 다윗의 중심' }).waitFor();
     await page.screenshot({ path: out + `home-${width}.png` });
     assert.equal(await page.getByRole('tab').count(), 4);
     assert.equal(await page.locator('body').evaluate(e => e.scrollWidth <= innerWidth), true);

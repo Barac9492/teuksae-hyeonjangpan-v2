@@ -2,10 +2,10 @@ import { availableSermon } from './sermons';
 
 export type SermonPrayerAction = 'read' | 'write';
 
-export function SermonCard({ day, now, onPray }: { day: number; now: number; onPray?: (action: SermonPrayerAction) => void }) {
+export function SermonCard({ day, now, onPray, recap = false }: { day: number; now: number; onPray?: (action: SermonPrayerAction) => void; recap?: boolean }) {
   const sermon = availableSermon(day, now);
-  return <section id="tc-sermon-card" className="tc-sermon" tabIndex={-1} aria-labelledby="tc-sermon-heading">
-    <p className="tc-sermon__eyebrow">10월 {day}일 · 말씀 묵상</p>
+  return <section id="tc-sermon-card" className={`tc-sermon${recap ? ' tc-sermon--recap' : ''}`} tabIndex={-1} aria-labelledby="tc-sermon-heading">
+    <p className="tc-sermon__eyebrow">{recap ? `10월 ${day}일 새벽 말씀 다시 보기` : `10월 ${day}일 · 말씀 묵상`}</p>
     {sermon ? <>
       <h2 id="tc-sermon-heading">{sermon.reflectionTitle}</h2>
       <p className="tc-sermon__source">{sermon.title} · {sermon.speaker}<br />{sermon.passage}</p>
