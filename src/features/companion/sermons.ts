@@ -1,5 +1,18 @@
-/** Official video metadata and caption-grounded reflections. Days 5–6 use caption wording; day 7 uses reviewed summaries. Prayer excerpts remain verbatim (see docs/sermon-*-source-*.md). */
-export const sermons = [{
+/** Official video metadata and caption-grounded reflections. Reflection wording and prayer excerpts remain verbatim (see docs/sermon-*-source-*.md). */
+type Sermon = {
+  day: number;
+  date: string;
+  title: string;
+  speaker: string;
+  passage: string;
+  videoUrl: string;
+  reflectionTitle: string;
+  summary?: string;
+  points: readonly string[];
+  prayerExcerpt: { text: string; startSeconds: number; timeLabel: string };
+};
+
+export const sermons: readonly Sermon[] = [{
   day: 5,
   date: '2026-10-05',
   title: '다윗의 중심',
@@ -34,13 +47,12 @@ export const sermons = [{
   speaker: '이찬수 목사',
   passage: '사무엘상 17:31–37',
   videoUrl: 'https://www.youtube.com/watch?v=x27Jm9asHDE',
-  reflectionTitle: '두려움 앞에서 되찾는 하나님의 사람이라는 정체성',
-  summary: '다윗의 담대함은 외적인 지위나 조건보다 성령 안에서 새로워진 정체성에서 나왔습니다. 하나님께 속한 사람임을 기억할 때 시선과 말이 달라지고, 사람의 평가에 휘둘리지 않으며, 지나온 삶을 은혜로 해석할 힘을 얻습니다.',
-  points: ['시선이 바뀌면 말도 바뀐다', '사람의 평가보다 하나님께 마음을 둔다', '지나온 삶에서 은혜를 발견한다'],
+  reflectionTitle: '기름부심이 가져다 준 세 가지 변화',
+  points: ['보는 눈과 언어가 달라집니다.', '사람의 평가에 연연하지 않습니다. 끌려다니지 않습니다.', '과거의 은혜로 현재를 재해석갑니다.'],
   prayerExcerpt: {
-    text: '사람의 평가에 연연하지 않는 제가 되기 원합니다. 사람의 평가에 끌려가지 않겠습니다.',
-    startSeconds: 2574,
-    timeLabel: '42:54–43:01',
+    text: '우리의 눈을 열어 주님을 보게 하여 주옵소서.',
+    startSeconds: 2688,
+    timeLabel: '44:48–44:55',
   },
 }] as const;
 
