@@ -1,4 +1,4 @@
-/** Same format every day: title/passage from the official video description; reflection title, points and prayer excerpt verbatim from its Korean auto-captions (see docs/sermon-*-source-*.md). */
+/** Official video metadata and caption-grounded reflections. Days 5–6 use caption wording; day 7 uses reviewed summaries. Prayer excerpts remain verbatim (see docs/sermon-*-source-*.md). */
 export const sermons = [{
   day: 5,
   date: '2026-10-05',
@@ -26,6 +26,21 @@ export const sermons = [{
     text: '성령의 내주하심이 내 안에 기쁨을 회복시켜 주시고 성령의 내주하심을 통하여 하나님 충만하게 충만하게 힘을내어 달려가게 하여 주시옵소서',
     startSeconds: 2673,
     timeLabel: '44:33–44:50',
+  },
+}, {
+  day: 7,
+  date: '2026-10-07',
+  title: '골리앗보다 크신 하나님을 보라',
+  speaker: '이찬수 목사',
+  passage: '사무엘상 17:31–37',
+  videoUrl: 'https://www.youtube.com/watch?v=x27Jm9asHDE',
+  reflectionTitle: '두려움 앞에서 되찾는 하나님의 사람이라는 정체성',
+  summary: '다윗의 담대함은 외적인 지위나 조건보다 성령 안에서 새로워진 정체성에서 나왔습니다. 하나님께 속한 사람임을 기억할 때 시선과 말이 달라지고, 사람의 평가에 휘둘리지 않으며, 지나온 삶을 은혜로 해석할 힘을 얻습니다.',
+  points: ['시선이 바뀌면 말도 바뀐다', '사람의 평가보다 하나님께 마음을 둔다', '지나온 삶에서 은혜를 발견한다'],
+  prayerExcerpt: {
+    text: '사람의 평가에 연연하지 않는 제가 되기 원합니다. 사람의 평가에 끌려가지 않겠습니다.',
+    startSeconds: 2574,
+    timeLabel: '42:54–43:01',
   },
 }] as const;
 
