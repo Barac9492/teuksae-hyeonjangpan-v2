@@ -9,6 +9,7 @@ export function SermonCard({ day, now, onPray, recap = false }: { day: number; n
     {sermon ? <>
       <h2 id="tc-sermon-heading">{sermon.reflectionTitle}</h2>
       <p className="tc-sermon__source">{sermon.title} · {sermon.speaker}<br />{sermon.passage}</p>
+      {'summary' in sermon && <p className="tc-sermon__summary">{sermon.summary}</p>}
       <ul className="tc-sermon__points">{sermon.points.map((point, index) => <li key={point}><span aria-hidden="true">0{index + 1}</span>{point}</li>)}</ul>
       <details className="tc-sermon__questions" key={day}>
         <summary>말씀에서 나눈 기도 제목 <span aria-hidden="true">＋</span></summary>

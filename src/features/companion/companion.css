@@ -598,6 +598,7 @@ body { background: #fbfbfa; }
 .tc-sermon__eyebrow { font-size: 13px; font-weight: 600; color: var(--ink-soft); }
 .tc-sermon h2 { font-size: 23px; font-weight: 600; letter-spacing: -.7px; margin: 8px 0; line-height: 1.4; }
 .tc-sermon .tc-sermon__source { font-size: 14px; color: var(--ink-soft); line-height: 1.7; margin-bottom: 14px; }
+.tc-sermon__summary { font-size: 15px; line-height: 1.8; margin-bottom: 14px; }
 .tc-sermon__points li { display: flex; align-items: baseline; gap: 12px; padding: 8px 0; font-size: 16px; font-weight: 600; }
 .tc-sermon__points li span { font-size: 12px; color: var(--ink-soft); font-weight: 400; }
 .tc-sermon__questions { margin: 14px 0 16px; border-top: 1px dashed var(--line-strong); border-bottom: 1px dashed var(--line-strong); }
