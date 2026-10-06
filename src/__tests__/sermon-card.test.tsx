@@ -134,19 +134,19 @@ it('opens day three at midnight KST while keeping day two latest until then', ()
   expect(latestSermonDay(Date.parse('2026-10-06T15:00:00Z'))).toBe(7);
 });
 
-it('shows the day-three recap, exact prayer link, older dates and latest selection after returning from another tab', () => {
+it('shows the day-three caption wording, exact prayer link, older dates and latest selection after returning from another tab', () => {
   vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-10-07T06:30:00+09:00'));
   render(<CompanionApp />);
   const card = document.getElementById('tc-sermon-card')!;
   expect(document.querySelector('#tc-panel-worship .tc-section')?.contains(card)).toBe(true);
   expect(card).toHaveTextContent('10월 7일 새벽 말씀 다시 보기');
-  expect(screen.getByRole('heading', { name: sermons[2].reflectionTitle })).toBeVisible();
-  expect(screen.getByText(sermons[2].summary)).toBeVisible();
-  for (const point of sermons[2].points) expect(screen.getByText(point)).toBeVisible();
+  expect(screen.getByRole('heading', { name: '기름부심이 가져다 준 세 가지 변화' })).toBeVisible();
+  expect(document.querySelector('.tc-sermon__summary')).not.toBeInTheDocument();
+  for (const point of ['보는 눈과 언어가 달라집니다.', '사람의 평가에 연연하지 않습니다. 끌려다니지 않습니다.', '과거의 은혜로 현재를 재해석갑니다.']) expect(screen.getByText(point)).toBeVisible();
   expect(document.querySelector('.tc-sermon__questions')).not.toHaveAttribute('open');
   fireEvent.click(screen.getByText('말씀에서 나눈 기도 제목'));
-  expect(screen.getByText('사람의 평가에 연연하지 않는 제가 되기 원합니다. 사람의 평가에 끌려가지 않겠습니다.')).toBeVisible();
-  expect(screen.getByRole('link', { name: /말씀 42:54–43:01/ })).toHaveAttribute('href', 'https://www.youtube.com/watch?v=x27Jm9asHDE&t=2574s');
+  expect(screen.getByText('우리의 눈을 열어 주님을 보게 하여 주옵소서.')).toBeVisible();
+  expect(screen.getByRole('link', { name: /말씀 44:48–44:55/ })).toHaveAttribute('href', 'https://www.youtube.com/watch?v=x27Jm9asHDE&t=2688s');
   expect(screen.getByRole('link', { name: /설교 다시 듣기/ })).toHaveAttribute('href', 'https://www.youtube.com/watch?v=x27Jm9asHDE');
   for (const day of [5, 6] as const) {
     fireEvent.click(screen.getByRole('button', { name: `10월 ${day}일 말씀 묵상` }));
