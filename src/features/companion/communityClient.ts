@@ -82,15 +82,44 @@ export function deleteToken(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
   return btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
+// Bounded so String.fromCharCode(...chunk) never spreads more args than engines allow.
+const BASE64_CHUNK_BYTES = 32768;
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = '';
+  for (let offset = 0; offset < bytes.length; offset += BASE64_CHUNK_BYTES) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + BASE64_CHUNK_BYTES));
+  }
+  return btoa(binary);
+}
+// Read photos even when FileReader is unavailable: prefer File/Blob.arrayBuffer
+// and only fall back to a guarded FileReader.
+async function readFileBase64(file: File, requestSignal: AbortSignal): Promise<string> {
+  if (typeof file.arrayBuffer === 'function') {
+    const buffer = await file.arrayBuffer();
+    // The deadline/cancellation race may have already settled while the native
+    // read was in flight; never convert and surface bytes after cancellation.
+    if (requestSignal.aborted) throw new DOMException('Request cancelled', 'AbortError');
+    return bytesToBase64(new Uint8Array(buffer));
+  }
+  if (typeof FileReader === 'function') {
+    return new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      const cancel = () => { reader.abort(); reject(new DOMException('Request cancelled', 'AbortError')); };
+      reader.onerror = () => reject(new Error('사진을 읽지 못했어요.'));
+      reader.onload = () => resolve(String(reader.result).split(',')[1]);
+      reader.onloadend = () => requestSignal.removeEventListener('abort', cancel);
+      requestSignal.addEventListener('abort', cancel, { once: true });
+      try {
+        reader.readAsDataURL(file);
+      } catch (error) {
+        requestSignal.removeEventListener('abort', cancel);
+        reject(error);
+      }
+    });
+  }
+  throw new Error('이 브라우저에서는 사진을 읽을 수 없어요. 다른 브라우저로 다시 시도해주세요.');
+}
 export async function photoBase64(file: File, signal?: AbortSignal): Promise<string> {
   if (file.size > 3 * 1024 * 1024 || file.size === 0 || file.type !== 'image/png') throw new Error('공개 접수용 PNG는 3MB 이하여야 해요. 더 작은 사진을 선택해주세요.');
-  return requestWithDeadline(requestSignal => new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    const cancel = () => { reader.abort(); reject(new DOMException('Request cancelled', 'AbortError')); };
-    reader.onerror = () => reject(new Error('사진을 읽지 못했어요.'));
-    reader.onload = () => resolve(String(reader.result).split(',')[1]);
-    reader.onloadend = () => requestSignal.removeEventListener('abort', cancel);
-    requestSignal.addEventListener('abort', cancel, { once: true });
-    reader.readAsDataURL(file);
-  }), { signal });
+  return requestWithDeadline(requestSignal => readFileBase64(file, requestSignal), { signal });
 }
