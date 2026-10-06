@@ -8,6 +8,10 @@ import { ParkingNotice } from './EventNotice';
 
 export type Stage = 0 | 1 | 2 | 3 | 4;
 
+function PreviewGymFloors() {
+  return <>{[1, 2].map(floor => <StatusRow key={floor} name={`체육관 ${floor}층`} extra="층별 확인 전 · 디자인 예시" value="사용률 확인 전" />)}</>;
+}
+
 export function PreviewWorshipStatus({ venue, stage, stale }: { venue: Venue; stage: Stage; stale: boolean }) {
   if (venue === 'dream') {
     if (stale) return <><StatusLead tone="neutral" label="정보 갱신이 필요한 상황 · 디자인 예시" title="현장 확인을 기다리고 있어요">이전 층별 상태는 표시하지 않습니다. 현장 안내를 확인해주세요.</StatusLead><StatusRow name="3·7·11층" value="확인 중" /></>;
@@ -21,7 +25,7 @@ export function PreviewWorshipStatus({ venue, stage, stale }: { venue: Venue; st
     </>;
   }
   if (stale) {
-    return <><StatusLead tone="neutral" label="정보 갱신이 필요한 상황 · 디자인 예시" title="현장 확인을 기다리고 있어요">이전 상태는 표시하지 않습니다. 입장과 주차는 현장 안내요원에게 확인해주세요.</StatusLead><StatusRow name="학교 출입" value="확인 중" /><StatusRow name="본당·체육관" value="확인 중" /></>;
+    return <><StatusLead tone="neutral" label="정보 갱신이 필요한 상황 · 디자인 예시" title="현장 확인을 기다리고 있어요">이전 상태는 표시하지 않습니다. 입장과 주차는 현장 안내요원에게 확인해주세요.</StatusLead><StatusRow name="학교 출입" value="확인 중" /><StatusRow name="본당" value="확인 중" /><PreviewGymFloors /></>;
   }
   const leads = [
     ['입장 전', OPENING_NOTICE, 'neutral'],
@@ -37,7 +41,7 @@ export function PreviewWorshipStatus({ venue, stage, stale }: { venue: Venue; st
       <StatusRow name="학교 출입" value={stage === 0 ? '개방 전' : '개방'} tone={stage === 0 ? 'neutral' : 'good'} />
       <StatusRow name="본당" extra="1·2층 통합 안내" value={stage < 3 ? '입장 전' : stage === 3 ? '입장 중' : '입장 마감'} tone={stage === 4 ? 'stop' : stage === 3 ? 'good' : 'neutral'} />
       <StatusRow name="본당 4층" value="사용률 확인 전" tone="neutral" />
-      <StatusRow name="체육관" value={stage < 2 ? '개방 전' : stage === 4 ? '혼잡' : '개방 · 여유'} tone={stage < 2 ? 'neutral' : stage === 4 ? 'warn' : 'good'} />
+      <PreviewGymFloors />
     </div>
   </>;
 }

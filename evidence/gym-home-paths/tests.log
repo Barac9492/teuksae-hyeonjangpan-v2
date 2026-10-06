@@ -1,0 +1,133 @@
+> teuksae-app-v1@1.0.0 test
+> vitest run
+
+
+ RUN  v3.2.7 /Users/ethancho/Documents/Codex/2026-10-07/task/gym-home-fix
+
+ ✓ src/__tests__/photo-archive.test.tsx (8 tests) 1082ms
+ ✓ src/__tests__/gym-home-paths.test.tsx (16 tests) 1126ms
+   ✓ keeps independent floors on the actual home in before mode and when switching venues/tabs  444ms
+ ✓ src/__tests__/companion-review.test.tsx (4 tests) 1237ms
+   ✓ Companion independent regression review > retains a prayer draft when checking parking but shows only one accessible panel  480ms
+   ✓ Companion independent regression review > keeps local memo composition collapsed and preserves its draft across main tabs  341ms
+ ✓ src/__tests__/photo-retry-bytes.test.tsx (13 tests) 1314ms
+ ✓ src/__tests__/continuous-capacity.test.tsx (44 tests) 1498ms
+ ✓ src/__tests__/admin-community-moderation.test.tsx (33 tests) 1780ms
+ ✓ src/__tests__/sermon-card.test.tsx (9 tests) 2074ms
+   ✓ shows the second-day card by default on 10월 6일 and links the sourced prayer segment  383ms
+   ✓ selects dates without inventing later sermons and keeps the sourced prayer folded with the after-service recap first  306ms
+   ✓ preserves running and paused timer settings across sermon reentry without starting or resetting  482ms
+   ✓ preserves draft and opt-out through preview cancel, browser back, and reentry without submitting  547ms
+ ✓ src/__tests__/photo-memo-restore.test.tsx (5 tests) 1020ms
+   ✓ exposes an optional memo before consent while extras stay closed, and Enter never submits  570ms
+ ✓ src/__tests__/companion-community-public.test.tsx (17 tests) 786ms
+ ✓ src/__tests__/admin-entrance-warning.test.tsx (10 tests) 1024ms
+ ✓ src/__tests__/public-service-mode.test.tsx (17 tests) 2881ms
+   ✓ continuous public use through service times > transitions all tabs on time, with managed runtime=true  1170ms
+   ✓ continuous public use through service times > transitions all tabs on time, with managed runtime=false  797ms
+ ✓ src/__tests__/companion-live-public.test.tsx (8 tests) 1090ms
+   ✓ public companion live operations > reads only public staff values and keeps Songrim access, hall, and gym independent  349ms
+ ✓ src/__tests__/landing.test.tsx (6 tests) 1108ms
+   ✓ 우리 illustrative landing page > opens a sharing notice and creates a session-only example without categories  303ms
+ ✓ src/__tests__/feedback-sharing.test.tsx (4 tests) 766ms
+   ✓ offers all-visitor public prayer posting instead of recipient sharing  499ms
+ ✓ src/__tests__/admin-ui.test.tsx (10 tests) 909ms
+ ✓ src/__tests__/retained-status.test.tsx (23 tests) 334ms
+ ✓ src/__tests__/admin-occupancy.test.tsx (11 tests) 744ms
+ ✓ src/__tests__/prayer-masking-review.test.tsx (6 tests) 642ms
+ ✓ src/__tests__/prayer-boards.test.tsx (4 tests) 435ms
+ ✓ src/__tests__/photo-reader-compat.test.tsx (18 tests) 642ms
+   ✓ photo upload without FileReader > preserves all 3145728 bytes without oversized spread calls  419ms
+ ✓ src/__tests__/admin-concurrency.test.tsx (5 tests) 528ms
+ ✓ src/__tests__/companion.test.tsx (11 tests) 4268ms
+   ✓ CompanionApp > has four keyboard tabs with prayer first after worship and no postcard tab or panel  313ms
+   ✓ CompanionApp > previews every Songrim opening stage, combines hall floors, and distinguishes Dream floors  948ms
+   ✓ CompanionApp > fails closed for stale status and can preview all parking full without a live claim  414ms
+   ✓ CompanionApp > adds only local memos, renders text safely, limits recent cards, and supports delete and no-server hide  1384ms
+   ✓ CompanionApp > opens the prayer feed first and previews locally without posting  338ms
+ ✓ src/__tests__/community.test.tsx (11 tests) 549ms
+   ✓ 우리 tab > puts carpool first, keeps the sleep result hidden until touched, and keeps sharing local  539ms
+ ✓ src/__tests__/community-public-status.test.tsx (14 tests) 743ms
+ ✓ src/__tests__/photo-feedback.test.tsx (6 tests) 482ms
+ ✓ src/__tests__/feedback-interactions.test.tsx (13 tests) 354ms
+ ✓ src/__tests__/runtime-offline.test.tsx (14 tests) 342ms
+ ✓ src/__tests__/community-request-resilience.test.tsx (16 tests) 491ms
+ ✓ src/__tests__/production-pilot.test.ts (29 tests) 533ms
+ ✓ src/__tests__/community-retry-normalization.test.tsx (6 tests) 354ms
+ ✓ src/__tests__/admin-feedback-tabs.test.tsx (5 tests) 437ms
+ ✓ src/__tests__/intergenerational-prayer.test.tsx (1 test) 444ms
+   ✓ shows blessing boards without age collection and keeps snacks folded  443ms
+ ✓ src/__tests__/companion-reflection-community-sharing.test.tsx (6 tests) 299ms
+ ✓ src/__tests__/venue-illustration.test.tsx (5 tests) 453ms
+ ✓ src/__tests__/requested-polish.test.tsx (6 tests) 217ms
+ ✓ src/__tests__/sharing-memo-feedback.test.tsx (1 test) 304ms
+   ✓ replaces added feedback after deleting the memo  303ms
+ ✓ src/__tests__/admin-moderation-audit.test.tsx (8 tests) 253ms
+ ✓ src/__tests__/install-card.test.tsx (11 tests) 208ms
+ ✓ src/__tests__/photo-consent-compact.test.tsx (4 tests) 194ms
+ ✓ src/__tests__/occupancy-history.test.tsx (13 tests) 240ms
+ ✓ src/__tests__/photo-publish-first.test.tsx (1 test) 186ms
+ ✓ src/__tests__/removed-reflection-menu.test.tsx (2 tests) 236ms
+ ✓ src/__tests__/breakfast.test.tsx (3 tests) 174ms
+ ✓ src/__tests__/photo-date-picker.test.tsx (2 tests) 278ms
+stderr | src/__tests__/prayer-card-layout.test.ts
+Error: Not implemented: navigation (except hash changes)
+    at module.exports (/Users/ethancho/Documents/Codex/2026-10-07/task/gym-floors/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at navigateFetch (/Users/ethancho/Documents/Codex/2026-10-07/task/gym-floors/node_modules/jsdom/lib/jsdom/living/window/navigation.js:77:3)
+    at exports.navigate (/Users/ethancho/Documents/Codex/2026-10-07/task/gym-floors/node_modules/jsdom/lib/jsdom/living/window/navigation.js:55:3)
+    at Timeout._onTimeout (/Users/ethancho/Documents/Codex/2026-10-07/task/gym-floors/node_modules/jsdom/lib/jsdom/living/nodes/HTMLHyperlinkElementUtils-impl.js:80:7)
+    at listOnTimeout (node:internal/timers:585:17)
+    at processTimers (node:internal/timers:521:7) undefined
+
+stderr | src/__tests__/prayer-card-layout.test.ts
+Error: Not implemented: navigation (except hash changes)
+    at module.exports (/Users/ethancho/Documents/Codex/2026-10-07/task/gym-floors/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at navigateFetch (/Users/ethancho/Documents/Codex/2026-10-07/task/gym-floors/node_modules/jsdom/lib/jsdom/living/window/navigation.js:77:3)
+    at exports.navigate (/Users/ethancho/Documents/Codex/2026-10-07/task/gym-floors/node_modules/jsdom/lib/jsdom/living/window/navigation.js:55:3)
+    at Timeout._onTimeout (/Users/ethancho/Documents/Codex/2026-10-07/task/gym-floors/node_modules/jsdom/lib/jsdom/living/nodes/HTMLHyperlinkElementUtils-impl.js:80:7)
+    at listOnTimeout (node:internal/timers:585:17)
+    at processTimers (node:internal/timers:521:7) undefined
+
+stderr | src/__tests__/prayer-card-layout.test.ts
+Error: Not implemented: navigation (except hash changes)
+    at module.exports (/Users/ethancho/Documents/Codex/2026-10-07/task/gym-floors/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at navigateFetch (/Users/ethancho/Documents/Codex/2026-10-07/task/gym-floors/node_modules/jsdom/lib/jsdom/living/window/navigation.js:77:3)
+    at exports.navigate (/Users/ethancho/Documents/Codex/2026-10-07/task/gym-floors/node_modules/jsdom/lib/jsdom/living/window/navigation.js:55:3)
+    at Timeout._onTimeout (/Users/ethancho/Documents/Codex/2026-10-07/task/gym-floors/node_modules/jsdom/lib/jsdom/living/nodes/HTMLHyperlinkElementUtils-impl.js:80:7)
+    at listOnTimeout (node:internal/timers:585:17)
+    at processTimers (node:internal/timers:521:7) undefined
+
+stderr | src/__tests__/prayer-card-layout.test.ts
+Error: Not implemented: navigation (except hash changes)
+    at module.exports (/Users/ethancho/Documents/Codex/2026-10-07/task/gym-floors/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at navigateFetch (/Users/ethancho/Documents/Codex/2026-10-07/task/gym-floors/node_modules/jsdom/lib/jsdom/living/window/navigation.js:77:3)
+    at exports.navigate (/Users/ethancho/Documents/Codex/2026-10-07/task/gym-floors/node_modules/jsdom/lib/jsdom/living/window/navigation.js:55:3)
+    at Timeout._onTimeout (/Users/ethancho/Documents/Codex/2026-10-07/task/gym-floors/node_modules/jsdom/lib/jsdom/living/nodes/HTMLHyperlinkElementUtils-impl.js:80:7)
+    at listOnTimeout (node:internal/timers:585:17)
+    at processTimers (node:internal/timers:521:7) undefined
+
+ ✓ src/__tests__/prayer-card-layout.test.ts (4 tests) 88ms
+ ✓ src/__tests__/photo-file-picker.test.tsx (2 tests) 219ms
+ ✓ src/__tests__/final-official-notice.test.tsx (12 tests) 133ms
+ ✓ src/__tests__/prayer-consent-compact.test.tsx (4 tests) 124ms
+ ✓ src/__tests__/pre-event-operations.test.tsx (6 tests) 136ms
+ ✓ src/__tests__/App.test.tsx (1 test) 401ms
+   ✓ App interaction flow > handles attendance, practice, and operator updates end-to-end  400ms
+ ✓ src/__tests__/gym-floors.test.tsx (5 tests) 255ms
+ ✓ src/__tests__/photo-canvas.test.ts (8 tests) 74ms
+ ✓ src/__tests__/moments.test.ts (3 tests) 11ms
+ ✓ src/__tests__/entrance-consistency.test.ts (178 tests) 55ms
+ ✓ src/__tests__/venue-notice.test.tsx (8 tests) 169ms
+ ✓ src/__tests__/public-status-copy.test.tsx (2 tests) 94ms
+ ✓ src/__tests__/rehearsal-runtime.test.tsx (3 tests) 91ms
+ ✓ src/__tests__/pilot-ui.test.tsx (3 tests) 117ms
+ ✓ src/__tests__/service-schedule.test.ts (8 tests) 8ms
+ ✓ src/__tests__/repository.test.ts (7 tests) 6ms
+ ✓ src/__tests__/companion-dawn.test.ts (3 tests) 5ms
+ ✓ src/__tests__/venue.test.ts (5 tests) 2ms
+ ✓ src/__tests__/moments-consent.test.ts (2 tests) 3ms
+
+ Test Files  63 passed (63)
+      Tests  723 passed (723)
+   Start at  08:21:54
+   Duration  9.05s (transform 1.30s, setup 3.00s, collect 7.84s, tests 37.05s, environment 19.98s, prepare 3.19s)

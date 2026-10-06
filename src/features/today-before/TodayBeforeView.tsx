@@ -5,6 +5,7 @@ import {
   VENUE_STATE_LABELS,
 } from "../../domain/venue";
 import type { AppSnapshot, VenueId } from "../../domain/types";
+import { LiveGymFloorStatus } from '../companion/LiveOperations';
 
 interface TodayBeforeViewProps {
   config: AppConfig;
@@ -131,29 +132,30 @@ export function TodayBeforeView({
             return (
               <article
                 key={venue.id}
-                className={`venue ${presentation.effectiveState === "recommended" ? "recommended" : ""}`}
+                className={`venue ${venue.id === 'gym' ? 'venue--gym' : presentation.effectiveState === "recommended" ? "recommended" : ""}`}
               >
                 <div>
                   <div className="venue-top">
                     <div>
-                      <h3>{venue.name}</h3>
-                      <p className="desc">{venue.description}</p>
+                      <h3>{venue.id === 'gym' ? '체육관 층별 현황' : venue.name}</h3>
+                      {venue.id !== 'gym' && <p className="desc">{venue.description}</p>}
                     </div>
-                    <span className={`badge ${presentation.effectiveState}`}>
+                    {venue.id !== 'gym' && <span className={`badge ${presentation.effectiveState}`}>
                       {VENUE_STATE_LABELS[presentation.effectiveState]}
-                    </span>
+                    </span>}
                   </div>
-                  {presentation.stale && (
+                  {venue.id === 'gym' && <LiveGymFloorStatus />}
+                  {venue.id !== 'gym' && presentation.stale && (
                     <p className="stale-copy">
                       마지막 업데이트가 10분을 넘어 확인 중으로 표시합니다.
                     </p>
                   )}
                 </div>
                 <div>
-                  <p className="meta">
+                  {venue.id !== 'gym' && <p className="meta">
                     {formatUpdatedLabel(venue.updatedAt)} · {venue.updatedBy}{" "}
                     확인
-                  </p>
+                  </p>}
                   {selectable && (
                     <button
                       type="button"
