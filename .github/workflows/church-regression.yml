@@ -56,6 +56,7 @@ jobs:
           done
           node tests/scripts/feedback-browser.mjs
           node tests/scripts/sermon-card-browser.mjs
+          node tests/scripts/gym-home-browser.mjs
           node tests/scripts/intergenerational-browser.mjs
       - name: Verify administrator tabs and moderation
         run: |

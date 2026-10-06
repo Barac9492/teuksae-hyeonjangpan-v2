@@ -332,6 +332,14 @@
   gap: 12px;
 }
 
+.venue--gym .tc-live-notice { font-size: 13px; line-height: 1.6; margin: 12px 0; }
+.venue--gym .tc-live-notice > span { display: block; }
+.venue--gym .tc-live-notice summary { cursor: pointer; }
+.venue--gym .tc-status-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+.venue--gym .tc-status-row > span { min-width: 0; }
+.venue--gym .tc-status-row small { display: block; font-size: 12px; margin-top: 4px; }
+.venue--gym .tc-status-value { text-align: right; }
+
 .venue {
   min-height: 190px;
   border: 1px solid var(--line);

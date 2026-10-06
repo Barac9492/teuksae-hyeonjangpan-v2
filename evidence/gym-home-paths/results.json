@@ -1,0 +1,139 @@
+{
+  "results": [
+    {
+      "width": 320,
+      "path": "/",
+      "mode": "before",
+      "independentFloors": true,
+      "venueSwitch": true,
+      "tabReturn": true,
+      "reload": true
+    },
+    {
+      "width": 320,
+      "path": "/",
+      "mode": "worship",
+      "independentFloors": true,
+      "venueSwitch": true,
+      "tabReturn": true,
+      "reload": true
+    },
+    {
+      "width": 320,
+      "path": "/",
+      "mode": "after",
+      "independentFloors": true,
+      "venueSwitch": true,
+      "tabReturn": true,
+      "reload": true
+    },
+    {
+      "width": 320,
+      "path": "/",
+      "mode": "outside",
+      "independentFloors": true,
+      "venueSwitch": true,
+      "tabReturn": true,
+      "reload": true
+    },
+    {
+      "width": 320,
+      "path": "/?preview=1",
+      "stages": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "stale": true,
+      "venueSwitch": true,
+      "unknownFloors": true
+    },
+    {
+      "width": 320,
+      "path": "/app",
+      "missing": false,
+      "afterAndBack": true,
+      "reload": true,
+      "attendanceNotDuplicated": true
+    },
+    {
+      "width": 320,
+      "path": "/app",
+      "missing": true,
+      "afterAndBack": true,
+      "reload": true,
+      "attendanceNotDuplicated": true
+    },
+    {
+      "width": 390,
+      "path": "/",
+      "mode": "before",
+      "independentFloors": true,
+      "venueSwitch": true,
+      "tabReturn": true,
+      "reload": true
+    },
+    {
+      "width": 390,
+      "path": "/",
+      "mode": "worship",
+      "independentFloors": true,
+      "venueSwitch": true,
+      "tabReturn": true,
+      "reload": true
+    },
+    {
+      "width": 390,
+      "path": "/",
+      "mode": "after",
+      "independentFloors": true,
+      "venueSwitch": true,
+      "tabReturn": true,
+      "reload": true
+    },
+    {
+      "width": 390,
+      "path": "/",
+      "mode": "outside",
+      "independentFloors": true,
+      "venueSwitch": true,
+      "tabReturn": true,
+      "reload": true
+    },
+    {
+      "width": 390,
+      "path": "/?preview=1",
+      "stages": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "stale": true,
+      "venueSwitch": true,
+      "unknownFloors": true
+    },
+    {
+      "width": 390,
+      "path": "/app",
+      "missing": false,
+      "afterAndBack": true,
+      "reload": true,
+      "attendanceNotDuplicated": true
+    },
+    {
+      "width": 390,
+      "path": "/app",
+      "missing": true,
+      "afterAndBack": true,
+      "reload": true,
+      "attendanceNotDuplicated": true
+    }
+  ],
+  "writes": [],
+  "errors": [],
+  "synthetic": true
+}

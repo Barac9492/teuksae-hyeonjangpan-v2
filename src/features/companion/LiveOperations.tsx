@@ -165,6 +165,13 @@ function StatusList({ items }: { items: FloorItem[] }) {
   return <div className="tc-status-list">{items.map((item) => <StatusRow key={item.key} name={item.label} extra={item.sub} value={item.value} tone={item.tone} />)}</div>;
 }
 
+/** Legacy /app attendance remains one venue; its capacity readings use the same independent floors as the public home. */
+export function LiveGymFloorStatus() {
+  const operations = useLiveOperations();
+  const ids = ['space.songrim.gym.f1', 'space.songrim.gym.f2'];
+  return <><LiveNotice enabled={operations.enabled} offline={operations.offline} confirmed={hasFreshDisplayedResource(ids, operations)} recorded={hasRecordedDisplayedResource(ids, operations)} /><StatusList items={ids.map(id => liveItem(id, operations))} /></>;
+}
+
 export function LiveWorshipStatus({ venue, operations }: { venue: Venue; operations: Operations }) {
   const ids = venue === 'songrim' ? ['space.songrim.access', 'space.songrim.hall', 'space.songrim.f4', 'space.songrim.gym.f1', 'space.songrim.gym.f2'] : ['space.dream.f11', 'space.dream.f7', 'space.dream.f3'];
   const items = ids.map((id) => liveItem(id, operations));
