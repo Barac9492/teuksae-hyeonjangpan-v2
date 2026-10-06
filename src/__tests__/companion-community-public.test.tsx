@@ -89,11 +89,11 @@ describe('public companion submissions', () => {
     view.rerender(<Community kind="prayer" text="B" payloadKey="B" />); expect(consent()).not.toBeChecked();
     view.rerender(<Community kind="prayer" text="A" payloadKey="A" />); expect(consent()).not.toBeChecked();
   });
-  it('shows real post-launch submission count and escaped approved content, never outsider images', async () => {
+  it('shows escaped approved content without any photo count, never outsider images', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => response({ ...feed, items: [{ id: 'public', kind: 'photo', text: '<script>unsafe()</script>', photoUrl: 'https://evil.test/x.png' }] })));
     render(<Community kind="photo" text="" payloadKey="empty" />);
-    await screen.findByText('오늘 사진 참여 7건'); expect(screen.getByText(/같은 사람의 여러 제출/)).toBeInTheDocument();
-    expect(screen.getByText('<script>unsafe()</script>')).toBeInTheDocument(); expect(document.querySelector('script')).toBeNull(); expect(screen.queryByRole('img')).toBeNull();
+    expect(await screen.findByText('<script>unsafe()</script>')).toBeInTheDocument(); expect(screen.queryByText(/사진 참여/)).toBeNull(); expect(screen.queryByText(/같은 사람의 여러 제출/)).toBeNull();
+    expect(document.querySelector('script')).toBeNull(); expect(screen.queryByRole('img')).toBeNull();
   });
   it('fails closed on an absent response without inventing zero', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => undefined));
@@ -107,16 +107,16 @@ describe('public companion submissions', () => {
     await screen.findByText(/서버에 접수했어요/); expect(screen.getByRole('alert')).toHaveTextContent('삭제 권한을 잃을 수');
     expect(screen.getByText(/내 제출 기록 \(/)).toBeInTheDocument(); vi.restoreAllMocks();
   });
-  it('sends only the prepared PNG and keeps event date separate from count date', async () => {
+  it('sends only the prepared PNG with the chosen event date and shows no count after submitting', async () => {
     const file = new File(['prepared-pixels'], 'dawn-photo.png', { type: 'image/png' });
     render(<Community kind="photo" text="새벽" eventDay={5} file={file} payloadKey="prepared" />);
-    await screen.findByText('오늘 사진 참여 7건');
+    await screen.findByText(/아직 승인되어 공개된 사진이/); expect(screen.queryByText(/사진 참여/)).toBeNull();
     fireEvent.click(consent()); fireEvent.click(submit());
     await screen.findByText(/서버에 접수했어요/);
     expect(posted[0].eventDay).toBe(5);
     expect(atob(String(posted[0].imageBase64))).toBe('prepared-pixels');
     expect(localStorage.getItem(RECEIPTS_KEY)).not.toContain('prepared-pixels');
-    expect(screen.getByText(/사진에 선택한 행사 날짜와는 무관/)).toHaveTextContent('2026-10-05');
+    expect(screen.queryByText(/사진 참여/)).toBeNull();
   });
   it('rejects oversized public images and only permits same origin API URLs', async () => {
     await expect(photoBase64(new File([new Uint8Array(3 * 1024 * 1024 + 1)], 'large.png', { type: 'image/png' }))).rejects.toThrow('3MB');

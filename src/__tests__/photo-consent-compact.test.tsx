@@ -15,7 +15,7 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 it('renders only one visible photo-consent label and puts explicit posting outside it', async () => {
   const { container } = render(<Community kind="photo" text="" payloadKey="A" file={image} />);
-  await screen.findByText('오늘 사진 참여 0건');
+  await screen.findByText(/아직 승인되어 공개된 사진이/);
   const box = container.querySelector('.tc-community-compose--compact') as HTMLElement;
   expect(box).not.toBeNull();
   expect(Array.from(box.children).filter(n => !(n as HTMLElement).hidden)).toHaveLength(1);
@@ -33,7 +33,7 @@ it('renders only one visible photo-consent label and puts explicit posting outsi
 });
 it('never uploads on checkbox click and requires an explicit prepared-photo submit', async () => {
   render(<Community kind="photo" text="새벽" payloadKey="A" file={image} eventDay={1} />);
-  await screen.findByText('오늘 사진 참여 0건');
+  await screen.findByText(/아직 승인되어 공개된 사진이/);
   fireEvent.click(screen.getByRole('checkbox', { name: '함께 나누기 · 공개' }));
   expect(writes).toHaveLength(0);
   const publish = screen.getByRole('button', { name: '사진 공개하기' });
@@ -46,7 +46,7 @@ it('never uploads on checkbox click and requires an explicit prepared-photo subm
 });
 it('invalidates photo consent after memo, date and payload edits, even returning to a prior photo', async () => {
   const view = render(<Community kind="photo" text="A" payloadKey="one" file={image} eventDay={0} />);
-  await screen.findByText('오늘 사진 참여 0건');
+  await screen.findByText(/아직 승인되어 공개된 사진이/);
   const agree = () => fireEvent.click(screen.getByRole('checkbox'));
   expect(screen.queryByText('사진·메모·날짜가 바뀌어 공개 동의를 다시 선택해주세요.')).not.toBeInTheDocument();
   agree(); view.rerender(<Community kind="photo" text="B" payloadKey="one" file={image} eventDay={0} />);
@@ -66,7 +66,7 @@ it('invalidates photo consent after memo, date and payload edits, even returning
 });
 it('keeps posting disabled without a prepared file even with consent', async () => {
   render(<Community kind="photo" text="" payloadKey="empty" file={null} />);
-  await screen.findByText('오늘 사진 참여 0건');
+  await screen.findByText(/아직 승인되어 공개된 사진이/);
   fireEvent.click(screen.getByRole('checkbox'));
   expect(screen.getByRole('button', { name: '사진 공개하기' })).toBeDisabled();
   await waitFor(() => expect(writes).toHaveLength(0));

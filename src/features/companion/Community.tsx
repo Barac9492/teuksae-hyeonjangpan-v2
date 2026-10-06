@@ -205,9 +205,8 @@ export function Community({ kind, text, eventDay = null, file, payloadKey, showC
   return <section className={`tc-community${kind === 'photo' ? ' tc-community--photo' : ''}`} aria-label={kind === 'photo' ? '공개 사진 나눔' : kind === 'reflection' ? '공개 묵상 나눔' : '공개 기도 나눔'}>
     {kind === 'photo' && composer}
     <header><h2>{kind === 'photo' ? '함께 남긴 새벽 사진' : kind === 'reflection' ? '함께 나누는 묵상' : prayerBoards[prayerBoard].title}</h2>
-      {kind === 'photo' && <><strong className="tc-community-count">{feed && !feedError ? `오늘 사진 참여 ${feed.photoCountToday}건` : feedError ? '오늘 사진 참여 건수 확인 불가' : '오늘 사진 참여 건수 확인 중'}</strong><details className="tc-footnote"><summary>ⓘ 참여 수 안내</summary><p>한국 시간 실제 접수일 기준입니다. 같은 사람의 여러 제출도 각각 셉니다. 검수 대기·공개 사진을 포함하고 반려·삭제는 제외합니다. 사진에 선택한 행사 날짜와는 무관해요.{feed && !feedError && ` (${feed.today})`}</p></details></>}
     </header>
-    {(feedError ? <p role="alert">{feedError} 최신 여부를 확인할 수 없어 이전 게시물과 참여 건수를 숨겼어요. <button type="button" className="tc-line-action" onClick={() => void refresh(true)}>다시 불러오기</button></p> : !feed ? <p role="status">공개 나눔 정보를 불러오는 중이에요.</p> : null)}
+    {(feedError ? <p role="alert">{feedError} 최신 여부를 확인할 수 없어 이전 게시물을 숨겼어요. <button type="button" className="tc-line-action" onClick={() => void refresh(true)}>다시 불러오기</button></p> : !feed ? <p role="status">공개 나눔 정보를 불러오는 중이에요.</p> : null)}
     {kind !== 'photo' && composer}
     {storageFailed && <p role="alert">{storageWarning}</p>}
     {message && <p role="status">{message}</p>}

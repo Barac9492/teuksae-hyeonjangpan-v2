@@ -32,7 +32,7 @@ describe('continuous public use through service times',()=>{
     }
     tab('예배');fireEvent.click(screen.getByText('간식 나눔·아침 식사 안내',{exact:true}));expect(screen.getByRole('region',{name:'간식 나눔·아침 식사'})).toBeVisible();
     tab('주차');expect(screen.getByText('70% · 혼잡')).toBeVisible();expect(within(screen.getByRole('tabpanel',{name:'주차'})).queryByText('예배 중',{exact:true})).toBeNull();
-    tab('사진');expect(screen.getByText('오늘 사진 참여 3건')).toBeVisible();
+    tab('사진');expect(within(screen.getByRole('tabpanel',{name:'사진'})).getByText('latest public content')).toBeVisible();expect(screen.queryByText(/사진 참여/)).toBeNull();
     await tick(69*60000+59000);expect(fetcher.mock.calls.length).toBeGreaterThan(count);expect(document.querySelector('[data-service-mode="worship"]')).toBeVisible();
     await tick(1000);await flush();expect(document.querySelector('[data-service-mode="after"]')).toBeVisible();
     expect(fetcher.mock.calls.length).toBeGreaterThan(count);tab('기도');expect(within(screen.getByRole('tabpanel',{name:'기도'})).getByText('latest public content')).toBeVisible();

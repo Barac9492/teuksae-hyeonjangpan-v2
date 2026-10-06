@@ -59,7 +59,7 @@ describe('public feed freshness and cancellation', () => {
     render(<Community {...props()} showComposer={false} />); await flush();
     await tick(30_000 + REQUEST_TIMEOUT_MS);
     expect(screen.queryByText(approved.text)).not.toBeInTheDocument();
-    expect(screen.getByRole('alert')).toHaveTextContent('이전 게시물과 참여 건수를 숨겼어요');
+    expect(screen.getByRole('alert')).toHaveTextContent('이전 게시물을 숨겼어요');
     await tick(600_000); expect(maximum).toBe(1); expect(inflight).toBeLessThanOrEqual(1);
     expect(screen.queryByText(approved.text)).not.toBeInTheDocument();
   });
@@ -89,7 +89,7 @@ describe('public feed freshness and cancellation', () => {
     const view = render(<Community {...props()} showComposer={false} />); await flush();
     view.rerender(<Community kind="photo" text="" payloadKey="new-tab" showComposer={false} />); await flush();
     expect(signals[0].aborted).toBe(true); old.resolve(response({ ...feed, photoCountToday: 99, items: [approved] })); await flush();
-    expect(screen.getByText('오늘 사진 참여 0건')).toBeVisible(); expect(screen.queryByText(approved.text)).not.toBeInTheDocument();
+    expect(screen.getByText(/아직 승인되어 공개된 사진이/)).toBeVisible(); expect(screen.queryByText(/사진 참여/)).toBeNull(); expect(screen.queryByText(approved.text)).not.toBeInTheDocument();
     view.unmount(); expect(vi.getTimerCount()).toBe(0);
   });
 });
