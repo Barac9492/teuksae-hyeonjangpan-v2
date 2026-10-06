@@ -1,10 +1,12 @@
-# Community resilience: migration 011 rollout
+# Community resilience: community admin pagination rollout
+
+Historical rollout record: “011” below is the original version of `20261002024937_community_admin_pagination.sql`. It is already recorded in production; the release steps below are not authorization to reapply it. See [filename reconciliation](migration-history-alignment-2026-10-06.md).
 
 ## Scope and current state
 
 This change adds bounded administrator pagination/status filtering and removes deleted tombstones before the SQL limit. The accompanying UI changes handle interrupted requests and stale list responses. The migration and regression tests are local deliverables; no remote SQL, deployment, production content, or storage mutation is part of this change.
 
-`011_community_admin_pagination.sql` depends on migrations 002–010, including the retained rehearsal namespace from 009. It replaces only `community_v2(text,jsonb)` and `rehearsal_community_v2(text,jsonb)` and adds partial indexes for active administrator pages. Existing row data, deletion receipts/tombstones, versions, sessions, account settings and storage objects are untouched. Old migrations must not be edited or rerun.
+`20261002024937_community_admin_pagination.sql` depends on migrations 002–010, including the retained rehearsal namespace from 009. It replaces only `community_v2(text,jsonb)` and `rehearsal_community_v2(text,jsonb)` and adds partial indexes for active administrator pages. Existing row data, deletion receipts/tombstones, versions, sessions, account settings and storage objects are untouched. Old migrations must not be edited or rerun.
 
 The live and rehearsal RPCs retain their own account locks, transaction-time superadmin/session checks, moderation versions, terminal-state handling and service-role-only grants. The rehearsal RPC still takes its global shared reset lock before every other operation. The application continues to use the live namespace; maintaining the retained rehearsal function does not restore the retired rehearsal UI.
 
@@ -18,8 +20,8 @@ The live and rehearsal RPCs retain their own account locks, transaction-time sup
 
 ## Required release order
 
-1. Run the checks below against the candidate checkout. Apply migrations through 011 to a disposable database and verify permissions with the intended PostgreSQL/Supabase configuration. The local PGlite harness executes real PostgreSQL SQL but does not reproduce Supabase PostgREST, pg_safeupdate, production load or concurrent-session timing.
-2. With explicit release authorization, apply **only the new 011 migration** to an environment already at 010. It is atomic. The non-concurrent partial-index builds can briefly block community writes; use an appropriate low-traffic release window. Any failure rolls back the entire migration.
+1. Run the checks below against the candidate checkout. Apply 002–010 and `20261002024937_community_admin_pagination.sql` to a disposable database and verify permissions with the intended PostgreSQL/Supabase configuration. The local PGlite harness executes real PostgreSQL SQL but does not reproduce Supabase PostgREST, pg_safeupdate, production load or concurrent-session timing.
+2. With explicit release authorization, apply **only `20261002024937_community_admin_pagination.sql`** to an environment already at 010. It is atomic. The non-concurrent partial-index builds can briefly block community writes; use an appropriate low-traffic release window. Any failure rolls back the entire migration.
 3. Verify both function definitions and execute permissions, then deploy the matching API and frontend together. **Database first is required.** The new SQL supports old `adminList` callers without a filter/cursor and returns a maximum of 100 non-deleted items. Do not deploy only the new UI/API over 006/009: those older RPCs ignore pagination arguments and cannot expose older pages correctly.
 4. With a valid superadmin session, inspect the first page and the approved filter. In an isolated/test dataset containing >100 approved rows and >100 newer deleted rows, follow every page, confirm no deleted row is shown and no active row is lost, and withdraw an older approved row. Use synthetic content for destructive smoke tests. Confirm a parking/space account still receives a denial.
 5. Test request recovery in the UI: an indefinitely pending fetch/body must release controls after the deadline; a late response must not restore withdrawn items; refresh/filter/page navigation must not let stale results replace newer state.
@@ -59,7 +61,7 @@ npm install --prefix /tmp/church-community-sql --no-save @electric-sql/pglite@0.
 PGLITE_MODULE=/tmp/church-community-sql/node_modules/@electric-sql/pglite/dist/index.js npm run test:community-sql
 ```
 
-The reusable harness is `tests/scripts/community-db.mjs`. It executes migrations 002–011 and validates both namespaces: migration atomicity/data preservation, >100 tombstone regression, >100 active rows, status filtering, bounded pages, tied/microsecond timestamps, a deleted cursor boundary, malformed cursors, cross-scope/non-admin/revoked/expired/stale-credential denial, RPC privileges, public visibility, owner tokens, replay safety, moderation versions, rejected/deleted terminal states and photo cleanup/counts. It also routes actual HTTP-handler pagination into the migrated local SQL rather than substituting a listing mock.
+The reusable harness is `tests/scripts/community-db.mjs`. It executes migrations 002–010 plus `20261002024937_community_admin_pagination.sql` and `20261003183917_admin_tabs_recoverable_trash.sql` and validates both namespaces: migration atomicity/data preservation, >100 tombstone regression, >100 active rows, status filtering, bounded pages, tied/microsecond timestamps, a deleted cursor boundary, malformed cursors, cross-scope/non-admin/revoked/expired/stale-credential denial, RPC privileges, public visibility, owner tokens, replay safety, moderation versions, rejected/deleted terminal states and photo cleanup/counts. It also routes actual HTTP-handler pagination into the migrated local SQL rather than substituting a listing mock.
 
 ## Candidate verification (2026-10-01 UTC)
 

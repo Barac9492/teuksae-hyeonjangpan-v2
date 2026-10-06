@@ -18,7 +18,7 @@
 
 ## 데이터와 운영 정책
 
-`20261005202358_prayer_blessing_boards.sql`은 기존 `community_v2_items`에 `prayer_board text NOT NULL DEFAULT 'general'`을 추가한다. 유효값은 `general`, `adults`, `youth`이며 사진·묵상은 일반값만 가능하다. 기존 행의 본문·상태·버전·해시·검수 필드는 변경하지 않는다. 기존 행은 일괄 기본값인 일반 게시판에 남는다.
+`20261005214409_prayer_blessing_boards.sql`은 기존 `community_v2_items`에 `prayer_board text NOT NULL DEFAULT 'general'`을 추가한다. 유효값은 `general`, `adults`, `youth`이며 사진·묵상은 일반값만 가능하다. 기존 행의 본문·상태·버전·해시·검수 필드는 변경하지 않는다. 기존 행은 일괄 기본값인 일반 게시판에 남는다.
 
 새 `community_prayer_page`는 승인·ready·기존 가림 검수 조건과 대상 분류를 모두 적용한 뒤 12건 페이지를 만든다. 이전 `list`/`community_public_page` 기도 조회는 일반 게시판만 반환한다. 별도 분류 인덱스를 추가했다. 일반 기도의 기존 재시도 payload hash를 유지하며, 특별 게시판은 분류를 hash에 포함한다. 같은 요청 ID를 다른 게시판으로 재사용하면 HTTP 409이다.
 

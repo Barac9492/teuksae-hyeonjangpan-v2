@@ -5,7 +5,7 @@ import {randomUUID} from 'node:crypto';
 const {PGlite}=await import(process.env.PGLITE_MODULE || '@electric-sql/pglite');
 const db=new PGlite(), dir=new URL('../../supabase/migrations/',import.meta.url);
 await db.exec(`create role anon; create role authenticated; create role service_role; create schema storage; create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]); create table storage.objects(id uuid primary key,bucket_id text,name text);`);
-for(const file of (await readdir(dir)).filter(f=>/^(00[2-9]|01[01])_/.test(f)||f.endsWith('_church_feedback_guidance_and_pages.sql')).sort()) await db.exec(await readFile(new URL(file,dir),'utf8'));
+for(const file of (await readdir(dir)).filter(f=>(/^(00[2-9]|010)_/.test(f)||f.endsWith('_community_admin_pagination.sql'))||f.endsWith('_church_feedback_guidance_and_pages.sql')).sort()) await db.exec(await readFile(new URL(file,dir),'utf8'));
 const query=async(sql,args=[]) => (await db.query(sql,args)).rows;
 const rpc=async(action,args={})=>(await query('select community_v2($1,$2) result',[action,JSON.stringify(args)]))[0].result;
 const sessions={};for(const role of ['superadmin','parking','space']){const id=randomUUID();sessions[role]=id;await db.query('insert into ops_accounts(username,role,display_label,active) values($1,$2,$1,true)',[role.toUpperCase(),role]);await db.query("insert into ops_sessions(id,username,credential_version,display_name,label,expires_at) values($1,$2,1,'Synthetic',$3,now()+interval '1 day')",[id,role.toUpperCase(),'S-'+id.replaceAll('-','').slice(0,10).toUpperCase()]);}

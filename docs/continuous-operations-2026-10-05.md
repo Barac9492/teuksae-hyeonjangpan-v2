@@ -47,7 +47,7 @@ Evidence: `evidence/continuous-operations/browser-results.json`, `full-flow/brow
 
 ## Pending approval: DB-first release
 
-1. Freshly verify main remains based on PR #29 or integrate any newer authorized changes, then rerun exact-head CI. This local branch adds only one migration: `20261004222445_continuous_operations_capacity.sql`. **Do not repeat the already released photo-archive migration.**
+1. Freshly verify main remains based on PR #29 or integrate any newer authorized changes, then rerun exact-head CI. This local branch adds only one migration: `20261004230127_continuous_operations_capacity.sql`. **Do not repeat the already released photo-archive migration.**
 2. After explicit operational DB/release approval, the designated release writer checks whether this new migration is already applied, verifies the existing seven-argument RPC and Dream constraint, and applies this exact new migration once. It replaces the Dream floor-only constraint/RPC validation and inserts 4F; it does not backfill/reset any existing reading or audit row. Execute permissions remain service-role only, with session/account/category authorization inside the function and empty `search_path`.
 3. Release the paired server/frontend, wait for production READY, and read back the public metadata and rendered HOME/parking. Do not submit a production test value. The first real Dream/4F percentage is a normal operator action.
 4. Ask operators to reload already-open admin/public tabs once the release is ready. New navigation is network-first and the cache generation changes, but an already-running old JavaScript bundle stays old until reload. No evidence established that the reporting user's device had a stale cache. Do not force reloads that discard drafts.

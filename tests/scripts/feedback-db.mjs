@@ -6,7 +6,7 @@ const { PGlite } = await import(process.env.PGLITE_MODULE || '@electric-sql/pgli
 const db = new PGlite();
 const dir = new URL('../../supabase/migrations/', import.meta.url);
 await db.exec(`create role anon; create role authenticated; create role service_role; create schema storage; create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]); create table storage.objects(id uuid primary key,bucket_id text,name text);`);
-for (const file of (await readdir(dir)).filter(f => /^(00[2-9]|01[01])_/.test(f)).sort()) await db.exec(await readFile(new URL(file, dir), 'utf8'));
+for (const file of (await readdir(dir)).filter(f => (/^(00[2-9]|010)_/.test(f)||f.endsWith('_community_admin_pagination.sql'))).sort()) await db.exec(await readFile(new URL(file, dir), 'utf8'));
 const rpc = async (name, args = []) => (await db.query(`select public.${name}(${args.map((_,i)=>`$${i+1}`).join(',')}) as result`, args)).rows[0].result;
 const fixtureHash = 'scrypt$' + 'a'.repeat(32) + '$' + 'b'.repeat(64);
 const sessions = {};

@@ -20,3 +20,7 @@
 좌석 테스트 값을 운영에 저장하지 않았다. 본 변경은 두 행 INSERT만 하며 테이블/함수/권한/RLS를 변경하지 않는다. 보안 advisor에는 기존 server-only 테이블의 [RLS 정책 없음 INFO](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy), 기존 pilot 함수의 [실행 권한 경고](https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable), 기존 anonymous 정책 및 [비밀번호 보호 경고](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection)가 남아 있다. 이번 범위에서 권한을 확대하거나 다른 서비스를 변경하지 않았다.
 
 배포 PR: https://github.com/Barac9492/teuksae-hyeonjangpan-v2/pull/41 (draft로 생성). CI에는 새 SQL 검사와 층 분리 후 5행 표시 기대값을 포함했다.
+
+## 2026-10-06 repository filename reconciliation
+
+The approved/applied source filename above is retained as an audit record. The current repository file is `supabase/migrations/20261006215814_split_gym_floors.sql`; its SQL bytes and SHA-256 are unchanged. The timestamp difference described above was the state at release time. This rename does not reapply SQL or modify database history. See [the eight-file mapping and remaining history constraints](migration-history-alignment-2026-10-06.md).

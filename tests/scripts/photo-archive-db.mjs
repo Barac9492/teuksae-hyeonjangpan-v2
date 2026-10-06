@@ -10,7 +10,7 @@ await db.exec(`create role anon;create role authenticated;create role service_ro
 const hash=c=>c.repeat(64),owner=hash('a'),payloadHash=hash('b');
 const seed=async(status='pending',kind='photo',ready=true)=>{const id=randomUUID();await db.query('insert into community_v2_items(id,kind,text,status,ready,token_hash,payload_hash,path,event_day) values($1,$2,$3,$4,$5,$6,$7,$8,1)',[id,kind,'합성 보관 검증',status,ready,owner,payloadHash,kind==='photo'?`${id}.png`:null]);return id;};
 const row=async id=>(await db.query('select * from community_v2_items where id=$1',[id])).rows[0];
-for(const f of (await readdir(dir)).filter(f=>/^(00[2-9]|01[01])_/.test(f)||/^2026.*\.sql$/.test(f)).sort()) {
+for(const f of (await readdir(dir)).filter(f=>(/^(00[2-9]|010)_/.test(f)||f.endsWith('_community_admin_pagination.sql'))||/^2026.*\.sql$/.test(f)).sort()) {
  if(f.endsWith('_photo_private_archive.sql')) {
   const id=await seed('approved'),before=await row(id);
   const definitions=(await db.query("select proname,pg_get_functiondef(oid) definition from pg_proc where pronamespace='public'::regnamespace")).rows;

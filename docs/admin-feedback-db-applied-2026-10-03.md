@@ -27,3 +27,7 @@ All three community tables retain RLS and no anon/authenticated SELECT grants. `
 The earlier `20261003062254_church_feedback_guidance_and_pages.sql` remains manually applied without a history entry and was **not rerun**. See [its release record](manual-db-release-2026-10-03.md).
 
 Application rollback may retain this additive DB change. Do not restore the older DB function while trashed rows exist; that requires a separately reviewed preservation plan. Full application CI and preview validation precede merge/deployment.
+
+## 2026-10-06 repository filename reconciliation
+
+The approved/applied source filename above is retained as an audit record. The current repository file is `supabase/migrations/20261003183917_admin_tabs_recoverable_trash.sql`; its SQL bytes and SHA-256 are unchanged. The timestamp difference described above was the state at release time. This rename does not reapply SQL or modify database history. See [the eight-file mapping and remaining history constraints](migration-history-alignment-2026-10-06.md).

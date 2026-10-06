@@ -12,7 +12,7 @@ await db.exec(`create role anon; create role authenticated; create role service_
 create schema storage;
 create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
 create table storage.objects(id uuid primary key,bucket_id text,name text);`);
-const migration='20261004222445_continuous_operations_capacity.sql';
+const migration='20261004230127_continuous_operations_capacity.sql';
 const files=(await readdir(dir)).filter(f=>f.endsWith('.sql')&&!f.startsWith('001')&&f!==migration).sort();
 for(const f of files)await db.exec(await readFile(new URL(f,dir),'utf8'));
 const sessions={};
