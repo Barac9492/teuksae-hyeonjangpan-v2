@@ -4,6 +4,7 @@ import App from "./App";
 import { loadAppConfig } from "./domain/config";
 import { createRepository } from "./data/createRepository";
 import { resolveRuntimeBackend } from "./data/runtime";
+import { Analytics } from "@vercel/analytics/react";
 import "./styles/tokens.css";
 import "./styles/base.css";
 import "./styles/app.css";
@@ -34,6 +35,7 @@ export async function bootstrap(): Promise<void> {
   ReactDOM.createRoot(rootElement).render(
     <React.StrictMode>
       <App config={effectiveConfig} repository={repository} runtime={runtime} />
+      <Analytics />
     </React.StrictMode>,
   );
   if (import.meta.env.PROD && "serviceWorker" in navigator) {
@@ -44,4 +46,3 @@ export async function bootstrap(): Promise<void> {
     else window.addEventListener("load", register, { once: true });
   }
 }
-
