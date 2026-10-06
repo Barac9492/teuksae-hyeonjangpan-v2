@@ -113,18 +113,18 @@ try {
     await page.clock.pauseAt(new Date('2026-10-07T12:00:00+09:00'));
     await page.goto(base);
     const card = page.locator('#tc-sermon-card');
-    await card.getByRole('heading', { name: '두려움 앞에서 되찾는 하나님의 사람이라는 정체성' }).waitFor();
+    await card.getByRole('heading', { name: '기름부심이 가져다 준 세 가지 변화' }).waitFor();
     assert.equal(await page.locator('#tc-panel-worship > .tc-section').first().locator('#tc-sermon-card').count(), 1);
     assert.match(await card.innerText(), /골리앗보다 크신 하나님을 보라 · 이찬수 목사/);
     assert.match(await card.innerText(), /사무엘상 17:31–37/);
-    assert.match(await card.locator('.tc-sermon__summary').innerText(), /성령 안에서 새로워진 정체성/);
-    assert.deepEqual(await card.locator('.tc-sermon__points li').allTextContents(), ['01시선이 바뀌면 말도 바뀐다', '02사람의 평가보다 하나님께 마음을 둔다', '03지나온 삶에서 은혜를 발견한다']);
+    assert.equal(await card.locator('.tc-sermon__summary').count(), 0);
+    assert.deepEqual(await card.locator('.tc-sermon__points li').allTextContents(), ['01보는 눈과 언어가 달라집니다.', '02사람의 평가에 연연하지 않습니다. 끌려다니지 않습니다.', '03과거의 은혜로 현재를 재해석갑니다.']);
     assert.equal(await card.locator('details').getAttribute('open'), null);
     assert.equal(await page.locator('body').evaluate(e => e.scrollWidth <= innerWidth), true);
     await card.screenshot({ path: out + `day-three-${width}.png` });
     await card.getByText('말씀에서 나눈 기도 제목').click();
-    assert.equal(await card.locator('blockquote').innerText(), '사람의 평가에 연연하지 않는 제가 되기 원합니다. 사람의 평가에 끌려가지 않겠습니다.');
-    assert.equal(await card.getByRole('link', { name: /말씀 42:54–43:01/ }).getAttribute('href'), 'https://www.youtube.com/watch?v=x27Jm9asHDE&t=2574s');
+    assert.equal(await card.locator('blockquote').innerText(), '우리의 눈을 열어 주님을 보게 하여 주옵소서.');
+    assert.equal(await card.getByRole('link', { name: /말씀 44:48–44:55/ }).getAttribute('href'), 'https://www.youtube.com/watch?v=x27Jm9asHDE&t=2688s');
     assert.equal(await card.getByRole('link', { name: /설교 다시 듣기/ }).getAttribute('href'), 'https://www.youtube.com/watch?v=x27Jm9asHDE');
     await card.screenshot({ path: out + `day-three-prayer-${width}.png` });
     for (const [day, title] of [[5, '하나님이 기뻐하신 다윗의 중심'], [6, '하나님이 원하셨던 훈련']]) {
@@ -136,14 +136,14 @@ try {
     assert.equal(await card.locator('details').getAttribute('open'), null);
     await page.getByRole('tab', { name: '기도', exact: true }).click();
     await page.getByRole('tab', { name: '예배', exact: true }).click();
-    await card.getByRole('heading', { name: '두려움 앞에서 되찾는 하나님의 사람이라는 정체성' }).waitFor();
+    await card.getByRole('heading', { name: '기름부심이 가져다 준 세 가지 변화' }).waitFor();
     await page.reload();
-    await card.getByRole('heading', { name: '두려움 앞에서 되찾는 하나님의 사람이라는 정체성' }).waitFor();
+    await card.getByRole('heading', { name: '기름부심이 가져다 준 세 가지 변화' }).waitFor();
     await page.getByRole('button', { name: '10월 8일 말씀 미등록' }).click();
     await card.getByRole('heading', { name: '아직 등록된 말씀이 없어요' }).waitFor();
     assert.equal(await page.locator('body').evaluate(e => e.scrollWidth <= innerWidth), true);
     assert.deepEqual(writes, []);
-    checks.push({ width, day: 7, noOverflow: true, dateSwitching: true, prayerTimestamp: 2574, prayerQuoteExact: true, tabReturn: true, reload: true, networkWrites: writes.length });
+    checks.push({ width, day: 7, noOverflow: true, dateSwitching: true, prayerTimestamp: 2688, prayerQuoteExact: true, tabReturn: true, reload: true, networkWrites: writes.length });
     await context.close();
   }
   assert.deepEqual(errors, []);
