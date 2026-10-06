@@ -9,7 +9,7 @@ const now = Date.parse('2026-10-06T04:10:00+09:00');
 function resources(at: number): Ops['resources'] { return [
  {id:'space.songrim.access',label:'송림 입장 단계',category:'space',state:'hall_open',version:1,updatedAt:new Date(at).toISOString()},
  {id:'space.songrim.hall',label:'본당',category:'space',state:'busy',occupancyPercent:70,version:1,updatedAt:new Date(at).toISOString()},
- {id:'space.songrim.gym',label:'체육관',category:'space',state:'closed',occupancyPercent:null,version:1,updatedAt:new Date(at).toISOString()},
+ {id:'space.songrim.gym.f1',label:'체육관 1층',category:'space',state:'closed',occupancyPercent:null,version:1,updatedAt:new Date(at).toISOString()},
  {id:'parking.dream',label:'드림센터 주차장',category:'parking',state:'available',occupancyPercent:40,guideFloor:null,version:1,updatedAt:new Date(at).toISOString()},
 ]; }
 const ops = (age: number): Ops => ({mode:'before',enabled:true,offline:false,confirmed:true,lastSync:now,now,resources:resources(now-age)});
@@ -34,7 +34,7 @@ it('preserves explicit full even without an occupancy estimate',()=>{
 });
 it.each([null,'invalid',new Date(now+1).toISOString()])('does not fabricate a reading from timestamp %s',updatedAt=>{
  const o=ops(0);o.resources=o.resources.map(r=>({...r,updatedAt}));render(<LiveWorshipStatus venue="songrim" operations={o}/>);
- expect(screen.getAllByText('확인 필요')).toHaveLength(4);expect(screen.queryByText('본당 입장 가능')).toBeNull();expect(screen.getAllByText('아직 확인 기록 없음')).toHaveLength(4);
+ expect(screen.getAllByText('확인 필요')).toHaveLength(5);expect(screen.queryByText('본당 입장 가능')).toBeNull();expect(screen.getAllByText('아직 확인 기록 없음')).toHaveLength(5);
 });
 it('marks even a two-minute-old prior-day reading with its date rather than today’s freshness',()=>{
  const time=Date.parse('2026-10-06T00:01:00+09:00'),saved='2026-10-05T23:59:00+09:00';

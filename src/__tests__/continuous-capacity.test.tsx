@@ -4,10 +4,10 @@ import { AdminApp } from '../features/admin';
 import { LiveParkingPanel, LiveWorshipStatus } from '../features/companion/LiveOperations';
 const now=Date.parse('2026-10-06T04:45:00+09:00');
 afterEach(()=>{cleanup();vi.restoreAllMocks();});
-for(const id of ['parking.dream','space.songrim.f4']) {
+for(const id of ['parking.dream','space.songrim.f4','space.songrim.gym.f1','space.songrim.gym.f2']) {
  it.each(Array.from({length:11},(_,i)=>i*10))(`${id} saves and publicly renders exact %s%% without changing other resources`,async percent=>{
   vi.spyOn(Date,'now').mockReturnValue(now);
-  const category=id.startsWith('parking')?'parking' as const:'space' as const,label=category==='parking'?'드림센터 주차장':'본당 4층';
+  const category=id.startsWith('parking')?'parking' as const:'space' as const,label=category==='parking'?'드림센터 주차장':id.endsWith('gym.f1')?'체육관 1층':id.endsWith('gym.f2')?'체육관 2층':'본당 4층';
   const resource={id,label,category,state:'checking' as string,version:0,updatedAt:null as string|null,occupancyPercent:null as number|null};
   const session={authenticated:true,username:'LOCAL',role:category,displayName:'합성 검증',sessionId:'synthetic',expiresAt:'2030-01-01T00:00:00Z',capabilities:{liveOperations:true}};
   const writes:Record<string,unknown>[]=[];

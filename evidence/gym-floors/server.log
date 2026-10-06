@@ -1,0 +1,608 @@
+
+> teuksae-app-v1@1.0.0 test:server
+> node --test server/__tests__/*.node-test.js
+
+TAP version 13
+# Subtest: DB-backed login returns the exact role/session contract with a four-hour hard expiry
+ok 1 - DB-backed login returns the exact role/session contract with a four-hour hard expiry
+  ---
+  duration_ms: 23.290416
+  type: 'test'
+  ...
+# Subtest: protected endpoints re-resolve sessions and logout revokes only current session
+ok 2 - protected endpoints re-resolve sessions and logout revokes only current session
+  ---
+  duration_ms: 40.342625
+  type: 'test'
+  ...
+# Subtest: operations enforce CAS and return latest resource on conflict
+ok 3 - operations enforce CAS and return latest resource on conflict
+  ---
+  duration_ms: 17.928
+  type: 'test'
+  ...
+# Subtest: team role cannot mutate another category
+ok 4 - team role cannot mutate another category
+  ---
+  duration_ms: 17.5285
+  type: 'test'
+  ...
+# Subtest: public status fails closed on database failure and never returns fallback data
+ok 5 - public status fails closed on database failure and never returns fallback data
+  ---
+  duration_ms: 0.129166
+  type: 'test'
+  ...
+# Subtest: invalid displayName, cross-site writes, and oversized request bodies are rejected
+ok 6 - invalid displayName, cross-site writes, and oversized request bodies are rejected
+  ---
+  duration_ms: 0.17025
+  type: 'test'
+  ...
+# Subtest: request replay is durable and cannot append a duplicate audit action
+ok 7 - request replay is durable and cannot append a duplicate audit action
+  ---
+  duration_ms: 17.815209
+  type: 'test'
+  ...
+# Subtest: durable account attempt budget blocks the thirteenth request
+ok 8 - durable account attempt budget blocks the thirteenth request
+  ---
+  duration_ms: 210.377833
+  type: 'test'
+  ...
+# Subtest: rejects bad origin, wrong methods, alternate paths, malformed bodies, and forged cookies
+ok 9 - rejects bad origin, wrong methods, alternate paths, malformed bodies, and forged cookies
+  ---
+  duration_ms: 0.339125
+  type: 'test'
+  ...
+# Subtest: server refuses a known superadmin target before team upsert RPC
+ok 10 - server refuses a known superadmin target before team upsert RPC
+  ---
+  duration_ms: 18.526875
+  type: 'test'
+  ...
+# Subtest: migration protects superadmin targets and stale credential completion
+ok 11 - migration protects superadmin targets and stale credential completion
+  ---
+  duration_ms: 3.249583
+  type: 'test'
+  ...
+# Subtest: all authenticated identity responses expose the live-operations capability
+ok 12 - all authenticated identity responses expose the live-operations capability
+  ---
+  duration_ms: 18.3685
+  type: 'test'
+  ...
+# Subtest: 003 reservation upgrade consumes once, refunds only its own current-window attempt, and serializes account locks
+ok 13 - 003 reservation upgrade consumes once, refunds only its own current-window attempt, and serializes account locks
+  ---
+  duration_ms: 0.769958
+  type: 'test'
+  ...
+# Subtest: operations read includes all public resources for the cross-role dashboard overview
+ok 14 - operations read includes all public resources for the cross-role dashboard overview
+  ---
+  duration_ms: 18.047625
+  type: 'test'
+  ...
+# Subtest: legacy two-hour tokens are rejected after the session-duration change
+ok 15 - legacy two-hour tokens are rejected after the session-duration change
+  ---
+  duration_ms: 17.393667
+  type: 'test'
+  ...
+# Subtest: overview RPC failure does not take the role-scoped editing screen down
+ok 16 - overview RPC failure does not take the role-scoped editing screen down
+  ---
+  duration_ms: 17.568417
+  type: 'test'
+  ...
+# Subtest: hanging public overview is aborted after two seconds without blocking role-scoped operations
+ok 17 - hanging public overview is aborted after two seconds without blocking role-scoped operations
+  ---
+  duration_ms: 2019.524166
+  type: 'test'
+  ...
+# Subtest: legacy admin GET defaults to all, preserves data, and returns a null final cursor
+ok 18 - legacy admin GET defaults to all, preserves data, and returns a null final cursor
+  ---
+  duration_ms: 3.407458
+  type: 'test'
+  ...
+# Subtest: admin status filter and opaque cursor round-trip exact microsecond precision
+ok 19 - admin status filter and opaque cursor round-trip exact microsecond precision
+  ---
+  duration_ms: 1.371584
+  type: 'test'
+  ...
+# Subtest: invalid, duplicate, oversized and filter-mismatched cursors fail before listing RPC
+ok 20 - invalid, duplicate, oversized and filter-mismatched cursors fail before listing RPC
+  ---
+  duration_ms: 4.176375
+  type: 'test'
+  ...
+# Subtest: admin pagination still requires a valid current superadmin session
+ok 21 - admin pagination still requires a valid current superadmin session
+  ---
+  duration_ms: 0.267459
+  type: 'test'
+  ...
+# Subtest: new filtered/cursor requests fail closed against an unmigrated RPC
+ok 22 - new filtered/cursor requests fail closed against an unmigrated RPC
+  ---
+  duration_ms: 0.221917
+  type: 'test'
+  ...
+# Subtest: admin list fails closed for oversized pages and malformed database cursors
+ok 23 - admin list fails closed for oversized pages and malformed database cursors
+  ---
+  duration_ms: 1.07025
+  type: 'test'
+  ...
+# Subtest: kind is enforced before pagination and bound to its opaque cursor
+ok 24 - kind is enforced before pagination and bound to its opaque cursor
+  ---
+  duration_ms: 0.530125
+  type: 'test'
+  ...
+# Subtest: kind/trash features fail closed until the actual supporting migration exists
+ok 25 - kind/trash features fail closed until the actual supporting migration exists
+  ---
+  duration_ms: 0.307667
+  type: 'test'
+  ...
+# Subtest: trash and restore use the same origin/session/version boundary and never clean storage
+ok 26 - trash and restore use the same origin/session/version boundary and never clean storage
+  ---
+  duration_ms: 1.165416
+  type: 'test'
+  ...
+# Subtest: origin does not trust Host or v1 ADMIN origin
+ok 27 - origin does not trust Host or v1 ADMIN origin
+  ---
+  duration_ms: 1.06025
+  type: 'test'
+  ...
+# Subtest: moderation and pending-photo access require valid session
+ok 28 - moderation and pending-photo access require valid session
+  ---
+  duration_ms: 0.33325
+  type: 'test'
+  ...
+# Subtest: prayer validation, consent, token and event day reject before database
+ok 29 - prayer validation, consent, token and event day reject before database
+  ---
+  duration_ms: 2.486875
+  type: 'test'
+  ...
+# Subtest: reflection accepts 1000 text characters as a pending ready text post
+ok 30 - reflection accepts 1000 text characters as a pending ready text post
+  ---
+  duration_ms: 1.105
+  type: 'test'
+  ...
+# Subtest: reflection rejects 1001 characters, blank text, image, and missing consent
+ok 31 - reflection rejects 1001 characters, blank text, image, and missing consent
+  ---
+  duration_ms: 0.765209
+  type: 'test'
+  ...
+# Subtest: GET reflection requests reflection list
+ok 32 - GET reflection requests reflection list
+  ---
+  duration_ms: 0.311416
+  type: 'test'
+  ...
+# Subtest: public feed passes through items and photo counts unfiltered by date, on any date (all-date availability)
+ok 33 - public feed passes through items and photo counts unfiltered by date, on any date (all-date availability)
+  ---
+  duration_ms: 0.83925
+  type: 'test'
+  ...
+# Subtest: admin list remains intact and unaffected by the removal of public date filtering
+ok 34 - admin list remains intact and unaffected by the removal of public date filtering
+  ---
+  duration_ms: 2.177958
+  type: 'test'
+  ...
+# Subtest: an approved photo is publicly visible regardless of its date, with no metadata date lookup
+ok 35 - an approved photo is publicly visible regardless of its date, with no metadata date lookup
+  ---
+  duration_ms: 0.68575
+  type: 'test'
+  ...
+# Subtest: a pending photo (any date) is denied to the public and only visible to a moderator session
+ok 36 - a pending photo (any date) is denied to the public and only visible to a moderator session
+  ---
+  duration_ms: 1.169625
+  type: 'test'
+  ...
+# Subtest: rejected and deleted photos (any date) are denied to the public
+ok 37 - rejected and deleted photos (any date) are denied to the public
+  ---
+  duration_ms: 0.40025
+  type: 'test'
+  ...
+# Subtest: PNG decoder rejects garbage, inflated IHDR and corrupt CRC, emits clean PNG
+ok 38 - PNG decoder rejects garbage, inflated IHDR and corrupt CRC, emits clean PNG
+  ---
+  duration_ms: 3.85175
+  type: 'test'
+  ...
+# Subtest: raw token and IP never enter RPC; retries preserve payload hash; mismatch is 409
+ok 39 - raw token and IP never enter RPC; retries preserve payload hash; mismatch is 409
+  ---
+  duration_ms: 0.427541
+  type: 'test'
+  ...
+# Subtest: database errors never fabricate count zero
+ok 40 - database errors never fabricate count zero
+  ---
+  duration_ms: 0.091875
+  type: 'test'
+  ...
+# Subtest: delete removes storage and exposes only receipt and count; failure is retryable
+ok 41 - delete removes storage and exposes only receipt and count; failure is retryable
+  ---
+  duration_ms: 0.161334
+  type: 'test'
+  ...
+# Subtest: private proxy rechecks visibility twice (before and after storage read) and uses no-store/nosniff, with no date metadata lookup
+ok 42 - private proxy rechecks visibility twice (before and after storage read) and uses no-store/nosniff, with no date metadata lookup
+  ---
+  duration_ms: 0.113125
+  type: 'test'
+  ...
+# Subtest: SQL security, count, moderation and retention invariants (static)
+ok 43 - SQL security, count, moderation and retention invariants (static)
+  ---
+  duration_ms: 10.306834
+  type: 'test'
+  ...
+# Subtest: reflection migration preserves RPC security and photo-only counts
+ok 44 - reflection migration preserves RPC security and photo-only counts
+  ---
+  duration_ms: 0.858291
+  type: 'test'
+  ...
+# Subtest: approved photos ignore ordinary and expired cookies
+ok 45 - approved photos ignore ordinary and expired cookies
+  ---
+  duration_ms: 0.370541
+  type: 'test'
+  ...
+# Subtest: processing quota rejects BEFORE decoding malformed PNG and charges accepted retries
+ok 46 - processing quota rejects BEFORE decoding malformed PNG and charges accepted retries
+  ---
+  duration_ms: 0.245417
+  type: 'test'
+  ...
+# Subtest: terminal status retries orphan cleanup
+ok 47 - terminal status retries orphan cleanup
+  ---
+  duration_ms: 0.102334
+  type: 'test'
+  ...
+# Subtest: cleanup rejects absent configuration, missing or wrong bearer without RPC
+ok 48 - cleanup rejects absent configuration, missing or wrong bearer without RPC
+  ---
+  duration_ms: 0.145333
+  type: 'test'
+  ...
+# Subtest: cleanup records success only after storage deletion and reports failed batch
+ok 49 - cleanup records success only after storage deletion and reports failed batch
+  ---
+  duration_ms: 0.177042
+  type: 'test'
+  ...
+# Subtest: SQL auth locks precede revalidation; rejected deletion and recurring cleanup are allowed
+ok 50 - SQL auth locks precede revalidation; rejected deletion and recurring cleanup are allowed
+  ---
+  duration_ms: 0.881458
+  type: 'test'
+  ...
+# Subtest: authenticated pending-photo review never queries public date metadata (no such endpoint exists)
+ok 51 - authenticated pending-photo review never queries public date metadata (no such endpoint exists)
+  ---
+  duration_ms: 0.512542
+  type: 'test'
+  ...
+# Subtest: pending photo still fails closed if moderator access is revoked during storage read (second RPC check)
+ok 52 - pending photo still fails closed if moderator access is revoked during storage read (second RPC check)
+  ---
+  duration_ms: 0.324291
+  type: 'test'
+  ...
+# Subtest: an approved photo's visibility can be revoked between the first and second RPC check (approval pulled mid-request)
+ok 53 - an approved photo's visibility can be revoked between the first and second RPC check (approval pulled mid-request)
+  ---
+  duration_ms: 0.187959
+  type: 'test'
+  ...
+# Subtest: status boundary shows a fresh non-future reading as current on any date, before/during/well after the official event window
+ok 54 - status boundary shows a fresh non-future reading as current on any date, before/during/well after the official event window
+  ---
+  duration_ms: 1.255708
+  type: 'test'
+  ...
+# Subtest: status boundary keeps history (lastClosedAt/lastFullAt/previousDay) visible on any past date, not only the official event window
+ok 55 - status boundary keeps history (lastClosedAt/lastFullAt/previousDay) visible on any past date, not only the official event window
+  ---
+  duration_ms: 0.379
+  type: 'test'
+  ...
+# Subtest: status boundary hides a future-timestamped reading and future history regardless of date policy (safety preserved)
+ok 56 - status boundary hides a future-timestamped reading and future history regardless of date policy (safety preserved)
+  ---
+  duration_ms: 0.059875
+  type: 'test'
+  ...
+# Subtest: status boundary hides a non-finite/invalid updatedAt regardless of date policy (safety preserved)
+ok 57 - status boundary hides a non-finite/invalid updatedAt regardless of date policy (safety preserved)
+  ---
+  duration_ms: 0.049042
+  type: 'test'
+  ...
+# Subtest: previousDay keeps firstFullAt/closedAt only while they are finite and not in the future, on any calendar date
+ok 58 - previousDay keeps firstFullAt/closedAt only while they are finite and not in the future, on any calendar date
+  ---
+  duration_ms: 0.101916
+  type: 'test'
+  ...
+# Subtest: deployed status handler filters the successful RPC response using the supplied now, with no date-window gating
+ok 59 - deployed status handler filters the successful RPC response using the supplied now, with no date-window gating
+  ---
+  duration_ms: 0.333917
+  type: 'test'
+  ...
+# Subtest: deployed status handler defaults now to the real clock when not supplied
+ok 60 - deployed status handler defaults now to the real clock when not supplied
+  ---
+  duration_ms: 0.164625
+  type: 'test'
+  ...
+# Subtest: filterPublicCommunity no longer filters items or photo counts by date, on any date
+ok 61 - filterPublicCommunity no longer filters items or photo counts by date, on any date
+  ---
+  duration_ms: 0.193916
+  type: 'test'
+  ...
+# Subtest: admin moderation route still requires a valid session regardless of date
+ok 62 - admin moderation route still requires a valid session regardless of date
+  ---
+  duration_ms: 0.769875
+  type: 'test'
+  ...
+# Subtest: an approved photo is publicly readable without a session on any date, while a pending photo still requires moderator auth
+ok 63 - an approved photo is publicly readable without a session on any date, while a pending photo still requires moderator auth
+  ---
+  duration_ms: 0.659583
+  type: 'test'
+  ...
+# Subtest: Dream API requires an explicit floor only for available guidance and never retries without it
+ok 64 - Dream API requires an explicit floor only for available guidance and never retries without it
+  ---
+  duration_ms: 2.685875
+  type: 'test'
+  ...
+# Subtest: paginated feed passes validated cursor to approved-only RPC and preserves no-store
+ok 65 - paginated feed passes validated cursor to approved-only RPC and preserves no-store
+  ---
+  duration_ms: 1.021417
+  type: 'test'
+  ...
+# Subtest: new Dream and sanctuary 4F percentages use all canonical steps and fail closed against an older RPC
+ok 66 - new Dream and sanctuary 4F percentages use all canonical steps and fail closed against an older RPC
+  ---
+  duration_ms: 2.792667
+  type: 'test'
+  ...
+# Subtest: audit view calls auditList with the signed session only and returns items
+ok 67 - audit view calls auditList with the signed session only and returns items
+  ---
+  duration_ms: 2.244
+  type: 'test'
+  ...
+# Subtest: pre-migration database (unknown action error) maps to a 503 update-needed message
+ok 68 - pre-migration database (unknown action error) maps to a 503 update-needed message
+  ---
+  duration_ms: 0.328167
+  type: 'test'
+  ...
+# Subtest: database authorization failure passes through as 403
+ok 69 - database authorization failure passes through as 403
+  ---
+  duration_ms: 0.185792
+  type: 'test'
+  ...
+# Subtest: responses without the attribution marker or with too many rows are rejected
+ok 70 - responses without the attribution marker or with too many rows are rejected
+  ---
+  duration_ms: 0.326542
+  type: 'test'
+  ...
+# Subtest: invalid audit queries never reach the database
+ok 71 - invalid audit queries never reach the database
+  ---
+  duration_ms: 1.839125
+  type: 'test'
+  ...
+# Subtest: existing adminList GET is unaffected when view is absent
+ok 72 - existing adminList GET is unaffected when view is absent
+  ---
+  duration_ms: 0.516709
+  type: 'test'
+  ...
+# Subtest: only missing signature plus null/omitted estimate falls back with identical five arguments
+ok 73 - only missing signature plus null/omitted estimate falls back with identical five arguments
+  ---
+  duration_ms: 2.11375
+  type: 'test'
+  ...
+# Subtest: missing signature never silently drops explicit matching estimates including zero
+ok 74 - missing signature never silently drops explicit matching estimates including zero
+  ---
+  duration_ms: 0.536958
+  type: 'test'
+  ...
+# Subtest: timeouts, transport failures, other errors and wrong HTTP status never retry
+ok 75 - timeouts, transport failures, other errors and wrong HTTP status never retry
+  ---
+  duration_ms: 2.101333
+  type: 'test'
+  ...
+# Subtest: failure of legacy fallback does not attempt a third write
+ok 76 - failure of legacy fallback does not attempt a third write
+  ---
+  duration_ms: 0.25825
+  type: 'test'
+  ...
+# Subtest: operator percentage accepts only null/omitted or 10-point steps from 0–100
+ok 77 - operator percentage accepts only null/omitted or 10-point steps from 0–100
+  ---
+  duration_ms: 0.35725
+  type: 'test'
+  ...
+# Subtest: API accepts matching steps and rejects invalid or state-inconsistent estimates
+ok 78 - API accepts matching steps and rejects invalid or state-inconsistent estimates
+  ---
+  duration_ms: 3.65
+  type: 'test'
+  ...
+# Subtest: 004 preserves transitions and security in SQL (static contract, not DB execution)
+ok 79 - 004 preserves transitions and security in SQL (static contract, not DB execution)
+  ---
+  duration_ms: 3.355042
+  type: 'test'
+  ...
+# Subtest: 007 enforces discrete estimates and preserves the secured, idempotent six-argument RPC
+ok 80 - 007 enforces discrete estimates and preserves the secured, idempotent six-argument RPC
+  ---
+  duration_ms: 1.470417
+  type: 'test'
+  ...
+# Subtest: archive filter fails closed on pre-migration database
+ok 81 - archive filter fails closed on pre-migration database
+  ---
+  duration_ms: 12.476708
+  type: 'test'
+  ...
+# Subtest: archive filter and opaque cursor remain tied to photo/status with bounded pages
+ok 82 - archive filter and opaque cursor remain tied to photo/status with bounded pages
+  ---
+  duration_ms: 1.462792
+  type: 'test'
+  ...
+# Subtest: archive decisions preserve exactly the displayed version and ignore client kind overrides
+ok 83 - archive decisions preserve exactly the displayed version and ignore client kind overrides
+  ---
+  duration_ms: 3.192083
+  type: 'test'
+  ...
+# Subtest: bounded exact dictionary, longest matches, literal stars and documented limitations
+ok 84 - bounded exact dictionary, longest matches, literal stars and documented limitations
+  ---
+  duration_ms: 1.136292
+  type: 'test'
+  ...
+# Subtest: public serializer strips hidden originals, rejects unmatched policies and raw fallback
+ok 85 - public serializer strips hidden originals, rejects unmatched policies and raw fallback
+  ---
+  duration_ms: 0.188083
+  type: 'test'
+  ...
+# Subtest: HTTP approval fails closed before any mutation when SQL policy is absent or mismatched
+ok 86 - HTTP approval fails closed before any mutation when SQL policy is absent or mismatched
+  ---
+  duration_ms: 2.117167
+  type: 'test'
+  ...
+# Subtest: new public review fails closed on old database capability without preview or mutation
+ok 87 - new public review fails closed on old database capability without preview or mutation
+  ---
+  duration_ms: 0.50725
+  type: 'test'
+  ...
+# Subtest: PWA manifest and installation icons are valid PNG assets
+ok 88 - PWA manifest and installation icons are valid PNG assets
+  ---
+  duration_ms: 3.459292
+  type: 'test'
+  ...
+# Subtest: worker never intercepts API, admin, external storage or writes
+ok 89 - worker never intercepts API, admin, external storage or writes
+  ---
+  duration_ms: 10.656625
+  type: 'test'
+  ...
+# Subtest: worker caches successful HTML navigation only
+ok 90 - worker caches successful HTML navigation only
+  ---
+  duration_ms: 0.850458
+  type: 'test'
+  ...
+# Subtest: worker never poisons JavaScript cache with failed responses or SPA HTML
+ok 91 - worker never poisons JavaScript cache with failed responses or SPA HTML
+  ---
+  duration_ms: 0.836208
+  type: 'test'
+  ...
+# Subtest: storage failure does not break successful online navigation or assets
+ok 92 - storage failure does not break successful online navigation or assets
+  ---
+  duration_ms: 0.584292
+  type: 'test'
+  ...
+# Subtest: activation only deletes this applications old caches
+ok 93 - activation only deletes this applications old caches
+  ---
+  duration_ms: 0.558709
+  type: 'test'
+  ...
+# Subtest: one dataset is used before and after the event even with the retired flag enabled
+ok 94 - one dataset is used before and after the event even with the retired flag enabled
+  ---
+  duration_ms: 0.71025
+  type: 'test'
+  ...
+# Subtest: submissions use the same RPC without a mode header or cutover conflict
+ok 95 - submissions use the same RPC without a mode header or cutover conflict
+  ---
+  duration_ms: 0.808292
+  type: 'test'
+  ...
+# Subtest: retired reset cannot delete either dataset
+ok 96 - retired reset cannot delete either dataset
+  ---
+  duration_ms: 0.819959
+  type: 'test'
+  ...
+# Subtest: moderation strips deleted tombstones while retaining pending items
+ok 97 - moderation strips deleted tombstones while retaining pending items
+  ---
+  duration_ms: 0.625417
+  type: 'test'
+  ...
+# Subtest: approved photo uses the operational private bucket throughout the event
+ok 98 - approved photo uses the operational private bucket throughout the event
+  ---
+  duration_ms: 0.545208
+  type: 'test'
+  ...
+# Subtest: orphan cleanup continues both isolated namespaces after event cutover
+ok 99 - orphan cleanup continues both isolated namespaces after event cutover
+  ---
+  duration_ms: 0.154541
+  type: 'test'
+  ...
+1..99
+# tests 99
+# suites 0
+# pass 99
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2526.247791

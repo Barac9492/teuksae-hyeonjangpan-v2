@@ -6,7 +6,7 @@ const now=Date.parse('2026-10-05T04:00:00+09:00');
 const session={authenticated:true,username:'TEST',role:'space',displayName:'합성 담당',expiresAt:'2030-01-01T00:00:00Z',sessionId:'fixture',capabilities:{liveOperations:true}};
 function setup(live=true) {
  vi.spyOn(Date,'now').mockReturnValue(now);
- let resources=['access','hall','gym'].map((id,i)=>({id:'space.songrim.'+id,label:['입장 단계','본당','체육관'][i],category:'space',state:'closed',version:1,updatedAt:new Date(now).toISOString(),occupancyPercent:null as number|null}));
+ let resources=['access','hall','gym.f1'].map((id,i)=>({id:'space.songrim.'+id,label:['입장 단계','본당','체육관 1층'][i],category:'space',state:'closed',version:1,updatedAt:new Date(now).toISOString(),occupancyPercent:null as number|null}));
  const writes:Record<string,unknown>[]=[];let delay:(()=>Promise<void>)|undefined;
  vi.spyOn(globalThis,'fetch').mockImplementation(async(url,init)=>{
   if(String(url).endsWith('/session'))return new Response(JSON.stringify({...session,capabilities:{liveOperations:live}}));
