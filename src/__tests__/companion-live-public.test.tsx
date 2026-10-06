@@ -26,13 +26,13 @@ describe('public companion live operations', () => {
     const fetchMock = routeFetch(() => reply([
       { id: 'space.songrim.access', label: '학교 출입', category: 'space', state: 'school_open', version: 2, updatedAt: fresh },
       { id: 'space.songrim.hall', label: '본당 1·2층', category: 'space', state: 'full', version: 2, updatedAt: fresh },
-      { id: 'space.songrim.gym', label: '체육관', category: 'space', state: 'available', version: 2, updatedAt: fresh },
+      { id: 'space.songrim.gym.f1', label: '체육관 1층', category: 'space', state: 'available', occupancyPercent: 20, version: 2, updatedAt: fresh },
     ]));
     vi.stubGlobal('fetch', fetchMock);
     render(<CompanionApp />);
     await waitFor(() => expect(screen.getByText('교문 개방')).toBeVisible());
     expect(screen.getByText('입장 마감')).toBeVisible();
-    expect(screen.getByText('이용 가능')).toBeVisible();
+    expect(screen.getByText('20% · 이용 가능')).toBeVisible();
     expect(fetchMock).toHaveBeenCalledWith('/api/status', expect.anything());
     expect(screen.queryByText('현장 현황 시범 운영')).not.toBeInTheDocument();
     expect(screen.queryByText(/교회 공식 앱 승인 전 공개 안내/)).not.toBeInTheDocument();

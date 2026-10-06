@@ -43,6 +43,7 @@ jobs:
           npm run test:prayer-boards-sql
           npm run test:photo-archive-sql
           npm run test:continuous-operations-sql
+          npm run test:gym-floors-sql
       - name: Verify mobile and desktop interactions
         run: |
           test -x "$CHROME_PATH"

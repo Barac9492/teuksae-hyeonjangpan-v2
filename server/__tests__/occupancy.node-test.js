@@ -12,13 +12,13 @@ test('API accepts matching steps and rejects invalid or state-inconsistent estim
   const encoded=Buffer.from(JSON.stringify({v:2,sid,sub:'TEST',cv:1,iat:Math.floor(now/1000),exp:Math.floor(now/1000)+SESSION_SECONDS,nonce:'n'.repeat(32)})).toString('base64url');
   const cookie=`${COOKIE_NAME}=${encoded}.${createHmac('sha256',secret).update(encoded).digest('base64url')}`;
   const env={ADMIN_SESSION_SECRET:secret,ADMIN_ALLOWED_ORIGIN:'https://fixture.example',SUPABASE_URL:'https://fixture.supabase.co',SUPABASE_SERVICE_ROLE_KEY:'k'.repeat(40)};
-  for(const [percent,id,state,expected] of [[0,'parking.calvary','available',200],[60,'space.songrim.hall','available',200],[70,'parking.songrim','busy',200],[100,'space.songrim.hall','full',200],[null,'parking.songrim','closed',200],[undefined,'parking.songrim','busy',200],[-1,'parking.songrim','available',400],[75,'parking.songrim','busy',400],[101,'parking.songrim','full',400],[50.5,'parking.songrim','available',400],['50','parking.songrim','available',400],[40,'parking.songrim','full',400],[100,'parking.songrim','busy',400],[50,'parking.songrim','closed',400],[20,'space.songrim.access','closed',400]]) {
+  for(const [percent,id,state,expected] of [[20,'space.songrim.gym.f1','available',200],[80,'space.songrim.gym.f2','busy',200],[100,'space.songrim.gym.f2','full',200],[65,'space.songrim.gym.f1','busy',400],[0,'parking.calvary','available',200],[60,'space.songrim.hall','available',200],[70,'parking.songrim','busy',200],[100,'space.songrim.hall','full',200],[null,'parking.songrim','closed',200],[undefined,'parking.songrim','busy',200],[-1,'parking.songrim','available',400],[75,'parking.songrim','busy',400],[101,'parking.songrim','full',400],[50.5,'parking.songrim','available',400],['50','parking.songrim','available',400],[40,'parking.songrim','full',400],[100,'parking.songrim','busy',400],[50,'parking.songrim','closed',400],[20,'space.songrim.access','closed',400]]) {
     let mutation=null;
     const fetcher=async(url,init)=>({ok:true,json:async()=>url.endsWith('ops_get_session')?{username:'TEST',credentialVersion:1,role:'superadmin'}:(mutation=JSON.parse(init.body),{resource:{id}})});
     const res={setHeader(){},end(){}};
     await handleAdmin('operations',{method:'POST',url:'/api/admin/operations',headers:{cookie,origin:env.ADMIN_ALLOWED_ORIGIN,'content-type':'application/json'},body:{resourceId:id,state,occupancyPercent:percent,expectedVersion:0,requestId:'22222222-2222-4222-8222-222222222222'}},res,env,now,fetcher);
     assert.equal(res.statusCode,expected);
-    if(expected===200)assert.equal(mutation.p_occupancy_percent,percent ?? null);else assert.equal(mutation,null);
+    if(expected===200){assert.equal(mutation.p_occupancy_percent,percent ?? null);assert.equal(mutation.p_resource_id,id);}else assert.equal(mutation,null);
   }
 });
 test('004 preserves transitions and security in SQL (static contract, not DB execution)',async()=>{

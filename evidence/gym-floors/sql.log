@@ -1,0 +1,5 @@
+
+> teuksae-app-v1@1.0.0 test:gym-floors-sql
+> node tests/scripts/gym-floors-db.mjs
+
+PASS gym floors: rollback, exact preservation, unknown initialization, 22 percentage saves, independent writes, public/admin parity, replay, conflicts, validation, permissions, safe rerun

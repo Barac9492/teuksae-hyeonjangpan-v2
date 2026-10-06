@@ -39,7 +39,8 @@ const defaults: LiveResource[] = [
   { id: 'space.songrim.access', label: '송림 입장 단계', category: 'space', state: 'checking', version: 0, updatedAt: null },
   { id: 'space.songrim.hall', label: '본당 1·2층', category: 'space', state: 'checking', version: 0, updatedAt: null },
   { id: 'space.songrim.f4', label: '본당 4층', category: 'space', state: 'checking', version: 0, updatedAt: null, occupancyPercent: null },
-  { id: 'space.songrim.gym', label: '체육관', category: 'space', state: 'checking', version: 0, updatedAt: null },
+  { id: 'space.songrim.gym.f1', label: '체육관 1층', category: 'space', state: 'checking', version: 0, updatedAt: null, occupancyPercent: null },
+  { id: 'space.songrim.gym.f2', label: '체육관 2층', category: 'space', state: 'checking', version: 0, updatedAt: null, occupancyPercent: null },
   { id: 'space.dream.f3', label: '3층', category: 'space', state: 'checking', version: 0, updatedAt: null },
   { id: 'space.dream.f7', label: '7층', category: 'space', state: 'checking', version: 0, updatedAt: null },
   { id: 'space.dream.f11', label: '11층', category: 'space', state: 'checking', version: 0, updatedAt: null },
@@ -165,7 +166,7 @@ function StatusList({ items }: { items: FloorItem[] }) {
 }
 
 export function LiveWorshipStatus({ venue, operations }: { venue: Venue; operations: Operations }) {
-  const ids = venue === 'songrim' ? ['space.songrim.access', 'space.songrim.hall', 'space.songrim.f4', 'space.songrim.gym'] : ['space.dream.f11', 'space.dream.f7', 'space.dream.f3'];
+  const ids = venue === 'songrim' ? ['space.songrim.access', 'space.songrim.hall', 'space.songrim.f4', 'space.songrim.gym.f1', 'space.songrim.gym.f2'] : ['space.dream.f11', 'space.dream.f7', 'space.dream.f3'];
   const items = ids.map((id) => liveItem(id, operations));
   return <><LiveNotice enabled={operations.enabled} offline={operations.offline} confirmed={hasFreshDisplayedResource(ids, operations)} recorded={hasRecordedDisplayedResource(ids, operations)} />{venue === 'songrim' ? <StatusList items={items} /> : <FloorStack items={items} variant="above" />}</>;
 }

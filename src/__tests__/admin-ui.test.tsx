@@ -97,7 +97,7 @@ it.each(['superadmin','parking','space'] as const)('shows the full read-only pub
  const all=[
   {id:'space.songrim.access',label:'송림본당 개방 단계',category:'space',state:'hall_open',version:1,updatedAt:new Date(Date.now()-60_000).toISOString()},
   {id:'space.songrim.hall',label:'본당1·2층',category:'space',state:'busy',version:1,updatedAt:null,occupancyPercent:70},
-  {id:'space.songrim.gym',label:'체육관',category:'space',state:'checking',version:1,updatedAt:null,occupancyPercent:null},
+  {id:'space.songrim.gym.f1',label:'체육관 1층',category:'space',state:'checking',version:1,updatedAt:null,occupancyPercent:null},
   {id:'space.dream.f11',label:'드림센터 11층',category:'space',state:'available',version:1,updatedAt:null,occupancyPercent:20},
   {id:'space.dream.f7',label:'드림센터 7층',category:'space',state:'busy',version:1,updatedAt:null,occupancyPercent:80},
   {id:'space.dream.f3',label:'드림센터 3층',category:'space',state:'full',version:1,updatedAt:null,occupancyPercent:100},
@@ -113,7 +113,7 @@ it.each(['superadmin','parking','space'] as const)('shows the full read-only pub
  expect(screen.getByText('1. 현장 확인 → 2. 값 선택 → 3. 현황 확인/저장 · 변동 시 다시 확인')).toBeVisible();
  const table=screen.getByRole('table',{name:'공개 현황 한눈에 보기'});
  expect(within(table).getAllByRole('row')).toHaveLength(9);
- for(const name of ['송림본당 개방 단계','본당1·2층','체육관','드림센터 11층','드림센터 7층','드림센터 3층','송림주차장','드림센터 주차장'])expect(within(table).getByRole('rowheader',{name})).toBeVisible();
+ for(const name of ['송림본당 개방 단계','본당1·2층','체육관 1층','드림센터 11층','드림센터 7층','드림센터 3층','송림주차장','드림센터 주차장'])expect(within(table).getByRole('rowheader',{name})).toBeVisible();
  expect(within(table).getByText('공개 중(최근 확인)')).toBeVisible();
  expect(within(table).getAllByText('확인 기록 없음')).toHaveLength(7);
  expect(within(table).getByText('사용률 확인 전')).toBeVisible();

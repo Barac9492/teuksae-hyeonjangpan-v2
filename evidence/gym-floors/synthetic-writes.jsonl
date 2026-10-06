@@ -1,0 +1,4 @@
+{"resourceId":"space.songrim.gym.f1","state":"available","occupancyPercent":20,"expectedVersion":0,"requestId":"1e608496-b93e-4eff-b3b6-5e8b05c96c4a"}
+{"resourceId":"space.songrim.gym.f2","state":"busy","occupancyPercent":80,"expectedVersion":0,"requestId":"33a62c7b-cb6f-4f79-bbec-d3741e68eaa2"}
+{"resourceId":"space.songrim.gym.f1","state":"available","occupancyPercent":60,"expectedVersion":1,"requestId":"e37df087-df23-45b5-add4-35404a455734"}
+{"resourceId":"space.songrim.gym.f2","state":"full","occupancyPercent":100,"expectedVersion":1,"requestId":"e6a125d7-c53d-4f8f-a206-85a16fda6252"}

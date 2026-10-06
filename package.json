@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint . --max-warnings=0",
+    "test:gym-floors-sql": "node tests/scripts/gym-floors-db.mjs",
     "test:continuous-operations-sql": "node tests/scripts/continuous-operations-db.mjs",
     "test:prayer-boards-sql": "node tests/scripts/prayer-boards-db.mjs",
     "test:server": "node --test server/__tests__/*.node-test.js",
