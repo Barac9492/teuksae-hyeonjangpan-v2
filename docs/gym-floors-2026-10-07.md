@@ -13,7 +13,7 @@
 
 ## DB와 기존 데이터
 
-`supabase/migrations/20261006214311_split_gym_floors.sql`은 기존 `ops_resources`에 다음 두 행만 추가한다.
+`supabase/migrations/20261006215814_split_gym_floors.sql`은 기존 `ops_resources`에 다음 두 행만 추가한다.
 
 - `space.songrim.gym.f1`: 체육관 1층
 - `space.songrim.gym.f2`: 체육관 2층

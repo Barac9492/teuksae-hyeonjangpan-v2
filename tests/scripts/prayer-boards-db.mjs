@@ -9,7 +9,7 @@ const db=new PGlite(),dir=new URL('../../supabase/migrations/',import.meta.url);
 let checks=0;const ok=(condition,label)=>{assert.ok(condition,label);checks++;console.log(`PASS ${label}`);};
 await db.exec('create role anon;create role authenticated;create role service_role;create schema storage;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);create table storage.objects(id uuid primary key,bucket_id text,name text);');
 let legacy,functionsBefore;
-for(const f of (await readdir(dir)).filter(f=>/^(00[2-9]|01[01])_/.test(f)||/^2026.*\.sql$/.test(f)).sort()){
+for(const f of (await readdir(dir)).filter(f=>(/^(00[2-9]|010)_/.test(f)||f.endsWith('_community_admin_pagination.sql'))||/^2026.*\.sql$/.test(f)).sort()){
  if(f.endsWith('_prayer_blessing_boards.sql')){
   await db.query("insert into community_v2_items(id,kind,text,status,ready,token_hash,payload_hash) values($1,'prayer','합성 기존 기도','approved',true,$2,$3)",[randomUUID(),'a'.repeat(64),'b'.repeat(64)]);
   legacy=(await db.query('select to_jsonb(c) row from community_v2_items c')).rows;

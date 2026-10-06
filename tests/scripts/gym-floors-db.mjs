@@ -6,7 +6,7 @@ const { PGlite } = await import(process.env.PGLITE_MODULE || '@electric-sql/pgli
 const db = new PGlite();
 const rows = async (sql, args = []) => (await db.query(sql, args)).rows;
 const scalar = async (sql, args = []) => Object.values((await rows(sql, args))[0])[0];
-const migration = '20261006214311_split_gym_floors.sql';
+const migration = '20261006215814_split_gym_floors.sql';
 const dir = new URL('../../supabase/migrations/', import.meta.url);
 await db.exec(`create role anon; create role authenticated; create role service_role;
 create schema storage;

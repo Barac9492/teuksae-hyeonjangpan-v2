@@ -1,4 +1,4 @@
-// Actual PostgreSQL migrations 002..011, synthetic rows only, no network/database credentials.
+// Actual PostgreSQL migrations 002..010 + community_admin_pagination, synthetic rows only, no network/database credentials.
 // Install @electric-sql/pglite@0.3.14 outside the app, then:
 // PGLITE_MODULE=/absolute/path/to/dist/index.js npm run test:community-sql
 import assert from 'node:assert/strict';
@@ -43,7 +43,7 @@ const seed=async(scope,options={})=>{
 await seed('',{status:'deleted',prefix:'77777777'});
 const sentinel=await rows('select * from community_v2_items');
 const oldDefinitions=await rows(`select oid,pg_get_functiondef(oid) as definition from pg_proc where pronamespace='public'::regnamespace order by oid`);
-const migration=await readFile(new URL('011_community_admin_pagination.sql',dir),'utf8');
+const migration=await readFile(new URL('20261002024937_community_admin_pagination.sql',dir),'utf8');
 await assert.rejects(()=>db.exec(migration.replace(/commit;\s*$/,'select 1/0; commit;')));
 await db.exec('rollback');
 equal(await rows(`select oid,pg_get_functiondef(oid) as definition from pg_proc where pronamespace='public'::regnamespace order by oid`),oldDefinitions,'failed migration rolls back all functions');
@@ -53,7 +53,7 @@ const changedDefinitions=await rows(`select oid,proname,pg_get_functiondef(oid) 
 equal(changedDefinitions.filter(row=>oldDefinitions.find(old=>old.oid===row.oid)?.definition!==row.definition).map(row=>row.proname).sort(),['community_v2','rehearsal_community_v2'],'only the two community RPCs change');
 
 // Re-run legacy invariants against the replacement live RPC too.
-await db.exec(await readFile(new URL('20261003115248_admin_tabs_recoverable_trash.sql',dir),'utf8'));
+await db.exec(await readFile(new URL('20261003183917_admin_tabs_recoverable_trash.sql',dir),'utf8'));
 for (const scope of ['','rehearsal_']) {
   const session=sessions[scope].superadmin;
   const admin=args=>call(scope,'adminList',{session,...args});
@@ -183,4 +183,4 @@ do {
 } while(cursor);
 equal(new Set(httpIds).size,201,'HTTP pagination reaches every active item through opaque cursors');
 await db.close();
-console.log(`PASS ${checks} community PostgreSQL/HTTP checks. Actual migrations 002..011; synthetic local data only.`);
+console.log(`PASS ${checks} community PostgreSQL/HTTP checks. Actual migrations 002..010 + community_admin_pagination; synthetic local data only.`);

@@ -1,4 +1,4 @@
-// Actual PostgreSQL migrations (002..011, feedback, trash, audit attribution) in PGlite.
+// Actual PostgreSQL migrations (002..010, community_admin_pagination, feedback, trash, audit attribution) in PGlite.
 // Synthetic rows only, no network or database credentials.
 // PGLITE_MODULE=/absolute/path/to/dist/index.js node tests/scripts/moderation-audit-db.mjs
 import assert from 'node:assert/strict';
@@ -10,7 +10,7 @@ const {PGlite}=await import(process.env.PGLITE_MODULE || '@electric-sql/pglite')
 const db=new PGlite(),dir=new URL('../../supabase/migrations/',import.meta.url);
 let checks=0;const ok=(c,l)=>{assert.ok(c,l);checks++;console.log(`PASS ${l}`);};
 await db.exec(`create role anon;create role authenticated;create role service_role;create schema storage;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);create table storage.objects(id uuid primary key,bucket_id text,name text);`);
-const files=(await readdir(dir)).filter(f=>/^(00[2-9]|01[01])_/.test(f)||/_(church_feedback_guidance_and_pages|admin_tabs_recoverable_trash|moderation_audit_attribution|reviewed_prayer_masking|photo_private_archive|continuous_operations_capacity|prayer_public_edit)\.sql$/.test(f)).sort();
+const files=(await readdir(dir)).filter(f=>(/^(00[2-9]|010)_/.test(f)||f.endsWith('_community_admin_pagination.sql'))||/_(church_feedback_guidance_and_pages|admin_tabs_recoverable_trash|moderation_audit_attribution|reviewed_prayer_masking|photo_private_archive|continuous_operations_capacity|prayer_public_edit)\.sql$/.test(f)).sort();
 ok(files.at(-1).endsWith('_prayer_public_edit.sql'),'public-edit migration follows attribution, archive and continuous operations');
 for(const f of files)await db.exec(await readFile(new URL(f,dir),'utf8'));
 const call=async(action,args)=>(await db.query('select public.community_v2($1,$2) r',[action,JSON.stringify(args)])).rows[0].r;

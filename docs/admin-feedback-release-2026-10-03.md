@@ -33,7 +33,7 @@ Stale or never-confirmed public data intentionally displays “확인 필요”;
 
 ## New migration requiring separate approval
 
-File: `supabase/migrations/20261003115248_admin_tabs_recoverable_trash.sql`
+File: `supabase/migrations/20261003183917_admin_tabs_recoverable_trash.sql`
 
 SHA-256: `2fbc0ac633d85eccb5f93c17ced387db04e148a60ed4c2a5054faa71b8c524df`
 
