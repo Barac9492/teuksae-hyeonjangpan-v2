@@ -4,8 +4,8 @@
 
 ## 변경
 
-- 2026-10-07 (`day: 7`, 행사 3일차) 설교 정보, 검토된 요약과 핵심 세 가지, 42:54–43:01 실제 연속 기도 인도문을 추가했다.
-- 셋째 날에만 선택적 요약 문단을 표시한다. 10월 5·6일 데이터는 기준 main과 문자 단위로 동일하며 기존 화면 내용도 유지한다.
+- 2026-10-07 (`day: 7`, 행사 3일차) 설교 정보, 교정된 핵심 세 가지, 44:48–44:55 실제 연속 기도문을 표시한다.
+- 자동자막 오인식 `기름부심`, `재해석갑니다`는 Ethan의 직접 교정에 따라 `기름부으심`, `재해석합니다`로 바로잡았다. 선택적 요약 문단은 제거했다. 10월 5·6일 데이터는 문자 단위로 동일하다.
 - [원문 근거 및 검증 한계](sermon-day-three-source-2026-10-07.md)에 요약과 직접 인용을 구분해 기록했다.
 - 체육관·다른 현황·DB·API·migration 및 migration-history 변경 없음.
 
@@ -19,7 +19,7 @@
 | `npm run build` | TypeScript 및 Vite 빌드 통과 |
 | `node --check tests/scripts/sermon-card-browser.mjs`, `git diff --check` | 통과 |
 | 기존 말씀 브라우저 회귀 | 320·390·1440px: 타이머, 입력 초안, 공개 동의, 앞/뒤 이동, 미리보기 취소, 오프라인 표시 통과 |
-| 셋째 날 브라우저 검증 | 320·390px: 기본 최신 선택, 제목·본문·요약·핵심, 기도 원문·시간 링크, 5·6·7일 전환, 8일 미등록, 기도 탭에서 복귀, 새로고침 통과 |
+| 셋째 날 브라우저 검증 | 기존 320·390px 레이아웃 회귀에 더해 교정 문구와 44:48–44:55 기도 링크를 1440×900 합성 로컬 fixture에서 재확인. 현재 320·390px 문구 회귀는 PR CI 게이트로 확인 |
 | 날짜 경계 | 2026-10-06 14:59:59 UTC에는 최신 6일, 15:00:00 UTC부터 최신 7일 |
 | 실제 Chrome 시각 확인 | 로컬 320·390px 가로 넘침 없음, 제목·요약·기도 펼침과 구간 링크 확인 |
 
@@ -28,7 +28,9 @@
 - [브라우저 결과](../evidence/sermon-day-three/browser-results.json)
 - [320px 카드](../evidence/sermon-day-three/day-three-320.png)
 - [390px 기도문](../evidence/sermon-day-three/day-three-prayer-390.png)
-- [실제 Chrome 390px](../evidence/sermon-day-three/review-390.jpg)
+- [교정 문구 로컬 카드](../evidence/sermon-day-three/wording-correction-1440.png)
+- [교정 기도문·시간 링크](../evidence/sermon-day-three/wording-correction-prayer-1440.png)
+- 기존 `day-three-*.png`, `review-390.jpg`는 최초 요약형 카드의 역사적 증거이며 현재 문구 증거로 사용하지 않는다.
 - 전체 테스트·서버·린트·빌드 로그: `evidence/sermon-day-three/`.
 
 ## 남은 단계

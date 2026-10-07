@@ -113,12 +113,12 @@ try {
     await page.clock.pauseAt(new Date('2026-10-07T12:00:00+09:00'));
     await page.goto(base);
     const card = page.locator('#tc-sermon-card');
-    await card.getByRole('heading', { name: '기름부심이 가져다 준 세 가지 변화' }).waitFor();
+    await card.getByRole('heading', { name: '기름부으심이 가져다 준 세 가지 변화' }).waitFor();
     assert.equal(await page.locator('#tc-panel-worship > .tc-section').first().locator('#tc-sermon-card').count(), 1);
     assert.match(await card.innerText(), /골리앗보다 크신 하나님을 보라 · 이찬수 목사/);
     assert.match(await card.innerText(), /사무엘상 17:31–37/);
     assert.equal(await card.locator('.tc-sermon__summary').count(), 0);
-    assert.deepEqual(await card.locator('.tc-sermon__points li').allTextContents(), ['01보는 눈과 언어가 달라집니다.', '02사람의 평가에 연연하지 않습니다. 끌려다니지 않습니다.', '03과거의 은혜로 현재를 재해석갑니다.']);
+    assert.deepEqual(await card.locator('.tc-sermon__points li').allTextContents(), ['01보는 눈과 언어가 달라집니다.', '02사람의 평가에 연연하지 않습니다. 끌려다니지 않습니다.', '03과거의 은혜로 현재를 재해석합니다.']);
     assert.equal(await card.locator('details').getAttribute('open'), null);
     assert.equal(await page.locator('body').evaluate(e => e.scrollWidth <= innerWidth), true);
     await card.screenshot({ path: out + `day-three-${width}.png` });
@@ -136,9 +136,9 @@ try {
     assert.equal(await card.locator('details').getAttribute('open'), null);
     await page.getByRole('tab', { name: '기도', exact: true }).click();
     await page.getByRole('tab', { name: '예배', exact: true }).click();
-    await card.getByRole('heading', { name: '기름부심이 가져다 준 세 가지 변화' }).waitFor();
+    await card.getByRole('heading', { name: '기름부으심이 가져다 준 세 가지 변화' }).waitFor();
     await page.reload();
-    await card.getByRole('heading', { name: '기름부심이 가져다 준 세 가지 변화' }).waitFor();
+    await card.getByRole('heading', { name: '기름부으심이 가져다 준 세 가지 변화' }).waitFor();
     await page.getByRole('button', { name: '10월 8일 말씀 미등록' }).click();
     await card.getByRole('heading', { name: '아직 등록된 말씀이 없어요' }).waitFor();
     assert.equal(await page.locator('body').evaluate(e => e.scrollWidth <= innerWidth), true);

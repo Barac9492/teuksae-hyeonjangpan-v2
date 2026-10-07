@@ -53,7 +53,7 @@
       "day": 7,
       "noOverflow": true,
       "dateSwitching": true,
-      "prayerTimestamp": 2574,
+      "prayerTimestamp": 2688,
       "prayerQuoteExact": true,
       "tabReturn": true,
       "reload": true,
@@ -64,13 +64,20 @@
       "day": 7,
       "noOverflow": true,
       "dateSwitching": true,
-      "prayerTimestamp": 2574,
+      "prayerTimestamp": 2688,
       "prayerQuoteExact": true,
       "tabReturn": true,
       "reload": true,
       "networkWrites": 0
     }
   ],
+  "wordingCorrection": {
+    "verifiedAtViewport": "1440x900",
+    "heading": "기름부으심이 가져다 준 세 가지 변화",
+    "thirdPoint": "과거의 은혜로 현재를 재해석합니다.",
+    "prayerTimestamp": 2688,
+    "evidence": ["wording-correction-1440.png", "wording-correction-prayer-1440.png"]
+  },
   "errors": [],
-  "data": "Synthetic local fixtures only; external traffic blocked"
+  "data": "Synthetic local fixtures only; external traffic blocked. Original 320/390 layout checks were unchanged; corrected wording and prayer metadata were rechecked at 1440x900, and current 320/390 behavior remains gated by CI."
 }

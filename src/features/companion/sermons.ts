@@ -47,8 +47,8 @@ export const sermons: readonly Sermon[] = [{
   speaker: '이찬수 목사',
   passage: '사무엘상 17:31–37',
   videoUrl: 'https://www.youtube.com/watch?v=x27Jm9asHDE',
-  reflectionTitle: '기름부심이 가져다 준 세 가지 변화',
-  points: ['보는 눈과 언어가 달라집니다.', '사람의 평가에 연연하지 않습니다. 끌려다니지 않습니다.', '과거의 은혜로 현재를 재해석갑니다.'],
+  reflectionTitle: '기름부으심이 가져다 준 세 가지 변화',
+  points: ['보는 눈과 언어가 달라집니다.', '사람의 평가에 연연하지 않습니다. 끌려다니지 않습니다.', '과거의 은혜로 현재를 재해석합니다.'],
   prayerExcerpt: {
     text: '우리의 눈을 열어 주님을 보게 하여 주옵소서.',
     startSeconds: 2688,
