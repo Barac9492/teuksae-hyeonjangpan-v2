@@ -140,9 +140,9 @@ it('shows the day-three caption wording, exact prayer link, older dates and late
   const card = document.getElementById('tc-sermon-card')!;
   expect(document.querySelector('#tc-panel-worship .tc-section')?.contains(card)).toBe(true);
   expect(card).toHaveTextContent('10월 7일 새벽 말씀 다시 보기');
-  expect(screen.getByRole('heading', { name: '기름부심이 가져다 준 세 가지 변화' })).toBeVisible();
+  expect(screen.getByRole('heading', { name: '기름부으심이 가져다 준 세 가지 변화' })).toBeVisible();
   expect(document.querySelector('.tc-sermon__summary')).not.toBeInTheDocument();
-  for (const point of ['보는 눈과 언어가 달라집니다.', '사람의 평가에 연연하지 않습니다. 끌려다니지 않습니다.', '과거의 은혜로 현재를 재해석갑니다.']) expect(screen.getByText(point)).toBeVisible();
+  for (const point of ['보는 눈과 언어가 달라집니다.', '사람의 평가에 연연하지 않습니다. 끌려다니지 않습니다.', '과거의 은혜로 현재를 재해석합니다.']) expect(screen.getByText(point)).toBeVisible();
   expect(document.querySelector('.tc-sermon__questions')).not.toHaveAttribute('open');
   fireEvent.click(screen.getByText('말씀에서 나눈 기도 제목'));
   expect(screen.getByText('우리의 눈을 열어 주님을 보게 하여 주옵소서.')).toBeVisible();
