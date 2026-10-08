@@ -146,7 +146,52 @@ try {
     checks.push({ width, day: 7, noOverflow: true, dateSwitching: true, prayerTimestamp: 2688, prayerQuoteExact: true, tabReturn: true, reload: true, networkWrites: writes.length });
     await context.close();
   }
+  for (const width of [320, 390]) {
+    const context = await browser.newContext({ viewport: { width, height: 844 }, reducedMotion: 'reduce', serviceWorkers: 'block' });
+    const writes = [];
+    await context.route('**/*', route => {
+      const request = route.request(), url = new URL(request.url());
+      if (url.origin !== base) return route.abort();
+      if (!url.pathname.startsWith('/api/')) return route.continue();
+      if (request.method() !== 'GET') writes.push(request.method());
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ enabled: true, resources: [], items: [], photoCountToday: 0, today: '2026-10-08' }) });
+    });
+    const page = await context.newPage();
+    page.on('pageerror', error => errors.push(error.message));
+    await page.clock.install({ time: new Date('2026-10-08T12:00:00+09:00') });
+    await page.clock.pauseAt(new Date('2026-10-08T12:00:00+09:00'));
+    await page.goto(base);
+    const card = page.locator('#tc-sermon-card');
+    await card.getByRole('heading', { name: '요나단을 통해 보는 참된 사랑의 특징' }).waitFor();
+    assert.equal(await page.locator('#tc-panel-worship > .tc-section').first().locator('#tc-sermon-card').count(), 1);
+    assert.match(await card.innerText(), /사람은 관계를 통해 성숙해간다 · 이찬수 목사/);
+    assert.match(await card.innerText(), /사무엘상 18:1–5/);
+    assert.equal(await card.locator('.tc-sermon__summary').count(), 0);
+    assert.deepEqual(await card.locator('.tc-sermon__points li').allTextContents(), ['01상대방이 잘될 때 기뻐하는 사랑', '02자신의 권리를 내려놓는 사랑', '03하나님을 더 의지하도록 도와주는 사랑']);
+    assert.equal(await card.locator('details').getAttribute('open'), null);
+    assert.equal(await page.locator('body').evaluate(e => e.scrollWidth <= innerWidth), true);
+    await card.screenshot({ path: out + `day-four-${width}.png` });
+    await card.getByText('말씀에서 나눈 기도 제목').click();
+    assert.equal(await card.locator('blockquote').innerText(), '하나님 피하기 전에 내 최선을 다해서 품을 수 있는 마음을 주시기 원합니다.');
+    assert.equal(await card.getByRole('link', { name: /말씀 43:06–43:17/ }).getAttribute('href'), 'https://www.youtube.com/watch?v=kFLj2-Axxd0&t=2586s');
+    assert.equal(await card.getByRole('link', { name: /설교 다시 듣기/ }).getAttribute('href'), 'https://www.youtube.com/watch?v=kFLj2-Axxd0');
+    await card.screenshot({ path: out + `day-four-prayer-${width}.png` });
+    for (const [day, title] of [[5, '하나님이 기뻐하신 다윗의 중심'], [6, '하나님이 원하셨던 훈련'], [7, '기름부으심이 가져다 준 세 가지 변화']]) {
+      await page.getByRole('button', { name: `10월 ${day}일 말씀 묵상` }).click();
+      await card.getByRole('heading', { name: title }).waitFor();
+    }
+    await page.getByRole('button', { name: '10월 8일 말씀 묵상' }).click();
+    await card.getByRole('heading', { name: '요나단을 통해 보는 참된 사랑의 특징' }).waitFor();
+    await page.reload();
+    await card.getByRole('heading', { name: '요나단을 통해 보는 참된 사랑의 특징' }).waitFor();
+    await page.getByRole('button', { name: '10월 9일 말씀 미등록' }).click();
+    await card.getByRole('heading', { name: '아직 등록된 말씀이 없어요' }).waitFor();
+    assert.equal(await page.locator('body').evaluate(e => e.scrollWidth <= innerWidth), true);
+    assert.deepEqual(writes, []);
+    checks.push({ width, day: 8, noOverflow: true, dateSwitching: true, prayerTimestamp: 2586, prayerQuoteExact: true, reload: true, networkWrites: writes.length });
+    await context.close();
+  }
   assert.deepEqual(errors, []);
   await writeFile(out + 'browser-results.json', JSON.stringify({ checks, errors, data: 'Synthetic local fixtures only; external traffic blocked' }, null, 2));
-  console.log('PASS: 320, 390, 1440px; timer/draft/consent/back/forward/cancel/offline; day three at 320/390px with exact prayer/date/tab/reload checks; zero writes');
+  console.log('PASS: 320, 390, 1440px; timer/draft/consent/back/forward/cancel/offline; day three at 320/390px with exact prayer/date/tab/reload checks; day four at 320/390px with exact prayer/date/reload checks; zero writes');
 } finally { await browser.close(); }
