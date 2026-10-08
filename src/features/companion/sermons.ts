@@ -54,6 +54,20 @@ export const sermons: readonly Sermon[] = [{
     startSeconds: 2688,
     timeLabel: '44:48–44:55',
   },
+}, {
+  day: 8,
+  date: '2026-10-08',
+  title: '사람은 관계를 통해 성숙해간다',
+  speaker: '이찬수 목사',
+  passage: '사무엘상 18:1–5',
+  videoUrl: 'https://www.youtube.com/watch?v=kFLj2-Axxd0',
+  reflectionTitle: '요나단을 통해 보는 참된 사랑의 특징',
+  points: ['상대방이 잘될 때 기뻐하는 사랑', '자신의 권리를 내려놓는 사랑', '하나님을 더 의지하도록 도와주는 사랑'],
+  prayerExcerpt: {
+    text: '하나님 피하기 전에 내 최선을 다해서 품을 수 있는 마음을 주시기 원합니다.',
+    startSeconds: 2586,
+    timeLabel: '43:06–43:17',
+  },
 }] as const;
 
 export function availableSermon(day: number, now: number) {
