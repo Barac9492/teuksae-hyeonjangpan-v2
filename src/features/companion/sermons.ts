@@ -68,6 +68,20 @@ export const sermons: readonly Sermon[] = [{
     startSeconds: 2586,
     timeLabel: '43:06–43:17',
   },
+}, {
+  day: 9,
+  date: '2026-10-09',
+  title: '상대방에게 끌려가지 않는 믿음',
+  speaker: '이찬수 목사',
+  passage: '사무엘상 18:6–16',
+  videoUrl: 'https://www.youtube.com/watch?v=AO95eBj9Yp4',
+  reflectionTitle: '다윗이 가진 힘의 원동력',
+  points: ['하나님께서 나와 함께 계신다. 이 확신.', '주권을 하나님께 맡겨 드리는 믿음.'],
+  prayerExcerpt: {
+    text: '하나님을 마음에 의식하고 하나님을 바라보고 그 하나님의 인도하심을 따라 혼란 없이 인생길을 걸어가는 주님의 자녀 되도록 인도하여 주시옵소서.',
+    startSeconds: 3889,
+    timeLabel: '1:04:49–1:05:02',
+  },
 }] as const;
 
 export function availableSermon(day: number, now: number) {

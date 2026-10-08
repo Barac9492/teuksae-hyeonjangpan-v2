@@ -17,8 +17,8 @@ afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); });
 it('only exposes reviewed, non-future content and keeps the last available sermon after the event', () => {
   expect(availableSermon(5, Date.parse('2026-10-04T14:59:59Z'))).toBeUndefined();
   expect(availableSermon(5, Date.parse('2026-10-04T15:00:00Z'))?.title).toBe('다윗의 중심');
-  for (const day of [9, 10]) expect(availableSermon(day, Date.parse('2027-01-01'))).toBeUndefined();
-  expect(latestSermonDay(Date.parse('2027-01-01'))).toBe(8);
+  expect(availableSermon(10, Date.parse('2027-01-01'))).toBeUndefined();
+  expect(latestSermonDay(Date.parse('2027-01-01'))).toBe(9);
 });
 
 it('opens the second-day sermon only from 2026-10-06 KST and keeps day one unchanged', () => {
@@ -189,6 +189,36 @@ it('shows the day-four caption wording, exact prayer link and older dates', () =
     expect(screen.getByRole('heading', { name: sermons[day - 5].reflectionTitle })).toBeVisible();
   }
   fireEvent.click(screen.getByRole('button', { name: '10월 9일 말씀 미등록' }));
+  expect(screen.getByRole('heading', { name: '아직 등록된 말씀이 없어요' })).toBeVisible();
+  expect(requests.every(request => request.method === 'GET')).toBe(true);
+});
+
+it('opens the fifth event day on October 9 at midnight KST while keeping October 8 latest until then', () => {
+  expect(availableSermon(9, Date.parse('2026-10-08T14:59:59Z'))).toBeUndefined();
+  expect(latestSermonDay(Date.parse('2026-10-08T14:59:59Z'))).toBe(8);
+  expect(availableSermon(9, Date.parse('2026-10-08T15:00:00Z'))?.title).toBe('상대방에게 끌려가지 않는 믿음');
+  expect(latestSermonDay(Date.parse('2026-10-08T15:00:00Z'))).toBe(9);
+});
+
+it('shows the October 9 caption wording, exact prayer link and older dates', () => {
+  vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-10-09T06:30:00+09:00'));
+  render(<CompanionApp />);
+  const card = document.getElementById('tc-sermon-card')!;
+  expect(document.querySelector('#tc-panel-worship .tc-section')?.contains(card)).toBe(true);
+  expect(card).toHaveTextContent('10월 9일 새벽 말씀 다시 보기');
+  expect(screen.getByRole('heading', { name: '다윗이 가진 힘의 원동력' })).toBeVisible();
+  expect(document.querySelector('.tc-sermon__summary')).not.toBeInTheDocument();
+  for (const point of ['하나님께서 나와 함께 계신다. 이 확신.', '주권을 하나님께 맡겨 드리는 믿음.']) expect(screen.getByText(point)).toBeVisible();
+  expect(document.querySelector('.tc-sermon__questions')).not.toHaveAttribute('open');
+  fireEvent.click(screen.getByText('말씀에서 나눈 기도 제목'));
+  expect(screen.getByText('하나님을 마음에 의식하고 하나님을 바라보고 그 하나님의 인도하심을 따라 혼란 없이 인생길을 걸어가는 주님의 자녀 되도록 인도하여 주시옵소서.')).toBeVisible();
+  expect(screen.getByRole('link', { name: /말씀 1:04:49–1:05:02/ })).toHaveAttribute('href', 'https://www.youtube.com/watch?v=AO95eBj9Yp4&t=3889s');
+  expect(screen.getByRole('link', { name: /설교 다시 듣기/ })).toHaveAttribute('href', 'https://www.youtube.com/watch?v=AO95eBj9Yp4');
+  for (const day of [5, 6, 7, 8] as const) {
+    fireEvent.click(screen.getByRole('button', { name: `10월 ${day}일 말씀 묵상` }));
+    expect(screen.getByRole('heading', { name: sermons[day - 5].reflectionTitle })).toBeVisible();
+  }
+  fireEvent.click(screen.getByRole('button', { name: '10월 10일 말씀 미등록' }));
   expect(screen.getByRole('heading', { name: '아직 등록된 말씀이 없어요' })).toBeVisible();
   expect(requests.every(request => request.method === 'GET')).toBe(true);
 });
