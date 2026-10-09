@@ -208,7 +208,7 @@ it('shows the October 9 caption wording, exact prayer link and older dates', () 
   expect(card).toHaveTextContent('10월 9일 새벽 말씀 다시 보기');
   expect(screen.getByRole('heading', { name: '다윗이 가진 힘의 원동력' })).toBeVisible();
   expect(document.querySelector('.tc-sermon__summary')).not.toBeInTheDocument();
-  for (const point of ['하나님께서 나와 함께 계신다. 이 확신.', '주권을 하나님께 맡겨 드리는 믿음.']) expect(screen.getByText(point)).toBeVisible();
+  for (const point of ['하나님께서 나와 함께 계신다. 이 확신.', '주권을 하나님께 맡겨 드린다. 이 믿음.']) expect(screen.getByText(point)).toBeVisible();
   expect(document.querySelector('.tc-sermon__questions')).not.toHaveAttribute('open');
   fireEvent.click(screen.getByText('말씀에서 나눈 기도 제목'));
   expect(screen.getByText('하나님을 마음에 의식하고 하나님을 바라보고 그 하나님의 인도하심을 따라 혼란 없이 인생길을 걸어가는 주님의 자녀 되도록 인도하여 주시옵소서.')).toBeVisible();
