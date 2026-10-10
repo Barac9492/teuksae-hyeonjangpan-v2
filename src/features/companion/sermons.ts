@@ -92,7 +92,7 @@ export const sermons: readonly Sermon[] = [{
   reflectionTitle: '다윗을 살리기 위한 요나단의 헌신',
   points: ['사랑의 권면', '생명을 건 중보', '회복을 위해 끝까지 행동하는 사랑'],
   prayerExcerpt: {
-    text: '내가이 땅에 존재하는 것이 그 누군가에게는 이것이 선물이 되게 하여 주시옵소서.',
+    text: '내가 이 땅에 존재하는 것이 그 누군가에게는 이것이 선물이 되게 하여 주시옵소서.',
     startSeconds: 2478,
     timeLabel: '41:18–41:28',
   },

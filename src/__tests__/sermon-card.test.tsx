@@ -241,7 +241,7 @@ it('shows the October 10 caption wording, exact prayer link and all older dates'
   for (const point of ['사랑의 권면', '생명을 건 중보', '회복을 위해 끝까지 행동하는 사랑']) expect(screen.getByText(point)).toBeVisible();
   expect(document.querySelector('.tc-sermon__questions')).not.toHaveAttribute('open');
   fireEvent.click(screen.getByText('말씀에서 나눈 기도 제목'));
-  expect(screen.getByText('내가이 땅에 존재하는 것이 그 누군가에게는 이것이 선물이 되게 하여 주시옵소서.')).toBeVisible();
+  expect(screen.getByText('내가 이 땅에 존재하는 것이 그 누군가에게는 이것이 선물이 되게 하여 주시옵소서.')).toBeVisible();
   expect(screen.getByRole('link', { name: /말씀 41:18–41:28/ })).toHaveAttribute('href', 'https://www.youtube.com/watch?v=MLCU6ApGZ0Q&t=2478s');
   expect(screen.getByRole('link', { name: /설교 다시 듣기/ })).toHaveAttribute('href', 'https://www.youtube.com/watch?v=MLCU6ApGZ0Q');
   for (const day of [5, 6, 7, 8, 9] as const) {
