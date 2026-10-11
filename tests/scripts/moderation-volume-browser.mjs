@@ -27,9 +27,9 @@ try {
   assert.equal(await page.getByRole('combobox',{name:'검토 상태'}).inputValue(),'pending');
   await rows.first().waitFor();
   assert.equal(await rows.count(),20);
-  assert.equal(await page.getByRole('checkbox').count(),20);
+  assert.equal(await page.locator('.community-moderation').getByRole('checkbox').count(),20);
   // Prayer text is readable in place, so its checkbox is usable immediately; photos still need opening.
-  assert.equal(await page.getByRole('checkbox').first().isDisabled(),kind==='photo');
+  assert.equal(await page.locator('.community-moderation').getByRole('checkbox').first().isDisabled(),kind==='photo');
   await overflow();
   if(kind==='prayer'){await rows.first().scrollIntoViewIfNeeded();await page.screenshot({path:out+'mobile-visible-checkboxes.png'});}
   const ids=[];let pageNumber=0;
@@ -47,7 +47,7 @@ try {
    await page.waitForFunction(old=>document.querySelector('.community-moderation__item')?.getAttribute('aria-label')!==old,oldName);
    await rows.first().waitFor();
    assert.equal(await page.getByRole('button',{name:'선택 공개 승인',exact:true}).isDisabled(),true);
-   assert.equal(await page.getByRole('checkbox').first().isChecked(),false);
+   assert.equal(await page.locator('.community-moderation').getByRole('checkbox').first().isChecked(),false);
   }
   assert.equal(ids.length,total);assert.equal(new Set(ids).size,total);assert.equal(posts.length,kind==='photo'?10:0);
   if(kind==='photo')await page.getByRole('button',{name:'현재 페이지 내용 모두 펼치기'}).click();
